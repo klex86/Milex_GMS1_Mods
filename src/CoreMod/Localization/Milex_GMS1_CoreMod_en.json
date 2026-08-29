@@ -2,7 +2,7 @@
   "menu.title": "⛏ MILEX GMS1 MODS",
   "menu.subtitle": "Gold Mining Simulator Modding Framework & Manager",
   "menu.close": "✕ Close",
-  "menu.tab.core_settings": "⚙ Core Settings",
+  "menu.tab.core_settings": "⚙ General",
   "menu.tab.mods": "📦 Loaded Mods",
   "menu.no_mods": "No feature mods loaded",
   "menu.select_mod": "Select a mod from the left sidebar.",
@@ -34,5 +34,9 @@
   "btn.disabled": "[  ] Disabled",
   "btn.rebind_prompt": "👉 Press a key...",
   "btn.reset": "Reset",
-  "btn.rebind": "Key: [ {0} ]"
+  "btn.rebind": "Key: [ {0} ]",
+
+  "mod.toggle.label": "Mod Status",
+  "mod.toggle.desc": "Toggles the mod including all Harmony patches instantly. State is persisted.",
+  "mod.disabled.hint": "⚠ This mod is disabled. Settings are locked."
 }

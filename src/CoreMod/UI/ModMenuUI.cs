@@ -21,6 +21,7 @@ namespace Milex.GMS1.Core.UI
     {
         private Rect _baseWindowRect = new Rect(100, 100, 840, 560);
         private float _lastScale = 1.0f; // Tracks previous scale to anchor window top-left on scale change
+        private float _currentScale = 1.0f; // Current frame scale, used inside DrawWindowContent
 
         // Navigation: -1 = Core Settings, >= 0 = Index in non-core mods list
         private int _selectedModIndex = -1;
@@ -127,6 +128,8 @@ namespace Milex.GMS1.Core.UI
                 _lastScale = scale;
             }
 
+            _currentScale = scale;
+
             Matrix4x4 originalMatrix = GUI.matrix;
 
             if (Math.Abs(scale - 1.0f) > 0.01f)
@@ -211,6 +214,7 @@ namespace Milex.GMS1.Core.UI
             {
                 fontSize = 13,
                 fontStyle = FontStyle.Normal,
+                richText = true,
                 normal = { background = _buttonTex, textColor = new Color(0.85f, 0.85f, 0.85f) },
                 hover = { background = MakeTex(2, 2, new Color(0.28f, 0.28f, 0.32f, 1.0f)), textColor = Color.white },
                 alignment = TextAnchor.MiddleLeft,
@@ -220,6 +224,7 @@ namespace Milex.GMS1.Core.UI
             _sidebarButtonActiveStyle = new GUIStyle(_sidebarButtonStyle)
             {
                 fontStyle = FontStyle.Bold,
+                richText = true,
                 normal = { background = _buttonActiveTex, textColor = Color.black },
                 hover = { background = _buttonActiveTex, textColor = Color.black }
             };
@@ -345,12 +350,14 @@ namespace Milex.GMS1.Core.UI
             GUILayout.BeginHorizontal();
 
             // === LEFT SIDEBAR ===
-            GUILayout.BeginVertical(GUILayout.Width(230), GUILayout.ExpandHeight(true));
-            _sidebarScrollPos = GUILayout.BeginScrollView(_sidebarScrollPos, false, true, GUILayout.Width(230));
+            // Width is fixed in screen-space (200px) regardless of scale.
+            float sidebarGuiWidth = 200f / _currentScale;
+            GUILayout.BeginVertical(GUILayout.Width(sidebarGuiWidth), GUILayout.ExpandHeight(true));
+            _sidebarScrollPos = GUILayout.BeginScrollView(_sidebarScrollPos, false, false, GUILayout.Width(sidebarGuiWidth));
 
             // Core Settings Button
             bool isCoreSelected = (_selectedModIndex == -1);
-            if (GUILayout.Button(L("menu.tab.core_settings", "⚙ Core-Optionen"), isCoreSelected ? _sidebarButtonActiveStyle : _sidebarButtonStyle, GUILayout.Height(40)))
+            if (GUILayout.Button(L("menu.tab.core_settings", "⚙ Allgemein"), isCoreSelected ? _sidebarButtonActiveStyle : _sidebarButtonStyle, GUILayout.Height(40)))
             {
                 _selectedModIndex = -1;
             }
@@ -373,8 +380,10 @@ namespace Milex.GMS1.Core.UI
                     GUIStyle btnStyle = isSelected ? _sidebarButtonActiveStyle : _sidebarButtonStyle;
 
                     string displayModName = mod.Translate("mod.name", mod.Name);
-                    string statusDot = mod.IsEnabled ? "<color=green>●</color>" : "<color=red>○</color>";
-                    if (GUILayout.Button($"{statusDot} {displayModName}\nv{mod.Version}", btnStyle, GUILayout.Height(44)))
+                    string statusDot = mod.IsEnabled ? "<color=green>&#9679;</color>" : "<color=red>&#9675;</color>";
+                    // Version in smaller rich-text below the name
+                    string btnLabel = $"{statusDot} <b>{displayModName}</b>\n<size=10>v{mod.Version}</size>";
+                    if (GUILayout.Button(btnLabel, btnStyle, GUILayout.Height(44)))
                     {
                         _selectedModIndex = i;
                     }
@@ -572,16 +581,17 @@ namespace Milex.GMS1.Core.UI
 
             string modTitle = mod.Translate("mod.name", mod.Name);
             GUILayout.Label(modTitle, _headerStyle);
-            GUILayout.Label($"Version: {mod.Version}  |  GUID: {mod.Guid}", _subHeaderStyle);
+            GUILayout.Label($"Version: {mod.Version}", _subHeaderStyle);
             GUILayout.Space(10);
 
             // ---- Enable / Disable Toggle ----
             if (mod.CanBeDisabled)
             {
                 bool isEnabled = mod.IsEnabled;
-                string toggleLabel = isEnabled
-                    ? L("btn.enabled", "[✓] Aktiviert") + " - " + L("mod.toggle.label", "Mod aktiv")
-                    : L("btn.disabled", "[  ] Deaktiviert") + " - " + L("mod.toggle.label", "Mod aktiv");
+                string stateLabel = isEnabled
+                    ? L("btn.enabled", "[✓] Aktiviert")
+                    : L("btn.disabled", "[  ] Deaktiviert");
+                string toggleLabel = L("mod.toggle.label", "Mod-Status") + ": " + stateLabel;
 
                 GUILayout.BeginVertical("box");
                 if (GUILayout.Button(toggleLabel, isEnabled ? _checkboxActiveStyle : _checkboxStyle, GUILayout.Height(32)))
