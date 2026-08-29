@@ -1,0 +1,38 @@
+{
+  "menu.title": "⛏ MILEX GMS1 MODS",
+  "menu.subtitle": "Gold Mining Simulator Modding Framework & Manager",
+  "menu.close": "✕ Close",
+  "menu.tab.core_settings": "⚙ Core Settings",
+  "menu.tab.mods": "📦 Loaded Mods",
+  "menu.no_mods": "No feature mods loaded",
+  "menu.select_mod": "Select a mod from the left sidebar.",
+  "menu.active_mods": "Active Mods",
+  "menu.status_footer": "Active Mods: {0} | Menu Key: {1} | Language: {2}",
+
+  "core.section.language": "Language Settings",
+  "core.use_game_language.name": "Use Game Language",
+  "core.use_game_language.desc": "Automatically detect language from game settings",
+  "core.selected_language.name": "Select Language",
+  "core.selected_language.desc": "Override language manually (available when 'Use Game Language' is disabled)",
+
+  "core.section.appearance": "Appearance & UI Scaling",
+  "core.ui_scale.name": "UI Scale (Font & Window Size)",
+  "core.ui_scale.desc": "Adjust interface size for 1440p / 4K high-resolution monitors",
+
+  "core.section.controls": "Hotkeys & Controls",
+  "core.menu_key.name": "Menu Toggle Key",
+  "core.menu_key.desc": "Key to open and close this mod management menu",
+
+  "dialog.missing_trans.title": "🌐 Missing Language Files Detected",
+  "dialog.missing_trans.prompt": "The following mods do not have a translation file for '{0}' yet:",
+  "dialog.missing_trans.question": "Would you like to generate editable translation template files for them now?",
+  "dialog.missing_trans.info": "Files will be created in 'BepInEx/plugins/Milex GMS1 Mod Localization/'. You can translate them and share them on NexusMods!",
+  "dialog.missing_trans.btn_yes": "✓ Create Templates",
+  "dialog.missing_trans.btn_no": "✕ No, keep defaults",
+
+  "btn.enabled": "[✓] Enabled",
+  "btn.disabled": "[  ] Disabled",
+  "btn.rebind_prompt": "👉 Press a key...",
+  "btn.reset": "Reset",
+  "btn.rebind": "Key: [ {0} ]"
+}

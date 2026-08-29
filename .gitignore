@@ -1,0 +1,27 @@
+## Build and Output directories
+[Bb]in/
+[Oo]bj/
+out/
+
+## Visual Studio
+.vs/
+*.user
+*.suo
+*.userosv
+*.sln.docstates
+
+## JetBrains Rider
+.idea/
+*.sln.iml
+
+## VS Code
+.vscode/
+
+## BepInEx & Game Artifacts (Configs, Cache, Logs)
+*.log
+*.tmp
+
+## OS generated files
+.DS_Store
+Thumbs.db
+desktop.ini

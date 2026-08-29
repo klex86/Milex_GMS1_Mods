@@ -1,0 +1,13 @@
+{
+  "mod.name": "HelloMod",
+  "config.controls.section": "Steuerung",
+  "config.controls.testhotkey.name": "Test-Taste",
+  "config.controls.testhotkey.desc": "Taste zum Auslösen des Begrüßungs-Logeintrags in der Konsole",
+  "config.general.section": "Allgemeine Einstellungen",
+  "config.general.showprefix.name": "Präfix anzeigen",
+  "config.general.showprefix.desc": "Gibt an, ob das [Greeting] Präfix im Log ausgegeben wird",
+  "config.general.greetingmessage.name": "Grußnachricht",
+  "config.general.greetingmessage.desc": "Eigener Grußtext, der beim Drücken der Test-Taste ausgegeben wird",
+  "log.greeting_default": "Hallo aus dem Gold Mining Simulator Modding!",
+  "log.instruction": "Drücke {0} für den Test-Logeintrag (oder passe die Taste im Mod-Menü via Insert an)."
+}

@@ -1,0 +1,13 @@
+{
+  "mod.name": "HelloMod",
+  "config.controls.section": "Controls",
+  "config.controls.testhotkey.name": "Test Hotkey",
+  "config.controls.testhotkey.desc": "Key to trigger the hello test log entry in the console",
+  "config.general.section": "General Settings",
+  "config.general.showprefix.name": "Show Prefix",
+  "config.general.showprefix.desc": "Determines whether the [Greeting] prefix is included in the log output",
+  "config.general.greetingmessage.name": "Greeting Message",
+  "config.general.greetingmessage.desc": "Custom greeting text to output when pressing the test key",
+  "log.greeting_default": "Hello from Gold Mining Simulator Modding!",
+  "log.instruction": "Press {0} to trigger test log output (or rebind via Core Mod Menu on Insert)."
+}

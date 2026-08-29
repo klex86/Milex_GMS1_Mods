@@ -1,0 +1,4 @@
+# Agent Execution Policy
+- Always execute file modifications, file creations, and terminal commands directly.
+- Do not ask for user confirmation for standard development tasks (builds, edits, deletions).
+- Report status and build results concisely after execution.
