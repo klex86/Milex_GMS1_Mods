@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using BepInEx;
 using BepInEx.Configuration;
 using BepInEx.Logging;
@@ -99,7 +99,9 @@ namespace Milex.GMS1.Core
             }
             else
             {
-                LogInfo("Mod is disabled - Harmony patches skipped.");
+                // Disable the MonoBehaviour so Update()/LateUpdate() do not run
+                this.enabled = false;
+                LogInfo("Mod is disabled - Harmony patches and Update() skipped.");
             }
         }
 
@@ -149,6 +151,9 @@ namespace Milex.GMS1.Core
 
             if (enable)
             {
+                // Re-enable the MonoBehaviour so Update()/LateUpdate() run again
+                this.enabled = true;
+
                 try
                 {
                     HarmonyInstance?.PatchAll(GetType().Assembly);
@@ -174,6 +179,9 @@ namespace Milex.GMS1.Core
                 }
 
                 try { OnModDisabled(); } catch (Exception ex) { LogError($"OnModDisabled threw: {ex}"); }
+
+                // Disable the MonoBehaviour so Update()/LateUpdate() stop running
+                this.enabled = false;
             }
         }
 

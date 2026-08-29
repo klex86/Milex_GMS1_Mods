@@ -20,7 +20,8 @@ namespace Milex.GMS1.Core.UI
     public class ModMenuUI : MonoBehaviour
     {
         private Rect _baseWindowRect = new Rect(100, 100, 840, 560);
-        
+        private float _lastScale = 1.0f; // Tracks previous scale to anchor window top-left on scale change
+
         // Navigation: -1 = Core Settings, >= 0 = Index in non-core mods list
         private int _selectedModIndex = -1;
         private Vector2 _sidebarScrollPos;
@@ -114,6 +115,18 @@ namespace Milex.GMS1.Core.UI
 
             // Handle Matrix-based UI scaling for High-DPI / 4K displays
             float scale = CorePlugin.UIScale != null ? Mathf.Clamp(CorePlugin.UIScale.Value, 0.8f, 1.8f) : 1.0f;
+
+            // When scale changes, adjust the GUI-space position so the window's
+            // top-left screen-space corner stays anchored. The matrix scales from
+            // the screen origin (0,0), so we compensate: newGuiPos = oldGuiPos * (oldScale / newScale).
+            if (!Mathf.Approximately(scale, _lastScale))
+            {
+                float ratio = _lastScale / scale;
+                _baseWindowRect.x *= ratio;
+                _baseWindowRect.y *= ratio;
+                _lastScale = scale;
+            }
+
             Matrix4x4 originalMatrix = GUI.matrix;
 
             if (Math.Abs(scale - 1.0f) > 0.01f)
@@ -190,7 +203,8 @@ namespace Milex.GMS1.Core.UI
             {
                 fontSize = 11,
                 normal = { textColor = new Color(0.70f, 0.70f, 0.70f) },
-                alignment = TextAnchor.MiddleLeft
+                alignment = TextAnchor.MiddleLeft,
+                wordWrap = false
             };
 
             _sidebarButtonStyle = new GUIStyle(GUI.skin.button)
@@ -222,7 +236,8 @@ namespace Milex.GMS1.Core.UI
             {
                 fontSize = 13,
                 fontStyle = FontStyle.Bold,
-                normal = { textColor = Color.white }
+                normal = { textColor = Color.white },
+                wordWrap = false
             };
 
             _entryDescStyle = new GUIStyle(GUI.skin.label)
@@ -400,7 +415,7 @@ namespace Milex.GMS1.Core.UI
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
             string status = string.Format(L("menu.status_footer", "Aktive Mods: {0} | Menü-Taste: {1} | Sprache: {2}"),
-                featureMods.Count + 1, CorePlugin.MenuToggleKey.Value, LocalizationManager.CurrentLanguage);
+                featureMods.Count, CorePlugin.MenuToggleKey.Value, LocalizationManager.CurrentLanguage);
             GUILayout.Label(status, _subHeaderStyle);
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
@@ -610,6 +625,11 @@ namespace Milex.GMS1.Core.UI
 
                 foreach (var definition in sectionGroup)
                 {
+                    // Skip the 'Enabled' entry — it is already shown as the dedicated Enable/Disable toggle above.
+                    if (definition.Key.Equals("Enabled", StringComparison.OrdinalIgnoreCase)
+                        && definition.Section.Equals("General", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
                     if (config.ContainsKey(definition))
                     {
                         ConfigEntryBase entryBase = config[definition];
