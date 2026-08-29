@@ -380,7 +380,7 @@ namespace Milex.GMS1.Core.UI
                     GUIStyle btnStyle = isSelected ? _sidebarButtonActiveStyle : _sidebarButtonStyle;
 
                     string displayModName = mod.Translate("mod.name", mod.Name);
-                    string statusDot = mod.IsEnabled ? "<color=green>&#9679;</color>" : "<color=red>&#9675;</color>";
+                    string statusDot = mod.IsEnabled ? "<color=green>\u25CF</color>" : "<color=red>\u25CB</color>";
                     // Version in smaller rich-text below the name
                     string btnLabel = $"{statusDot} <b>{displayModName}</b>\n<size=10>v{mod.Version}</size>";
                     if (GUILayout.Button(btnLabel, btnStyle, GUILayout.Height(44)))
