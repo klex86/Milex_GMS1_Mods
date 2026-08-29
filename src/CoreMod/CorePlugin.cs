@@ -22,6 +22,9 @@ namespace Milex.GMS1.Core
         public override string ModName => PluginName;
         public override string ModVersion => PluginVersion;
 
+        /// <summary>The core mod can never be disabled at runtime.</summary>
+        public override bool CanBeDisabled => false;
+
         public static CorePlugin Instance { get; private set; }
 
         public static ConfigEntry<KeyCode> MenuToggleKey { get; private set; }

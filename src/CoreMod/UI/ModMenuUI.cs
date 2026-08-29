@@ -358,7 +358,8 @@ namespace Milex.GMS1.Core.UI
                     GUIStyle btnStyle = isSelected ? _sidebarButtonActiveStyle : _sidebarButtonStyle;
 
                     string displayModName = mod.Translate("mod.name", mod.Name);
-                    if (GUILayout.Button($"{displayModName}\nv{mod.Version}", btnStyle, GUILayout.Height(44)))
+                    string statusDot = mod.IsEnabled ? "<color=green>●</color>" : "<color=red>○</color>";
+                    if (GUILayout.Button($"{statusDot} {displayModName}\nv{mod.Version}", btnStyle, GUILayout.Height(44)))
                     {
                         _selectedModIndex = i;
                     }
@@ -559,9 +560,39 @@ namespace Milex.GMS1.Core.UI
             GUILayout.Label($"Version: {mod.Version}  |  GUID: {mod.Guid}", _subHeaderStyle);
             GUILayout.Space(10);
 
+            // ---- Enable / Disable Toggle ----
+            if (mod.CanBeDisabled)
+            {
+                bool isEnabled = mod.IsEnabled;
+                string toggleLabel = isEnabled
+                    ? L("btn.enabled", "[✓] Aktiviert") + " - " + L("mod.toggle.label", "Mod aktiv")
+                    : L("btn.disabled", "[  ] Deaktiviert") + " - " + L("mod.toggle.label", "Mod aktiv");
+
+                GUILayout.BeginVertical("box");
+                if (GUILayout.Button(toggleLabel, isEnabled ? _checkboxActiveStyle : _checkboxStyle, GUILayout.Height(32)))
+                {
+                    mod.Instance?.SetEnabled(!isEnabled);
+                }
+                GUILayout.Label(L("mod.toggle.desc", "Schaltet den Mod inkl. aller Harmony-Patches sofort an oder aus. Der Zustand wird gespeichert."), _entryDescStyle);
+                GUILayout.EndVertical();
+                GUILayout.Space(8);
+            }
+
+            // Gray out config when disabled
+            GUI.enabled = mod.IsEnabled;
+
+            if (!mod.IsEnabled)
+            {
+                GUILayout.BeginVertical("box");
+                GUILayout.Label(L("mod.disabled.hint", "⚠ Dieser Mod ist deaktiviert. Einstellungen sind gesperrt."), _subHeaderStyle);
+                GUILayout.EndVertical();
+                GUILayout.Space(6);
+            }
+
             var config = mod.Config;
             if (config == null || config.Keys.Count == 0)
             {
+                GUI.enabled = true;
                 GUILayout.Label("Dieser Mod besitzt keine konfigurierbaren Einstellungen.", _subHeaderStyle);
                 GUILayout.EndVertical();
                 return;
@@ -590,6 +621,7 @@ namespace Milex.GMS1.Core.UI
                 GUILayout.Space(8);
             }
 
+            GUI.enabled = true; // Always restore after mod config view
             GUILayout.EndVertical();
         }
 

@@ -19,6 +19,12 @@ namespace Milex.GMS1.Core
         public Assembly Assembly => Instance?.GetType().Assembly;
         public ConfigFile Config => Instance?.Config;
 
+        /// <summary>Whether the mod is currently enabled (live state from ModBase).</summary>
+        public bool IsEnabled => Instance?.IsEnabled ?? false;
+
+        /// <summary>Whether the mod supports being disabled at runtime.</summary>
+        public bool CanBeDisabled => Instance?.CanBeDisabled ?? true;
+
         public ModInfo(ModBase instance)
         {
             Instance = instance ?? throw new ArgumentNullException(nameof(instance));

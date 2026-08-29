@@ -53,5 +53,23 @@ namespace Milex.GMS1.Mods.HelloMod
                 LogInfo(msg);
             }
         }
+
+        /// <summary>
+        /// Called when the mod is re-enabled via the Mod Menu.
+        /// Use this to re-register event handlers or reinitialise mod state.
+        /// </summary>
+        protected override void OnModEnabled()
+        {
+            LogInfo("HelloMod was enabled at runtime.");
+        }
+
+        /// <summary>
+        /// Called when the mod is disabled via the Mod Menu.
+        /// Use this to clean up any game state the mod has changed.
+        /// </summary>
+        protected override void OnModDisabled()
+        {
+            LogInfo("HelloMod was disabled at runtime.");
+        }
     }
 }
