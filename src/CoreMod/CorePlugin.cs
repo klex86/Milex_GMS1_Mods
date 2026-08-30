@@ -53,6 +53,24 @@ namespace Milex.GMS1.Core
 
             IgnoreExternalTranslations.SettingChanged += (s, e) => LocalizationManager.ReloadAll();
 
+            PauseGameOnMenu.SettingChanged += (s, e) =>
+            {
+                if (IsMenuOpen)
+                {
+                    if (PauseGameOnMenu.Value && !_isGamePausedByMenu)
+                    {
+                        _previousTimeScale = Time.timeScale > 0.001f ? Time.timeScale : 1.0f;
+                        Time.timeScale = 0.0f;
+                        _isGamePausedByMenu = true;
+                    }
+                    else if (!PauseGameOnMenu.Value && _isGamePausedByMenu)
+                    {
+                        Time.timeScale = _previousTimeScale > 0.001f ? _previousTimeScale : 1.0f;
+                        _isGamePausedByMenu = false;
+                    }
+                }
+            };
+
             base.Awake();
 
             // Attach ModMenuUI component
@@ -66,6 +84,7 @@ namespace Milex.GMS1.Core
         private static CursorLockMode _previousLockMode = CursorLockMode.None;
         private static bool _previousCursorVisible = true;
         private static float _previousTimeScale = 1.0f;
+        private static bool _isGamePausedByMenu = false;
 
         private void Update()
         {
@@ -122,15 +141,17 @@ namespace Milex.GMS1.Core
 
                 if (PauseGameOnMenu != null && PauseGameOnMenu.Value)
                 {
-                    _previousTimeScale = Time.timeScale;
+                    _previousTimeScale = Time.timeScale > 0.001f ? Time.timeScale : 1.0f;
                     Time.timeScale = 0.0f;
+                    _isGamePausedByMenu = true;
                 }
             }
             else
             {
-                if (PauseGameOnMenu != null && PauseGameOnMenu.Value)
+                if (_isGamePausedByMenu)
                 {
-                    Time.timeScale = _previousTimeScale;
+                    Time.timeScale = _previousTimeScale > 0.001f ? _previousTimeScale : 1.0f;
+                    _isGamePausedByMenu = false;
                 }
 
                 // Restore game cursor state
