@@ -13,6 +13,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
     /// Alle Config-Keys sind auf Englisch. Anzeigenamen kommen aus den Lokalisierungsdateien.
     /// Jede Gruppe hat einen eigenen Simple/Advanced-Schalter.
     /// Gruppe 5 (Anhaenger) hat keinen Gruppen-Multiplikator, da die Komponenten nichts miteinander zu tun haben.
+    /// Kaskadenschutz synchronisiert abhaengige Stationen live und sichtbar in der GUI.
     /// </summary>
     public class TuningConfig
     {
@@ -29,6 +30,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
 
         private const float DefaultMultiplier = 1.0f;
         private readonly ConfigFile _cfg;
+        private bool _isSyncing = false;
 
         // ===========================================================
         // ALLGEMEINE EINSTELLUNGEN
@@ -118,6 +120,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         {
             _cfg = cfg;
             BindAll();
+            ApplyCascadeProtection();
         }
 
         private void BindAll()
@@ -181,6 +184,29 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
             // Gruppe 5 – kein SimpleMode/Gruppen-Multiplikator
             MagnetiteTrailer_Capacity = BindStep("Group5_Trailers", "MagnetiteTrailer_Capacity", "Load capacity of the magnetite trailer.");
             FuelTrailer_Capacity      = BindStep("Group5_Trailers", "FuelTrailer_Capacity",      "Load capacity of the fuel trailer.");
+
+            // Event-Listener: Reaktiver Kaskadenschutz und SimpleMode-Synchronisation
+            AutoScaleDependentInputs.SettingChanged += (s, e) => ApplyCascadeProtection();
+
+            Group1SimpleMode.SettingChanged += (s, e) => ApplyCascadeProtection();
+            Group1Multiplier.SettingChanged += (s, e) => ApplyCascadeProtection();
+            Bucket_Capacity.SettingChanged  += (s, e) => ApplyCascadeProtection();
+
+            Group2SimpleMode.SettingChanged += (s, e) => ApplyCascadeProtection();
+            Group2Multiplier.SettingChanged += (s, e) => ApplyCascadeProtection();
+
+            Group3SimpleMode.SettingChanged += (s, e) => ApplyCascadeProtection();
+            Group3Multiplier.SettingChanged += (s, e) => ApplyCascadeProtection();
+
+            Group4SimpleMode.SettingChanged += (s, e) => ApplyCascadeProtection();
+            Group4Multiplier.SettingChanged += (s, e) => ApplyCascadeProtection();
+
+            // Manuelle Eingabe auf abhängigen Reglern gegen Bucket-Minimum absichern
+            Pan_Capacity.SettingChanged               += (s, e) => EnforceMinimum(Pan_Capacity);
+            HogPan_Capacity.SettingChanged            += (s, e) => EnforceMinimum(HogPan_Capacity);
+            WaveTable_Capacity.SettingChanged         += (s, e) => EnforceMinimum(WaveTable_Capacity);
+            MagnetiteSeparator_Speed.SettingChanged   += (s, e) => EnforceMinimum(MagnetiteSeparator_Speed);
+            MagnetiteTrailer_Capacity.SettingChanged  += (s, e) => EnforceMinimum(MagnetiteTrailer_Capacity);
         }
 
         private ConfigEntry<float> BindStep(string section, string key, string description)
@@ -190,53 +216,175 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                     new AcceptableValueList<float>(Steps)));
         }
 
+        public float GetEffectiveBucketMultiplier()
+        {
+            return Group1SimpleMode.Value ? Group1Multiplier.Value : Bucket_Capacity.Value;
+        }
+
+        /// <summary>
+        /// Synchronisiert im Simple Mode alle Einzelregler auf ihren Gruppen-Multiplikator
+        /// und erzwingt bei aktivem AutoScaleDependentInputs, dass alle Folgegeraete
+        /// (Pfanne, Wave Table, Magnetitabscheider, Anhaenger) mindestens den Eimer-Multiplikator erreichen.
+        /// </summary>
+        public void ApplyCascadeProtection()
+        {
+            if (_isSyncing) return;
+            _isSyncing = true;
+
+            try
+            {
+                // In Simple Mode: Einzelregler jeder Gruppe auf den Gruppen-Multiplikator spiegeln
+                if (Group1SimpleMode.Value)
+                {
+                    float g1 = Group1Multiplier.Value;
+                    Shovel_FillSpeed.Value = g1;
+                    Bucket_Capacity.Value = g1;
+                    Pan_Capacity.Value = g1;
+                    HogPan_Capacity.Value = g1;
+                    MobileWashPlant_Speed.Value = g1;
+                }
+
+                if (Group2SimpleMode.Value)
+                {
+                    float g2 = Group2Multiplier.Value;
+                    MiniExcavator_DigSpeed.Value = g2;
+                    Excavator_DigSpeed.Value = g2;
+                    WheelLoader_LoadSpeed.Value = g2;
+                    BackhoeLoader_LoadSpeed.Value = g2;
+                    MobileConveyor_Speed.Value = g2;
+                }
+
+                if (Group3SimpleMode.Value)
+                {
+                    float g3 = Group3Multiplier.Value;
+                    Hopper_Capacity.Value = g3;
+                    Conveyor_Speed.Value = g3;
+                    VibratingScreen_Speed.Value = g3;
+                    Derocker_Speed.Value = g3;
+                    Sluice_Speed.Value = g3;
+                    Trommel_Speed.Value = g3;
+                    Jig_Speed.Value = g3;
+                    MinersMoss_Capacity.Value = g3;
+                }
+
+                if (Group4SimpleMode.Value)
+                {
+                    float g4 = Group4Multiplier.Value;
+                    Nuggetator_Speed.Value = g4;
+                    MagnetiteSeparator_Speed.Value = g4;
+                    WaveTable_Speed.Value = g4;
+                    WaveTable_Capacity.Value = g4;
+                }
+
+                // Kaskadenschutz fuer Eimer-Folgestationen
+                if (AutoScaleDependentInputs.Value)
+                {
+                    float bucketMult = GetEffectiveBucketMultiplier();
+
+                    if (Pan_Capacity.Value < bucketMult) Pan_Capacity.Value = bucketMult;
+                    if (HogPan_Capacity.Value < bucketMult) HogPan_Capacity.Value = bucketMult;
+
+                    if (Group4SimpleMode.Value)
+                    {
+                        if (Group4Multiplier.Value < bucketMult)
+                        {
+                            Group4Multiplier.Value = bucketMult;
+                            Nuggetator_Speed.Value = bucketMult;
+                            MagnetiteSeparator_Speed.Value = bucketMult;
+                            WaveTable_Speed.Value = bucketMult;
+                            WaveTable_Capacity.Value = bucketMult;
+                        }
+                    }
+                    else
+                    {
+                        if (MagnetiteSeparator_Speed.Value < bucketMult) MagnetiteSeparator_Speed.Value = bucketMult;
+                        if (WaveTable_Capacity.Value < bucketMult) WaveTable_Capacity.Value = bucketMult;
+                    }
+
+                    if (MagnetiteTrailer_Capacity.Value < bucketMult) MagnetiteTrailer_Capacity.Value = bucketMult;
+                }
+            }
+            finally
+            {
+                _isSyncing = false;
+            }
+        }
+
+        private void EnforceMinimum(ConfigEntry<float> entry)
+        {
+            if (_isSyncing || !AutoScaleDependentInputs.Value) return;
+            float bucketMult = GetEffectiveBucketMultiplier();
+            if (entry.Value < bucketMult)
+            {
+                _isSyncing = true;
+                try
+                {
+                    entry.Value = bucketMult;
+                }
+                finally
+                {
+                    _isSyncing = false;
+                }
+            }
+        }
+
         // ===========================================================
         // GRUPPEN-RESET-API
         // ===========================================================
 
         public void ResetGroup(int groupIndex)
         {
-            switch (groupIndex)
+            _isSyncing = true;
+            try
             {
-                case 1:
-                    Group1Multiplier.Value      = DefaultMultiplier;
-                    Shovel_FillSpeed.Value       = DefaultMultiplier;
-                    Bucket_Capacity.Value        = DefaultMultiplier;
-                    Pan_Capacity.Value           = DefaultMultiplier;
-                    HogPan_Capacity.Value        = DefaultMultiplier;
-                    MobileWashPlant_Speed.Value  = DefaultMultiplier;
-                    break;
-                case 2:
-                    Group2Multiplier.Value          = DefaultMultiplier;
-                    MiniExcavator_DigSpeed.Value    = DefaultMultiplier;
-                    Excavator_DigSpeed.Value        = DefaultMultiplier;
-                    WheelLoader_LoadSpeed.Value     = DefaultMultiplier;
-                    BackhoeLoader_LoadSpeed.Value   = DefaultMultiplier;
-                    MobileConveyor_Speed.Value      = DefaultMultiplier;
-                    break;
-                case 3:
-                    Group3Multiplier.Value       = DefaultMultiplier;
-                    Hopper_Capacity.Value        = DefaultMultiplier;
-                    Conveyor_Speed.Value         = DefaultMultiplier;
-                    VibratingScreen_Speed.Value  = DefaultMultiplier;
-                    Derocker_Speed.Value         = DefaultMultiplier;
-                    Sluice_Speed.Value           = DefaultMultiplier;
-                    Trommel_Speed.Value          = DefaultMultiplier;
-                    Jig_Speed.Value              = DefaultMultiplier;
-                    MinersMoss_Capacity.Value    = DefaultMultiplier;
-                    break;
-                case 4:
-                    Group4Multiplier.Value           = DefaultMultiplier;
-                    Nuggetator_Speed.Value           = DefaultMultiplier;
-                    MagnetiteSeparator_Speed.Value   = DefaultMultiplier;
-                    WaveTable_Speed.Value            = DefaultMultiplier;
-                    WaveTable_Capacity.Value         = DefaultMultiplier;
-                    break;
-                case 5:
-                    MagnetiteTrailer_Capacity.Value = DefaultMultiplier;
-                    FuelTrailer_Capacity.Value      = DefaultMultiplier;
-                    break;
+                switch (groupIndex)
+                {
+                    case 1:
+                        Group1Multiplier.Value       = DefaultMultiplier;
+                        Shovel_FillSpeed.Value       = DefaultMultiplier;
+                        Bucket_Capacity.Value        = DefaultMultiplier;
+                        Pan_Capacity.Value           = DefaultMultiplier;
+                        HogPan_Capacity.Value        = DefaultMultiplier;
+                        MobileWashPlant_Speed.Value  = DefaultMultiplier;
+                        break;
+                    case 2:
+                        Group2Multiplier.Value          = DefaultMultiplier;
+                        MiniExcavator_DigSpeed.Value    = DefaultMultiplier;
+                        Excavator_DigSpeed.Value        = DefaultMultiplier;
+                        WheelLoader_LoadSpeed.Value     = DefaultMultiplier;
+                        BackhoeLoader_LoadSpeed.Value   = DefaultMultiplier;
+                        MobileConveyor_Speed.Value      = DefaultMultiplier;
+                        break;
+                    case 3:
+                        Group3Multiplier.Value       = DefaultMultiplier;
+                        Hopper_Capacity.Value        = DefaultMultiplier;
+                        Conveyor_Speed.Value         = DefaultMultiplier;
+                        VibratingScreen_Speed.Value  = DefaultMultiplier;
+                        Derocker_Speed.Value         = DefaultMultiplier;
+                        Sluice_Speed.Value           = DefaultMultiplier;
+                        Trommel_Speed.Value          = DefaultMultiplier;
+                        Jig_Speed.Value              = DefaultMultiplier;
+                        MinersMoss_Capacity.Value    = DefaultMultiplier;
+                        break;
+                    case 4:
+                        Group4Multiplier.Value           = DefaultMultiplier;
+                        Nuggetator_Speed.Value           = DefaultMultiplier;
+                        MagnetiteSeparator_Speed.Value   = DefaultMultiplier;
+                        WaveTable_Speed.Value            = DefaultMultiplier;
+                        WaveTable_Capacity.Value         = DefaultMultiplier;
+                        break;
+                    case 5:
+                        MagnetiteTrailer_Capacity.Value = DefaultMultiplier;
+                        FuelTrailer_Capacity.Value      = DefaultMultiplier;
+                        break;
+                }
             }
+            finally
+            {
+                _isSyncing = false;
+            }
+
+            ApplyCascadeProtection();
             _cfg.Save();
         }
 

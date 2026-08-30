@@ -13,7 +13,8 @@ Das Format folgt den Grundsaetzen von [Keep a Changelog](https://keepachangelog.
 - **Einfacher / Erweiterter Modus jetzt pro Gruppe**: Jede der fuenf Gruppen hat einen eigenen Schalter. So kann man z. B. Gruppe 1 auf einfach lassen und Gruppe 3 auf erweitert schalten, ohne dass alle anderen Gruppen beeinflusst werden. Der globale Modus-Schalter wurde entfernt.
 - **Slider in 0.5-Schritten**: Alle Multiplikator-Regler rasten jetzt in Schritten von 0.5 ein (0.5, 1.0, 1.5, … 10.0). Stufenlose Werte zwischen den Schritten sind nicht mehr moeglich.
 - **Gruppe 5 (Anhaenger) hat keinen Gruppen-Multiplikator mehr**: Magnetitanhaenger und Kraftstoffanhaenger haben nichts miteinander zu tun und werden jetzt getrennt und unabhaengig voneinander eingestellt.
-- **Einzelregler im einfachen Modus gesperrt**: Wenn der einfache Modus einer Gruppe aktiv ist, sind die Einzelregler dieser Gruppe ausgegraut und koennen nicht veraendert werden.
+- **Kaskadenschutz live in der Benutzeroberfläche**: Wird das Eimervolumen (oder der Gruppenregler von Gruppe 1) erhöht, springen alle abhängigen Geräte (Goldwaschpfanne, Rütteltisch, Magnetitabscheider, Anhänger) in Echtzeit auf mindestens denselben Wert. Ein manuelles Unterschreiten des Eimerwerts wird bei aktivem Kaskadenschutz automatisch verhindert.
+- **Einzelregler im einfachen Modus gesperrt**: Wenn der einfache Modus einer Gruppe aktiv ist, sind die Einzelregler dieser Gruppe ausgegraut und koennen nicht veraendert werden. Gleichzeitig spiegeln sie den Gruppenwert wider.
 
 ---
 

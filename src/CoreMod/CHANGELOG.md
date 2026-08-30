@@ -4,6 +4,18 @@ Alle Änderungen am zentralen Mod-Framework `Milex GMS1 CoreMod`.
 
 ---
 
+## [1.2.1] - 2026-08-30
+
+### Verbesserungen & Fehlerbehebungen
+- **Deutlich sichtbare Schieberegler (Slider)**:
+  - Die Schieberegler im Menü heben sich nun mit einer klar abgegrenzten Rinne und einem goldenen Schiebegriff deutlich vom dunklen Hintergrund ab.
+- **Automatische Gruppensperre im einfachen Modus**:
+  - Wenn in einer Gruppe der einfache Modus aktiv ist, werden die spezifischen Einzelregler automatisch ausgegraut und gesperrt, da der Gruppenregler die Führung übernimmt.
+- **Gruppen-Reset-Knopf**:
+  - Jede Gruppe im Menü besitzt nun einen eigenen Knopf `[ Gruppe zurücksetzen ]`, um die Werte dieser Gruppe direkt auf die Standardwerte zurückzustellen.
+
+---
+
 ## [1.2.0] - 2026-08-30
 
 ### Neue Funktionen

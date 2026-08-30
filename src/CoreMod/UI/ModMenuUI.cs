@@ -315,24 +315,29 @@ namespace Milex.GMS1.Core.UI
                 padding = new RectOffset(4, 4, 3, 3)
             };
 
-            // Slider track: dark inset groove so the track is clearly visible
+            // Slider track: clearly visible contrasting trough with bright border
+            Texture2D trackTex = MakeBorderedTex(12, 12, new Color(0.22f, 0.23f, 0.28f, 1.0f), new Color(0.48f, 0.50f, 0.60f, 1.0f), 1);
             _sliderTrackStyle = new GUIStyle(GUI.skin.horizontalSlider)
             {
-                normal   = { background = MakeTex(2, 2, new Color(0.10f, 0.10f, 0.12f, 1.0f)) },
-                border   = new RectOffset(3, 3, 3, 3),
+                normal   = { background = trackTex },
+                border   = new RectOffset(2, 2, 2, 2),
                 padding  = new RectOffset(0, 0, 0, 0),
-                fixedHeight = 10f,
+                fixedHeight = 12f,
                 margin   = new RectOffset(0, 0, 6, 6)
             };
 
-            // Slider thumb: gold accent, taller than the track so it stands out
+            // Slider thumb: vibrant gold grabber with bright edge
+            Texture2D thumbNormal = MakeBorderedTex(12, 12, new Color(0.88f, 0.70f, 0.15f, 1.0f), new Color(1.0f, 0.92f, 0.50f, 1.0f), 1);
+            Texture2D thumbHover  = MakeBorderedTex(12, 12, new Color(1.00f, 0.82f, 0.25f, 1.0f), new Color(1.0f, 1.0f, 0.80f, 1.0f), 1);
+            Texture2D thumbActive = MakeBorderedTex(12, 12, new Color(1.00f, 0.95f, 0.50f, 1.0f), Color.white, 1);
+
             _sliderThumbStyle = new GUIStyle(GUI.skin.horizontalSliderThumb)
             {
-                normal   = { background = MakeTex(2, 2, new Color(0.85f, 0.65f, 0.13f, 1.0f)) },
-                hover    = { background = MakeTex(2, 2, new Color(1.00f, 0.80f, 0.25f, 1.0f)) },
-                active   = { background = MakeTex(2, 2, new Color(1.00f, 0.90f, 0.40f, 1.0f)) },
-                fixedWidth  = 14f,
-                fixedHeight = 18f
+                normal   = { background = thumbNormal },
+                hover    = { background = thumbHover },
+                active   = { background = thumbActive },
+                fixedWidth  = 16f,
+                fixedHeight = 22f
             };
 
             _stylesInitialized = true;
@@ -379,12 +384,12 @@ namespace Milex.GMS1.Core.UI
 
             // Core Settings Button
             bool isCoreSelected = (_selectedModIndex == -1);
-            if (GUILayout.Button(L("menu.tab.core_settings", "⚙ Allgemein"), isCoreSelected ? _sidebarButtonActiveStyle : _sidebarButtonStyle, GUILayout.Height(40)))
+            if (GUILayout.Button(L("menu.tab.core_settings", "Allgemein"), isCoreSelected ? _sidebarButtonActiveStyle : _sidebarButtonStyle, GUILayout.Height(40)))
             {
                 _selectedModIndex = -1;
             }
             GUILayout.Space(8);
-            GUILayout.Label(L("menu.tab.mods", "📦 Geladene Mods"), _subHeaderStyle);
+            GUILayout.Label(L("menu.tab.mods", "Geladene Mods"), _subHeaderStyle);
             GUILayout.Space(4);
 
             // Feature Mods List (CoreMod excluded!)
@@ -660,7 +665,39 @@ namespace Milex.GMS1.Core.UI
             {
                 string sectionKey = sectionGroup.Key;
                 string sectionTranslated = mod.Translate($"config.{sectionKey.ToLowerInvariant()}.section", sectionKey);
+
+                GUILayout.BeginHorizontal();
                 GUILayout.Label(sectionTranslated, _sectionHeaderStyle);
+                GUILayout.FlexibleSpace();
+
+                // Section Reset Button
+                if (!sectionKey.Equals("General", StringComparison.OrdinalIgnoreCase))
+                {
+                    string resetLabel = mod.Translate("ui.reset_group", "[ Gruppe zurücksetzen ]");
+                    if (GUILayout.Button(resetLabel, _buttonStyle, GUILayout.Width(170), GUILayout.Height(24)))
+                    {
+                        foreach (var def in sectionGroup)
+                        {
+                            if (config.ContainsKey(def))
+                            {
+                                var entry = config[def];
+                                entry.BoxedValue = entry.DefaultValue;
+                            }
+                        }
+                        config.Save();
+                    }
+                }
+                GUILayout.EndHorizontal();
+
+                // Detect if this section has a SimpleMode toggle
+                ConfigDefinition simpleModeDef = sectionGroup.FirstOrDefault(d => d.Key.Equals("SimpleMode", StringComparison.OrdinalIgnoreCase));
+                bool hasSimpleMode = (simpleModeDef != null && config.ContainsKey(simpleModeDef));
+                bool isSimpleModeActive = false;
+                if (hasSimpleMode)
+                {
+                    var simpleEntry = config[simpleModeDef] as ConfigEntry<bool>;
+                    if (simpleEntry != null) isSimpleModeActive = simpleEntry.Value;
+                }
 
                 foreach (var definition in sectionGroup)
                 {
@@ -672,7 +709,32 @@ namespace Milex.GMS1.Core.UI
                     if (config.ContainsKey(definition))
                     {
                         ConfigEntryBase entryBase = config[definition];
+
+                        // Control enabled/disabled state per entry based on SimpleMode
+                        bool entryEnabled = mod.IsEnabled;
+                        if (mod.IsEnabled && hasSimpleMode)
+                        {
+                            bool isSimpleToggle = definition.Key.Equals("SimpleMode", StringComparison.OrdinalIgnoreCase);
+                            bool isGroupMult = definition.Key.Equals("Group_Multiplier", StringComparison.OrdinalIgnoreCase)
+                                            || definition.Key.Equals("GroupMultiplier", StringComparison.OrdinalIgnoreCase);
+
+                            if (isSimpleModeActive)
+                            {
+                                // In Simple Mode: SimpleMode toggle & GroupMultiplier are enabled.
+                                // All other individual component sliders are disabled/greyed out!
+                                entryEnabled = isSimpleToggle || isGroupMult;
+                            }
+                            else
+                            {
+                                // In Advanced Mode: SimpleMode toggle & individual component sliders are enabled.
+                                // GroupMultiplier is disabled/greyed out.
+                                entryEnabled = !isGroupMult;
+                            }
+                        }
+
+                        GUI.enabled = entryEnabled;
                         DrawConfigEntryCard(entryBase, mod.AssemblyName);
+                        GUI.enabled = mod.IsEnabled;
                         GUILayout.Space(6);
                     }
                 }
@@ -928,6 +990,23 @@ namespace Milex.GMS1.Core.UI
             for (int i = 0; i < pix.Length; i++)
             {
                 pix[i] = col;
+            }
+            Texture2D result = new Texture2D(width, height);
+            result.SetPixels(pix);
+            result.Apply();
+            return result;
+        }
+
+        private Texture2D MakeBorderedTex(int width, int height, Color fillColor, Color borderColor, int borderWidth = 1)
+        {
+            Color[] pix = new Color[width * height];
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    bool isBorder = (x < borderWidth || x >= width - borderWidth || y < borderWidth || y >= height - borderWidth);
+                    pix[y * width + x] = isBorder ? borderColor : fillColor;
+                }
             }
             Texture2D result = new Texture2D(width, height);
             result.SetPixels(pix);
