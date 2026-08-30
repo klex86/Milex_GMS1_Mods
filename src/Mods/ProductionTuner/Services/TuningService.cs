@@ -6,8 +6,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
     /// Layer 2: Domain service for Production Tuner.
     ///
     /// Provides the effective multiplier applied to each game component.
-    /// Each component has its own individual slider and default multiplier.
-    /// With active cascade protection, dependent equipment is guaranteed to at least match bucket capacity.
+    /// All configuration values, defaults, and cascade constraints are managed directly in TuningConfig.
     /// </summary>
     public class TuningService
     {
@@ -26,13 +25,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
 
         public float GetBucketCapacity() => _cfg.Bucket_Capacity.Value;
 
-        /// <summary>Cascade protection: guarantees at least bucket capacity multiplier.</summary>
-        public float GetHogPanCapacity()
-        {
-            return _cfg.AutoScaleDependentInputs.Value
-                ? System.Math.Max(_cfg.HogPan_Capacity.Value, GetBucketCapacity())
-                : _cfg.HogPan_Capacity.Value;
-        }
+        public float GetHogPanCapacity() => _cfg.HogPan_Capacity.Value;
 
         public float GetMobileWashPlantSpeed() => _cfg.MobileWashPlant_Speed.Value;
 
@@ -78,35 +71,17 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
 
         public float GetMagnetiteSeparatorSpeed() => _cfg.MagnetiteSeparator_Speed.Value;
 
-        /// <summary>Cascade protection: guarantees at least bucket capacity multiplier.</summary>
-        public float GetMagnetiteSeparatorCapacity()
-        {
-            return _cfg.AutoScaleDependentInputs.Value
-                ? System.Math.Max(_cfg.MagnetiteSeparator_Capacity.Value, GetBucketCapacity())
-                : _cfg.MagnetiteSeparator_Capacity.Value;
-        }
+        public float GetMagnetiteSeparatorCapacity() => _cfg.MagnetiteSeparator_Capacity.Value;
 
         public float GetWaveTableSpeed() => _cfg.WaveTable_Speed.Value;
 
-        /// <summary>Cascade protection: guarantees at least bucket capacity multiplier.</summary>
-        public float GetWaveTableCapacity()
-        {
-            return _cfg.AutoScaleDependentInputs.Value
-                ? System.Math.Max(_cfg.WaveTable_Capacity.Value, GetBucketCapacity())
-                : _cfg.WaveTable_Capacity.Value;
-        }
+        public float GetWaveTableCapacity() => _cfg.WaveTable_Capacity.Value;
 
         // ===========================================================
         // GROUP 5 – Trailers
         // ===========================================================
 
-        /// <summary>Cascade protection: guarantees at least bucket capacity multiplier.</summary>
-        public float GetMagnetiteTrailerCapacity()
-        {
-            return _cfg.AutoScaleDependentInputs.Value
-                ? System.Math.Max(_cfg.MagnetiteTrailer_Capacity.Value, GetBucketCapacity())
-                : _cfg.MagnetiteTrailer_Capacity.Value;
-        }
+        public float GetMagnetiteTrailerCapacity() => _cfg.MagnetiteTrailer_Capacity.Value;
 
         public float GetFuelTrailerCapacity() => _cfg.FuelTrailer_Capacity.Value;
     }

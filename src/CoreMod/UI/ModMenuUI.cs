@@ -879,14 +879,6 @@ namespace Milex.GMS1.Core.UI
                     maxVal = range.MaxValue;
                 }
 
-                // Query dynamic min and max bounds from mod if supported
-                if (mod?.Instance != null)
-                {
-                    minVal = mod.Instance.GetMinSliderValue(entry.Definition, minVal);
-                    maxVal = mod.Instance.GetMaxSliderValue(entry.Definition, maxVal);
-                    if (minVal > maxVal) minVal = maxVal;
-                }
-
                 GUILayout.BeginHorizontal();
 
                 float rawSlider = GUILayout.HorizontalSlider(currentVal, minVal, maxVal, _sliderTrackStyle, _sliderThumbStyle, GUILayout.Width(220));
