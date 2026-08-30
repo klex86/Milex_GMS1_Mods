@@ -3,7 +3,7 @@ using HarmonyLib;
 using Milex.GMS1.Core;
 using Milex.GMS1.Core.Localization;
 
-namespace Milex_GMS1_CoreMod.Patches
+namespace Milex.GMS1.Core.Patches
 {
     [HarmonyPatch(typeof(LocaleManager))]
     public static class LocaleManagerPatches
@@ -24,9 +24,9 @@ namespace Milex_GMS1_CoreMod.Patches
                     }
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
-                CorePlugin.Instance?.LogError($"[LocaleManagerPatch] Fehler bei Sprachwechsel: {ex}");              
+                CorePlugin.Instance?.LogError($"[LocaleManagerPatch] Fehler bei Sprachwechsel: {ex}");
             }
         }
     }
