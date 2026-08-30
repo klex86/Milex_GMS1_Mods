@@ -323,7 +323,7 @@ namespace Milex.GMS1.Core.UI
             GUILayout.Space(12);
             GUILayout.BeginVertical();
             GUILayout.Space(8);
-            GUILayout.Label(L("menu.title", "⛏ MILEX GMS1 MODS"), _headerStyle);
+            GUILayout.Label(L("menu.title", "MILEX GMS1 MODS"), _headerStyle);
             GUILayout.Label(L("menu.subtitle", "Gold Mining Simulator Modding Framework"), _subHeaderStyle);
             GUILayout.Space(6);
             GUILayout.EndVertical();
@@ -341,7 +341,7 @@ namespace Milex.GMS1.Core.UI
             {
                 GUI.backgroundColor = new Color(0.85f, 0.20f, 0.20f, 0.95f);
                 GUILayout.BeginHorizontal("box");
-                GUILayout.Label($"👉 {string.Format(L("btn.rebind_prompt", "Drücke eine neue Taste für '{0}' (ESC zum Abbrechen)..."), _rebindingLabel)}", _entryLabelStyle);
+                GUILayout.Label(string.Format(L("btn.rebind_prompt", "Drücke eine neue Taste für '{0}' (ESC zum Abbrechen)..."), _rebindingLabel), _entryLabelStyle);
                 GUILayout.EndHorizontal();
                 GUI.backgroundColor = Color.white;
             }

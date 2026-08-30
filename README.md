@@ -4,6 +4,19 @@ Modding-Framework und modulare Mod-Sammlung für **Gold Mining Simulator** (*Gol
 
 ---
 
+## Dokumentations-Übersicht & Navigation
+
+Da GitHub reine Markdown-Includes nicht direkt unterstützt, gelangst du über die folgenden Links direkt zu den Detail-Dokumentationen der einzelnen Komponenten:
+
+| Komponente | Beschreibung | Dokumentation |
+|---|---|---|
+| **Milex GMS1 CoreMod** | Zentrales Framework, ModBase, Ingame-Menü, Input-Blocker & Lokalisierungs-Engine | [CoreMod README.md](src/CoreMod/README.md) |
+| **Milex GMS1 HelloMod** | Beispiel-Mod & Vorlage für Mod-Entwickler | [HelloMod README.md](src/Mods/HelloMod/README.md) |
+| **Tastenbelegung** | Referenz der Hotkeys und Steuerung | [KEYBINDINGS.md](KEYBINDINGS.md) |
+| **Changelog** | Vollständige Änderungshistorie aller Mod-Releases | [CHANGELOG.md](CHANGELOG.md) |
+
+---
+
 ## Architektur & Multi-Assembly Aufbau
 
 Das Repository ist als modulare Multi-Project Solution aufgesetzt:
@@ -13,11 +26,13 @@ d:\Modding\GMSModding\
 ├── GMSModding.sln                         # Solution für alle Projekte
 ├── Directory.Build.props                  # Zentrale Spielpfade, References & Auto-Deploy
 ├── KEYBINDINGS.md                         # Hotkey-Referenz & Modding-Leitfaden
-├── README.md                              # Gesamt-Dokumentation
+├── README.md                              # Gesamt-Dokumentation (Haupt-Hub)
 ├── CHANGELOG.md                           # Zentrales Changelog
 │
 ├── src\
 │   ├── CoreMod\                           # Milex_GMS1_CoreMod.dll (v1.2.0)
+│   │   ├── README.md                      # Detailed CoreMod documentation
+│   │   ├── CHANGELOG.md                   # CoreMod release history
 │   │   ├── Milex_GMS1_CoreMod.csproj
 │   │   ├── CorePlugin.cs                  # BepInEx-Einstiegspunkt, Menü-Toggle (Insert)
 │   │   ├── ModBase.cs                     # Basisklasse mit Enable/Disable-Lifecycle & ModRegistry
@@ -32,6 +47,8 @@ d:\Modding\GMSModding\
 │   │
 │   └── Mods\
 │       └── HelloMod\                      # Milex_GMS1_HelloMod.dll (v1.1.0)
+│           ├── README.md                  # Detailed HelloMod documentation
+│           ├── CHANGELOG.md               # HelloMod release history
 │           ├── Milex_GMS1_HelloMod.csproj
 │           ├── Localization\
 │           │   ├── Milex_GMS1_HelloMod_en.json
