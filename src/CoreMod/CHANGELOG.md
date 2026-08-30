@@ -1,41 +1,40 @@
 # Changelog - Milex GMS1 CoreMod
 
-All notable changes to `Milex_GMS1_CoreMod` will be documented in this file.
+Alle Änderungen am zentralen Mod-Framework `Milex GMS1 CoreMod`.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
+---
 
 ## [1.2.0] - 2026-08-30
 
-### Added
-- **Live Sub-Mod Lifecycle Management**:
-  - `ModBase.SetEnabled(bool)` with automatic Harmony `PatchAll` / `UnpatchSelf` and `MonoBehaviour.enabled` toggle.
-  - Virtual `OnModEnabled()` and `OnModDisabled()` hooks.
-  - `CorePlugin` overrides `CanBeDisabled => false` to protect core functionality.
-- **Developer Localization Option**:
-  - `IgnoreExternalTranslations` setting in `Milex_GMS1_CoreMod.cfg`.
-  - Bypasses disk JSON files in `Milex GMS1 Mod Localization` folder to load directly from embedded DLL resources.
-- **TimeScale Pause Logic**:
-  - Independent pause state tracking (`_isGamePausedByMenu`) ensuring time scale is safely restored under all conditions.
-- **Input & Camera Lock Matrix**:
-  - Native `InputManager.SetPauseMenuBlocked(true)` reflection call, native Unity input patches, mouse wheel delta blocking, and `Cursor.lockState` getter interception.
-- **UI Anchoring & Formatting**:
-  - Fixed top-left corner anchoring during matrix UI scaling.
-  - Removed unicode emojis from menu titles, buttons, and localization files.
+### Neue Funktionen
+- **Live An-/Ausschalten von Sub-Mods**:
+  - Jeder Erweiterungs-Mod besitzt jetzt einen An/Aus-Schalter im Ingame-Menü.
+  - Das Deaktivieren stoppt alle Mod-Funktionen und Spielanpassungen sofort im laufenden Spiel.
+  - Der Core-Mod selbst bleibt als Kern des Mod-Systems immer aktiv.
+- **Entwickler-Schalter für Sprachdateien**:
+  - Einstellung *"Externe Sprachdateien ignorieren"* hinzugefügt. Lädt Texte direkt aus den internen Mod-Ressourcen für einfachere Tests.
+
+### Fehlerbehebungen & Optimierungen
+- **Fix für Spiel-Pause**:
+  - Behebt ein Problem, bei dem das Spiel nach dem Schließen des Menüs pausiert blieb, wenn die Pause-Option im offenen Menü umgestellt wurde.
+- **Fokussierte Menü-Skalierung**:
+  - Das Menü bleibt beim Skalieren an seiner oberen linken Ecke verankert und wandert nicht mehr über den Bildschirm.
+- **Eingabe- & Kamerasperre**:
+  - Verhindert zuverlässig, dass beim Bedienen des Menüs im Hintergrund die Kamera gedreht oder Werkzeuge gewechselt werden.
+- **Bereinigte Schrift- & Symbol-Darstellung**:
+  - Entfernung unsauber dargestellter Sonderzeichen für ein übersichtliches und gut lesbares Layout.
 
 ---
 
 ## [1.1.0] - 2026-08-29
 
-### Added
-- Multi-Assembly separation and `ModRegistry`.
-- IMGUI In-Game Mod Configuration Menu on `Insert`.
+### Neue Funktionen
+- Trennung in Kern-Framework und Erweiterungs-Mods.
+- Aufrufbares Ingame-Menü über die Taste `Einfügen` (`Insert`).
 
 ---
 
 ## [1.0.0] - 2026-08-29
 
-### Added
-- Initial `ModBase` class with automated Harmony patch/unpatch lifecycle.
+### Erstveröffentlichung
+- Grundstein für das Mod-System und automatische Verwaltung von Einstellungen.

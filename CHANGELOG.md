@@ -1,44 +1,45 @@
 # Changelog - Milex GMS1 Mods
 
-All notable changes to the `Milex GMS1 Mods` solution will be documented in this file.
+Alle relevanten Änderungen und Neuerungen der Mod-Sammlung werden in dieser Datei verständlich dokumentiert.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
-and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
-
-## [Unreleased]
+---
 
 ## [1.2.0] - 2026-08-30
 
-### Added
-- **Sub-Mod Enable/Disable Lifecycle**:
-  - Live Enable/Disable toggle button in the Mod Menu for all registered sub-mods.
-  - Automatically applies (`PatchAll`) or removes (`UnpatchSelf`) Harmony patches upon state change.
-  - Toggles `MonoBehaviour.enabled` to completely halt/resume `Update()` loop execution on disabled mods.
-  - State persisted to each mod's individual `.cfg` under `[General] Enabled`.
-- **Developer Option (`IgnoreExternalTranslations`)**:
-  - Config entry in CoreMod (`General / IgnoreExternalTranslations`) allowing developers to bypass external disk JSON files and force loading embedded DLL resources directly.
-  - Live reloading of all localization tables upon toggle.
-- **Improved UI Scaling & Anchoring**:
-  - Matrix-based scaling anchors the window's top-left screen-space position, expanding towards right/bottom without window drift.
-  - Fixed 200px screen-space sidebar width.
-- **TimeScale & Pause Management**:
-  - Reliable state tracking (`_isGamePausedByMenu`) ensuring time scale is always correctly restored when closing the menu or toggling options while open.
-- **Input Blocker & Camera Freeze**:
-  - Native game input blocker (`InputManager.SetPauseMenuBlocked`), native Unity input patches, and `Cursor.lockState` getter deception ensuring camera and mouse wheel remain completely frozen during menu navigation.
-- **Clean UI Text Formatting**:
-  - Stripped unnecessary unicode icons and emojis from menu labels and localization files for clean rendering across all fonts.
+### Neue Funktionen & Erweiterungen
+- **Mods im laufenden Spiel an- und ausschalten**:
+  - Jeder installierte Mod kann jetzt direkt im Ingame-Menü per Klick aktiviert oder deaktiviert werden.
+  - Wenn ein Mod deaktiviert wird, werden alle seine Anpassungen und Spiellogiken sofort im Hintergrund gestoppt – ein Neustart des Spiels ist nicht erforderlich.
+  - Der Zustand (aktiv/inaktiv) wird automatisch gespeichert und beim nächsten Spielstart wiederhergestellt.
+  - Das Core-Framework selbst bleibt stets aktiv, um die Stabilität des Spiels zu gewährleisten.
+- **Entwickler-Option für Übersetzungen**:
+  - Neue Option *"Externe Sprachdateien ignorieren"* in den allgemeinen Einstellungen.
+  - Nützlich für Mod-Entwickler: Übersetzungen werden direkt aus den Mod-Dateien gelesen, sodass lokale Sprachdateien für Tests nicht manuell gelöscht werden müssen.
+
+### Verbesserungen & Fehlerbehebungen
+- **Saubere Menü-Darstellung**:
+  - Alle Symbole und Textdarstellungen wurden überarbeitet, sodass Menüs und Beschreibungen auf jedem Monitor sauber und gut lesbar angezeigt werden.
+- **Verlässliche Spiel-Pause im Menü**:
+  - Das Spiel hält beim Öffnen des Mod-Menüs verlässlich an und läuft beim Schließen wieder normal weiter – selbst wenn die Pause-Einstellung bei geöffnetem Menü umgestellt wird.
+- **Kamera- & Steuerungssperre**:
+  - Während das Mod-Menü geöffnet ist, bleibt die Spielkamera fixiert und Werkzeuge oder das Mausrad lösen keine ungewollten Aktionen im Hintergrund aus.
+- **Stabile Menü-Skalierung**:
+  - Das Vergrößern und Verkleinern des Menüs (UI-Skalierung) behält die linke obere Ecke an fester Position, sodass das Menü nicht über den Bildschirm wandert.
 
 ---
 
 ## [1.1.0] - 2026-08-29
 
-### Added
-- Modular Multi-Assembly architecture with `GMSCore` and `HelloMod`.
-- In-Game IMGUI Mod Configuration Menu (`Insert` key) with real-time BepInEx `.cfg` persistence and KeyCode rebinding.
+### Neue Funktionen
+- **Ingame-Menü**:
+  - Neues Einstellungen-Menü im Spiel, aufrufbar über die Taste `Einfügen` (`Insert`).
+  - Tastenbelegungen können direkt im Spiel angepasst werden.
+- **Mehrsprachigkeit**:
+  - Automatische Übersetzung von Menüs und Hinweisen auf Deutsch und Englisch.
 
 ---
 
 ## [1.0.0] - 2026-08-29
 
-### Added
-- Initial project setup, `ModBase`, `HelloMod`, and keybinding guidelines.
+### Erstveröffentlichung
+- Erster Release des Mod-Frameworks und des `HelloMod`-Demonstrations-Mods.
