@@ -25,3 +25,7 @@ out/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+## Agent Memory
+AGENTS.md
+
