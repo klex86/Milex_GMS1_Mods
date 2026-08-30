@@ -59,6 +59,8 @@ namespace Milex.GMS1.Core.UI
         private GUIStyle _dropdownItemActiveStyle;
         private GUIStyle _dialogStyle;
         private GUIStyle _textFieldStyle;
+        private GUIStyle _sliderTrackStyle;
+        private GUIStyle _sliderThumbStyle;
 
         private Texture2D _bgTexture;
         private Texture2D _sidebarBgTexture;
@@ -311,6 +313,26 @@ namespace Milex.GMS1.Core.UI
                 fontSize = 12,
                 normal = { textColor = Color.white },
                 padding = new RectOffset(4, 4, 3, 3)
+            };
+
+            // Slider track: dark inset groove so the track is clearly visible
+            _sliderTrackStyle = new GUIStyle(GUI.skin.horizontalSlider)
+            {
+                normal   = { background = MakeTex(2, 2, new Color(0.10f, 0.10f, 0.12f, 1.0f)) },
+                border   = new RectOffset(3, 3, 3, 3),
+                padding  = new RectOffset(0, 0, 0, 0),
+                fixedHeight = 10f,
+                margin   = new RectOffset(0, 0, 6, 6)
+            };
+
+            // Slider thumb: gold accent, taller than the track so it stands out
+            _sliderThumbStyle = new GUIStyle(GUI.skin.horizontalSliderThumb)
+            {
+                normal   = { background = MakeTex(2, 2, new Color(0.85f, 0.65f, 0.13f, 1.0f)) },
+                hover    = { background = MakeTex(2, 2, new Color(1.00f, 0.80f, 0.25f, 1.0f)) },
+                active   = { background = MakeTex(2, 2, new Color(1.00f, 0.90f, 0.40f, 1.0f)) },
+                fixedWidth  = 14f,
+                fixedHeight = 18f
             };
 
             _stylesInitialized = true;
@@ -774,7 +796,7 @@ namespace Milex.GMS1.Core.UI
 
                 GUILayout.BeginHorizontal();
 
-                float rawSlider = GUILayout.HorizontalSlider(currentVal, minVal, maxVal, GUILayout.Width(200));
+                float rawSlider = GUILayout.HorizontalSlider(currentVal, minVal, maxVal, _sliderTrackStyle, _sliderThumbStyle, GUILayout.Width(220));
 
                 // Snap to step if a fixed step size was detected
                 float newVal;
