@@ -472,8 +472,9 @@ namespace Milex.GMS1.Core.UI
             // Status Bar
             GUILayout.BeginHorizontal();
             GUILayout.Space(10);
+            int activeModsCount = featureMods.Count(m => m.IsEnabled);
             string status = string.Format(L("menu.status_footer", "Aktive Mods: {0} | Menü-Taste: {1} | Sprache: {2}"),
-                featureMods.Count, CorePlugin.MenuToggleKey.Value, LocalizationManager.CurrentLanguage);
+                $"{activeModsCount} / {featureMods.Count}", CorePlugin.MenuToggleKey.Value, LocalizationManager.CurrentLanguage);
             GUILayout.Label(status, _subHeaderStyle);
             GUILayout.FlexibleSpace();
             GUILayout.EndHorizontal();
@@ -486,7 +487,7 @@ namespace Milex.GMS1.Core.UI
         {
             GUILayout.BeginVertical();
 
-            GUILayout.Label(L("menu.tab.core_settings", "⚙ Core-Optionen"), _headerStyle);
+            GUILayout.Label(L("menu.tab.core_settings", "Core-Optionen"), _headerStyle);
             GUILayout.Label("Version: " + CorePlugin.PluginVersion + " | GUID: " + CorePlugin.PluginGuid, _subHeaderStyle);
             GUILayout.Space(12);
 

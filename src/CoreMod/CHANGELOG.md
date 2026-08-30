@@ -15,6 +15,8 @@ Alle Änderungen am zentralen Mod-Framework `Milex GMS1 CoreMod`.
   - Jede Gruppe im Menü besitzt nun einen eigenen Knopf `[ Gruppe zurücksetzen ]`, um die Werte dieser Gruppe direkt auf die Standardwerte zurückzustellen.
 - **Englische Konfigurations-Beschreibungen**:
   - Alle internen Beschreibungen in der Konfigurationsdatei (`.cfg`) sind nun einheitlich auf Englisch verfasst. Menü-Texte im Spiel richten sich weiterhin nach den Lokalisierungsdateien.
+- **Live-Aktualisierung der Statusleiste**:
+  - Die Anzahl aktiver Mods in der Fußzeile wird nun bei jedem Aktivieren oder Deaktivieren eines Mods sofort in Echtzeit aktualisiert (Format: `Aktive Mods: X / Y`).
 
 ---
 

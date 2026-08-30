@@ -17,6 +17,8 @@ Alle relevanten Änderungen und Neuerungen der Mod-Sammlung werden in dieser Dat
   - Hinter jedem Eingabefeld wird der werkseitige Standardwert des Mods angezeigt (z. B. `(Standard: 1.0)`).
 - **Einfacher Modus als Standard**:
   - Beim Zurücksetzen einer Einstellungs-Gruppe wird immer der einfache Modus als Standard wiederhergestellt.
+- **Statusleisten-Zähler für aktive Mods**:
+  - Der Zähler aktiver Mods in der Fußzeile aktualisiert sich jetzt sofort live beim Aktivieren oder Deaktivieren eines Mods (Anzeige: `Aktive Mods: X / Y`).
 
 ---
 
