@@ -111,34 +111,46 @@ namespace Milex.GMS1.Core.Localization
 
         public static string GetGameLanguage()
         {
-            // TODO: Extract exact language code from Gold Mining Simulator / Gold Rush: The Game localization system
             try
             {
-                var sysLang = UnityEngine.Application.systemLanguage;
-                switch (sysLang)
+                
+                if (Singleton<LocaleManager>.IsInstanced())
                 {
-                    case UnityEngine.SystemLanguage.German: return "de";
-                    case UnityEngine.SystemLanguage.French: return "fr";
-                    case UnityEngine.SystemLanguage.Spanish: return "es";
-                    case UnityEngine.SystemLanguage.Russian: return "ru";
-                    case UnityEngine.SystemLanguage.Polish: return "pl";
-                    case UnityEngine.SystemLanguage.Italian: return "it";
-                    case UnityEngine.SystemLanguage.Portuguese: return "pt";
-                    case UnityEngine.SystemLanguage.Turkish: return "tr";
-                    case UnityEngine.SystemLanguage.Dutch: return "nl";
-                    case UnityEngine.SystemLanguage.Swedish: return "sv";
-                    case UnityEngine.SystemLanguage.Danish: return "da";
-                    case UnityEngine.SystemLanguage.Norwegian: return "no";
-                    case UnityEngine.SystemLanguage.Romanian: return "ro";
-                    case UnityEngine.SystemLanguage.Czech: return "cs";
-                    case UnityEngine.SystemLanguage.Bulgarian: return "bg";
-                    case UnityEngine.SystemLanguage.Greek: return "el";
-                    case UnityEngine.SystemLanguage.Japanese: return "ja";
-                    case UnityEngine.SystemLanguage.Korean: return "ko";
-                    case UnityEngine.SystemLanguage.ChineseSimplified: return "zh-CN";
-                    case UnityEngine.SystemLanguage.ChineseTraditional: return "zh-TD";
-                    default: return "en";
+                    var localeMgr = Singleton<LocaleManager>.Instance;
+                    int langId = localeMgr.LanguageId;
+                    if (localeMgr.LanguagesShortNames != null && langId >= 0 && langId < localeMgr.LanguagesShortNames.Length)
+                    {
+                        return localeMgr.LanguagesShortNames[langId];
+                    }
                 }
+
+                // 2. Fallback: Vor Initialisierung des LocaleManagers direkt aus den SaveData-Settings lesen:
+                var settingsData = SaveManager.GetSettingsData();
+                if (settingsData != null && settingsData.HasKey("LANGUAGE_ID"))
+                {
+                    int savedId = settingsData.GetInt("LANGUAGE_ID");
+                    // Mapping der 21 Indizes auf die ISO-Codes (entspricht LocaleManager.LanguagesShortNames)
+                    string[] fallbackShortNames = new string[]
+                    {
+                        "en", "pl", "de", "fr", "es", "ru", "it", "pt", "zh-CN", "zh-TD",
+                        "ja", "ko", "nl", "tr", "no", "cs", "ro", "da", "bg", "el", "sv"
+                    };
+
+                    if (savedId >= 0 && savedId < fallbackShortNames.Length)
+                    {
+                        return fallbackShortNames[savedId];
+                    }
+                }
+
+                // 3. Fallback: Betriebssystem-Sprache
+                return UnityEngine.Application.systemLanguage switch
+                {
+                    UnityEngine.SystemLanguage.German => "de",
+                    UnityEngine.SystemLanguage.Polish => "pl",
+                    UnityEngine.SystemLanguage.French => "fr",
+                    UnityEngine.SystemLanguage.Spanish => "es",
+                    _ => "en"
+                };
             }
             catch
             {
