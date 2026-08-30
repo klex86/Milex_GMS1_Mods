@@ -1,15 +1,15 @@
 # Milex GMS1 Production Tuner
 
-- **Version:** `1.0.0` ([Changelog ansehen](CHANGELOG.md))
+- **Version:** `1.1.0` ([Changelog ansehen](CHANGELOG.md))
 - **Mod-Name:** Milex GMS1 Production Tuner
 - **Autor:** Milex
 - **Dateiname:** `Milex_GMS1_ProductionTuner.dll`
 - **Abhaengigkeit:** `Milex_GMS1_CoreMod.dll`
 
 Der **Production Tuner** gibt dir vollstaendige Kontrolle ueber die Verarbeitungsgeschwindigkeiten,
-Kapazitaeten und Hydraulikleistung aller Maschinen, Fahrzeuge und Werkzeuge in *Gold Rush: The Game*.
-Alle Werte werden als Multiplikatoren auf die Original-Spielwerte angewendet – 1.0 entspricht
-immer dem unveraeinderten Spiel, 2.0 bedeutet doppelte Leistung.
+Kapazitaeten und das Ladetempo aller Maschinen, Fahrzeuge und Werkzeuge in *Gold Rush: The Game*.
+Alle Werte werden als Multiplikatoren auf die Original-Basiswerte des Spiels angewendet. Jeder Wert besitzt
+seinen eigenen, optimal abgestimmten Standard-Multiplikator und laesst sich in 0.5-Schritten (von 0.5 bis 10.0) feinstufig einstellen.
 
 ---
 
@@ -24,11 +24,12 @@ immer dem unveraeinderten Spiel, 2.0 bedeutet doppelte Leistung.
 ## Bedienung im Spiel
 
 1. Druecke **`Einfuegen`** (`Insert`), um das Mod-Menue zu oeffnen.
-2. Wähle links in der Leiste den Eintrag **Production Tuner** aus.
-3. Im Hauptbereich erscheinen die fuenf Gruppen-Regler.
-4. Klicke auf **`[ Gruppe zuruecksetzen ]`**, um alle Werte einer Gruppe auf Standard (1.0) zu setzen.
-5. Klicke auf **`[ Alle zuruecksetzen ]`**, um saemtliche Werte auf Standard zu setzen.
-6. Schalte im Einstellungsbereich den **Erweiterten Modus** ein, um Einzelregler pro Komponente und Parameter zu sehen.
+2. Waehle links in der Leiste den Eintrag **Production Tuner** aus.
+3. Im Hauptbereich erscheinen die fuenf Gruppen. Jede Gruppe besitzt ihren eigenen Schalter fuer den **Einfachen Modus**.
+4. **Einfacher Modus (aktiv)**: Nur der Gruppen-Multiplikator laesst sich bedienen; die Einzelregler sind ausgegraut.
+5. **Erweiterter Modus (inaktiv)**: Alle spezifischen Einzelregler der Gruppe werden freigeschaltet und koennen individuell eingestellt werden.
+6. Hinter jedem Eingabefeld wird der Standardwert des Mods angezeigt (z. B. `(Standard: 2.0)`).
+7. Klicke auf **`[ Gruppe zuruecksetzen ]`**, um alle Werte einer Gruppe auf ihre mod-seitigen Standard-Multiplikatoren zurueckzusetzen.
 
 ---
 
@@ -41,40 +42,33 @@ Die Einstellungsdatei wird beim ersten Start automatisch angelegt:
 
 | Schalter | Standardwert | Bedeutung |
 |---|---|---|
-| `AdvancedMode` | `false` | Einfacher Modus: ein Regler pro Gruppe. Erweiterter Modus: Einzelregler pro Komponente. |
-| `AutoScaleDependentInputs` | `true` | Skaliert Pfanne, Wave Table, Magnetitabscheider und Anhaenger automatisch auf mindestens den Eimer-Wert, um Materialverlust zu verhindern. |
+| `AutoScaleDependentInputs` | `true` | Kaskadenschutz: Skaliert Hog Pan, Magnetitabscheider, Wave Table und Magnetitanhaenger automatisch auf mindestens den effektiven Eimer-Wert, um Materialverlust zu verhindern. |
 
 ### Multiplikator-Gruppen
 
-Alle Multiplikatoren haben einen Bereich von **0.1** (10% Leistung) bis **10.0** (zehnfache Leistung).
-Der Standardwert **1.0** entspricht dem unveraenderten Spiel.
+Alle Regler arbeiten in festen **0.5-Schritten** (0.5 bis 10.0).
 
-| Sektion | Enthaltene Komponenten |
+| Sektion | Enthaltene Komponenten & Default-Multiplikatoren |
 |---|---|
-| `[Group1_HandTools]` | Schaufel, Eimer, Pfanne, Hog Pan, Mobile Waschanlage |
-| `[Group2_Vehicles]` | Minibagger, Bagger, Radlader, Baggerlader, Mobiles Foerderband |
-| `[Group3_WashPlantModules]` | Einfuelltrichter, Foerderband, Ruettler, Derocker, Waschrinne, Trommel, Jig, Miner's Moss |
-| `[Group4_FineProcessing]` | Nuggetator, Magnetitabscheider, Wave Table |
-| `[Group5_Trailers]` | Magnetitanhaenger, Kraftstoffanhaenger |
-
-Im einfachen Modus (Standard) gibt es in jeder Sektion nur den Schalter `GroupMultiplier`.
-Im erweiterten Modus werden alle Einzelregler sichtbar und koennen unabhaengig angepasst werden.
+| `[Group1_HandTools]` | Schaufel (2.0x), Eimer (2.0x), Hog Pan (2.0x), Mobile Waschanlage Speed (3.0x), Mobile Waschanlage Kapazitaet (2.0x) |
+| `[Group2_Vehicles]` | Bagger alle (3.0x), Radlader (3.0x), Baggerlader (3.0x), Muldenkipper Dump Truck (3.0x) |
+| `[Group3_WashPlantModules]` | Einfuelltrichter (2.0x), Foerderband-Eimer (2.0x), Waschanlagen Kapazitaet (2.0x), Waschanlagen Speed (2.0x), Waschrinnen (2.0x), Miner's Moss (2.0x) |
+| `[Group4_FineProcessing]` | Nuggetator Speed (2.0x), Magnetitabscheider Speed (2.0x), Magnetitabscheider Kapazitaet (2.0x), Wave Table Speed (3.0x), Wave Table Kapazitaet (3.0x) |
+| `[Group5_Trailers]` | Magnetitanhaenger (2.0x), Kraftstoffanhaenger (3.0x) |
 
 ### Kaskadenschutz (`AutoScaleDependentInputs = true`)
 
-Vergrossert du den Eimer auf zum Beispiel 3.0x, kann er mehr Material aufnehmen als Pfanne,
-Wave Table oder Magnetitabscheider fassen koennen – Material wuerde verloren gehen.
-Mit aktivem Kaskadenschutz werden diese Geraete automatisch auf mindestens 3.0x gesetzt,
-egal was du dort manuell eingestellt hast.
+Vergroesserst du das Fassungsvermoegen des Eimers, koennen die Folgebehaelter (Hog Pan, Magnetitabscheider,
+Wave Table oder Magnetitanhaenger) ueberlaufen und Material wuerde geloescht werden.
+Mit aktivem Kaskadenschutz werden die Kapazitaeten dieser Folgestationen in der Benutzeroberflaeche und im Spiel
+automatisch in Echtzeit auf mindestens das effektive Eimervolumen hochskaliert.
 
 ---
 
 ## Sprachdateien
 
-Der Mod unterstuetzt Mehrsprachigkeit ueber externe JSON-Dateien:
+Der Mod unterstuetzt vollstaendige Lokalisierung:
 
 - **Speicherort:** `BepInEx/plugins/Milex GMS1 Mod Localization/`
-- **Vorlagen:** `Milex_GMS1_ProductionTuner_en.json` und `Milex_GMS1_ProductionTuner_de.json`
-  werden beim ersten Start automatisch entpackt.
-- **Eigene Uebersetzung:** Eine Vorlage fuer eine fehlende Sprache kann im Ingame-Menue unter
-  *Allgemein -> Sprache* generiert werden. Die Datei dann mit einem Texteditor uebersetzen und speichern.
+- **Dateien:** `Milex_GMS1_ProductionTuner_en.json` und `Milex_GMS1_ProductionTuner_de.json`
+- Neue Sprachvorlagen koennen jederzeit ueber das CoreMod-Menue generiert werden.

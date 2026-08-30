@@ -5,7 +5,7 @@ Dieser Ordner ist für die Harmony-Patch-Klassen des Production Tuner Mods reser
 ## Was hier hingehört
 
 Sobald die Spiel-DLLs (`Assembly-CSharp.dll`) mit einem Dekompiler (z. B. ILSpy oder dnSpy)
-analysiert wurden, werden hier für jede der 40 Komponenten Harmony-Patch-Klassen angelegt.
+analysiert wurden, werden hier für jede der Komponenten Harmony-Patch-Klassen angelegt.
 
 Jede Patch-Klasse greift in die interne Methode oder das Feld der Spielklasse ein und
 multipliziert den Originalwert mit dem berechneten Multiplikator aus dem `TuningService`.
@@ -33,29 +33,27 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches
 
 ## Zuordnungstabelle – TODO: In Phase 2 ausfüllen
 
-| Komponente                | TuningService-Methode              | Spielklasse (TODO)       | Methode/Feld (TODO)      |
-|---------------------------|------------------------------------|--------------------------|--------------------------|
-| Schaufel                  | GetShovelFillSpeed()               | ?                        | ?                        |
-| Eimer                     | GetBucketCapacity()                | ?                        | ?                        |
-| Pfanne                    | GetPanCapacity()                   | ?                        | ?                        |
-| Hog Pan                   | GetHogPanCapacity()                | ?                        | ?                        |
-| Mobile Waschanlage        | GetMobileWashPlantSpeed()          | ?                        | ?                        |
-| Minibagger                | GetMiniBaggerDigSpeed()            | ?                        | ?                        |
-| Bagger                    | GetBaggerDigSpeed()                | ?                        | ?                        |
-| Radlader                  | GetRadladerLoadSpeed()             | ?                        | ?                        |
-| Baggerlader               | GetBaggerladerLoadSpeed()          | ?                        | ?                        |
-| Mobiles Foerderband       | GetMobileConveyorSpeed()           | ?                        | ?                        |
-| Einfuelltrichter          | GetHopperCapacity()                | ?                        | ?                        |
-| Foerderband (stationaer)  | GetConveyorSpeed()                 | ?                        | ?                        |
-| Ruettler                  | GetVibratingScreenSpeed()          | ?                        | ?                        |
-| Derocker                  | GetDerockerSpeed()                 | ?                        | ?                        |
-| Waschrinne                | GetSluiceSpeed()                   | ?                        | ?                        |
-| Trommelwaschanlage        | GetTrommelSpeed()                  | ?                        | ?                        |
-| Jig                       | GetJigSpeed()                      | ?                        | ?                        |
-| Miner's Moss              | GetMinersMossCapacity()            | ?                        | ?                        |
-| Nuggetator                | GetNuggeterSpeed()                 | ?                        | ?                        |
-| Magnetitabscheider        | GetMagnetiteSeparatorSpeed()       | ?                        | ?                        |
-| Wave Table (Speed)        | GetWaveTableSpeed()                | ?                        | ?                        |
-| Wave Table (Kapazitaet)   | GetWaveTableCapacity()             | ?                        | ?                        |
-| Magnetitanhaenger         | GetMagnetiteTrailerCapacity()      | ?                        | ?                        |
-| Kraftstoffanhaenger       | GetFuelTrailerCapacity()           | ?                        | ?                        |
+| Komponente                         | TuningService-Methode               | Spielklasse (TODO)       | Methode/Feld (TODO)      |
+|------------------------------------|-------------------------------------|--------------------------|--------------------------|
+| Schaufel (Fill Speed)              | GetShovelFillSpeed()                | ?                        | ?                        |
+| Eimer (Kapazitaet)                 | GetBucketCapacity()                 | ?                        | ?                        |
+| Hog Pan (Kapazitaet)               | GetHogPanCapacity()                 | ?                        | ?                        |
+| Mobile Waschanlage (Speed)         | GetMobileWashPlantSpeed()           | ?                        | ?                        |
+| Mobile Waschanlage (Kapazitaet)    | GetMobileWashPlantCapacity()        | ?                        | ?                        |
+| Bagger (alle: Mini & Gross)        | GetExcavatorDigSpeed()              | ?                        | ?                        |
+| Radlader                           | GetWheelLoaderLoadSpeed()           | ?                        | ?                        |
+| Baggerlader                        | GetBackhoeLoaderLoadSpeed()         | ?                        | ?                        |
+| Muldenkipper (Dump Truck)          | GetDumpTruckCapacity()              | ?                        | ?                        |
+| Einfuelltrichter                   | GetHopperCapacity()                 | ?                        | ?                        |
+| Foerderband-Eimer                  | GetConveyorBucketCapacity()         | ?                        | ?                        |
+| Waschanlagen (Kapazitaet)          | GetWashplantCapacity()              | ?                        | ?                        |
+| Waschanlagen (Speed)               | GetWashplantSpeed()                 | ?                        | ?                        |
+| Waschrinnen (Sluice Boxes)         | GetSluiceboxCapacity()              | ?                        | ?                        |
+| Miner's Moss                       | GetMinersMossCapacity()             | ?                        | ?                        |
+| Nuggetator                         | GetNuggetatorSpeed()                | ?                        | ?                        |
+| Magnetitabscheider (Speed)         | GetMagnetiteSeparatorSpeed()        | ?                        | ?                        |
+| Magnetitabscheider (Kapazitaet)    | GetMagnetiteSeparatorCapacity()     | ?                        | ?                        |
+| Wave Table (Speed)                 | GetWaveTableSpeed()                 | ?                        | ?                        |
+| Wave Table (Kapazitaet)            | GetWaveTableCapacity()              | ?                        | ?                        |
+| Magnetitanhaenger                  | GetMagnetiteTrailerCapacity()       | ?                        | ?                        |
+| Kraftstoffanhaenger                | GetFuelTrailerCapacity()            | ?                        | ?                        |

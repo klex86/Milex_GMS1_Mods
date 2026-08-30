@@ -4,6 +4,18 @@ Alle relevanten Änderungen und Neuerungen der Mod-Sammlung werden in dieser Dat
 
 ---
 
+## [1.4.0] - 2026-08-30
+
+### Neuerungen & Optimierungen in Production Tuner
+- **Spezifische Default-Multiplikatoren**: Jeder Regler startet nun mit seinem eigenen, sinnvollen Standardmultiplikator (z. B. Bagger 3.0x, Muldenkipper 3.0x, Schaufel 2.0x, Waschanlagen 2.0x).
+- **Überarbeitung der Komponenten & Schalter**:
+  - Handwerkzeuge: Goldwaschpfanne entfernt, Kapazitätsregler für mobile Waschanlage ergänzt.
+  - Fahrzeuge: Minibagger und Bagger zu einem gemeinsamen Bagger-Regler zusammengefasst, Muldenkipper (Dump Truck) neu aufgenommen, mobiles Förderband entfernt.
+  - Waschanlagen-Module: Zentralisierte Regler für Waschanlagen-Kapazität, Verarbeitungsgeschwindigkeit und Waschrinnen; überflüssige Einzelschalter bereinigt.
+  - Feinverarbeitung: Eingangskapazität für den Magnetitabscheider neu implementiert und in den Kaskadenschutz integriert.
+
+---
+
 ## [1.3.1] - 2026-08-30
 
 ### Verbesserungen & Fehlerbehebungen

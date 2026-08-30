@@ -5,6 +5,20 @@ Das Format folgt den Grundsaetzen von [Keep a Changelog](https://keepachangelog.
 
 ---
 
+## [1.1.0] – 2026-08-30
+
+### Neue Funktionen & Überarbeitungen
+
+- **Spezifische Default-Multiplikatoren pro Komponente**: Jeder Wert startet nun mit seinem eigenen, optimal abgestimmten Standard-Multiplikator (z. B. Bagger 3.0x, Muldenkipper 3.0x, Schaufel 2.0x, Waschanlagen 2.0x) anstelle eines pauschalen 1.0-Werts.
+- **Bereinigung und Ergänzung der Komponenten**:
+  - **Gruppe 1 (Handwerkzeuge)**: `Pan_Capacity` entfernt. `MobileWashPlant_Capacity` (2.0x) als neuer Regler für das Fassungsvermögen der mobilen Waschanlage hinzugefügt.
+  - **Gruppe 2 (Fahrzeuge)**: `MiniExcavator_DigSpeed` entfernt (alle Bagger werden nun einheitlich über `Excavator_DigSpeed` geregelt). `MobileConveyor_Speed` entfernt. `DumpTruck_Capacity` (3.0x) neu hinzugefügt.
+  - **Gruppe 3 (Waschanlagen-Module)**: `Conveyor_Speed` in `ConveyorBucket_Capacity` (2.0x) umbenannt. Nicht benötigte Einzelschalter (`VibratingScreen_Speed`, `Derocker_Speed`, `Sluice_Speed`, `Trommel_Speed`, `Jig_Speed`) entfernt. Neue zentrale Regler: `Washplant_Capacity` (2.0x), `Washplant_Speed` (2.0x) und `Sluicebox_Capacity` (2.0x) hinzugefügt.
+  - **Gruppe 4 (Feinverarbeitung)**: `MagnetiteSeparator_Capacity` (2.0x) als neuer Regler für die Eingangskapazität des Magnetitabscheiders hinzugefügt.
+- **Präzisierter Kaskadenschutz**: Der Kaskadenschutz sichert nun exakt die relevanten Behälter ab (`HogPan_Capacity`, `MagnetiteSeparator_Capacity`, `WaveTable_Capacity`, `MagnetiteTrailer_Capacity`) und verhindert Materialverlust bei vergrößertem Eimer.
+
+---
+
 ## [1.0.1] – 2026-08-30
 
 ### Fehlerbehebungen & Verbesserungen

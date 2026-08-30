@@ -6,8 +6,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
     /// Schicht 2: Domänen-Service für den Production Tuner.
     ///
     /// Berechnet den effektiven Multiplikator, der auf ein Spielobjekt angewendet wird.
-    /// Im Simple Mode gilt der Gruppen-Multiplikator für alle Komponenten der Gruppe.
-    /// Im Advanced Mode bestimmt der Einzelregler der jeweiligen Komponente den Wert.
+    /// Im Simple Mode skaliert der Gruppen-Multiplikator die Einzelmultiplikatoren der Gruppe.
+    /// Im Advanced Mode bestimmt der Einzelregler der jeweiligen Komponente direkt den Wert.
     /// Bei aktivem Kaskadenschutz wird für Folgegeräte automatisch mindestens das Eimervolumen garantiert.
     /// </summary>
     public class TuningService
@@ -27,7 +27,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         {
             // TODO: Hook into [GameClass: Shovel] [Field/Method: fillRate]
             return _cfg.Group1SimpleMode.Value
-                ? _cfg.Group1Multiplier.Value
+                ? (_cfg.Group1Multiplier.Value * _cfg.Shovel_FillSpeed.Value)
                 : _cfg.Shovel_FillSpeed.Value;
         }
 
@@ -35,20 +35,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         {
             // TODO: Hook into [GameClass: Bucket / BucketItem] [Field/Method: capacity or maxVolume]
             return _cfg.Group1SimpleMode.Value
-                ? _cfg.Group1Multiplier.Value
+                ? (_cfg.Group1Multiplier.Value * _cfg.Bucket_Capacity.Value)
                 : _cfg.Bucket_Capacity.Value;
-        }
-
-        /// <summary>Kaskadenschutz: mindestens so gross wie der Eimer-Multiplikator.</summary>
-        public float GetPanCapacity()
-        {
-            // TODO: Hook into [GameClass: GoldPan] [Field/Method: capacity]
-            float val = _cfg.Group1SimpleMode.Value
-                ? _cfg.Group1Multiplier.Value
-                : _cfg.Pan_Capacity.Value;
-            return _cfg.AutoScaleDependentInputs.Value
-                ? System.Math.Max(val, GetBucketCapacity())
-                : val;
         }
 
         /// <summary>Kaskadenschutz: mindestens so gross wie der Eimer-Multiplikator.</summary>
@@ -56,7 +44,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         {
             // TODO: Hook into [GameClass: HogPan] [Field/Method: capacity]
             float val = _cfg.Group1SimpleMode.Value
-                ? _cfg.Group1Multiplier.Value
+                ? (_cfg.Group1Multiplier.Value * _cfg.HogPan_Capacity.Value)
                 : _cfg.HogPan_Capacity.Value;
             return _cfg.AutoScaleDependentInputs.Value
                 ? System.Math.Max(val, GetBucketCapacity())
@@ -67,27 +55,28 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         {
             // TODO: Hook into [GameClass: MobileWashPlant] [Field/Method: processingSpeed]
             return _cfg.Group1SimpleMode.Value
-                ? _cfg.Group1Multiplier.Value
+                ? (_cfg.Group1Multiplier.Value * _cfg.MobileWashPlant_Speed.Value)
                 : _cfg.MobileWashPlant_Speed.Value;
         }
 
-        // ===========================================================
-        // GRUPPE 2 – Vehicles & Mobile Conveyor
-        // ===========================================================
-
-        public float GetMiniExcavatorDigSpeed()
+        public float GetMobileWashPlantCapacity()
         {
-            // TODO: Hook into [GameClass: MiniExcavatorController] [Field/Method: digSpeed]
-            return _cfg.Group2SimpleMode.Value
-                ? _cfg.Group2Multiplier.Value
-                : _cfg.MiniExcavator_DigSpeed.Value;
+            // TODO: Hook into [GameClass: MobileWashPlant] [Field/Method: capacity]
+            return _cfg.Group1SimpleMode.Value
+                ? (_cfg.Group1Multiplier.Value * _cfg.MobileWashPlant_Capacity.Value)
+                : _cfg.MobileWashPlant_Capacity.Value;
         }
 
+        // ===========================================================
+        // GRUPPE 2 – Vehicles
+        // ===========================================================
+
+        /// <summary>Gilt fuer alle Bagger (Minibagger und Grossbagger).</summary>
         public float GetExcavatorDigSpeed()
         {
-            // TODO: Hook into [GameClass: ExcavatorController] [Field/Method: digSpeed]
+            // TODO: Hook into [GameClass: ExcavatorController / MiniExcavatorController] [Field/Method: digSpeed]
             return _cfg.Group2SimpleMode.Value
-                ? _cfg.Group2Multiplier.Value
+                ? (_cfg.Group2Multiplier.Value * _cfg.Excavator_DigSpeed.Value)
                 : _cfg.Excavator_DigSpeed.Value;
         }
 
@@ -95,7 +84,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         {
             // TODO: Hook into [GameClass: WheelLoaderController] [Field/Method: loadSpeed]
             return _cfg.Group2SimpleMode.Value
-                ? _cfg.Group2Multiplier.Value
+                ? (_cfg.Group2Multiplier.Value * _cfg.WheelLoader_LoadSpeed.Value)
                 : _cfg.WheelLoader_LoadSpeed.Value;
         }
 
@@ -103,83 +92,70 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         {
             // TODO: Hook into [GameClass: BackhoeController] [Field/Method: loadSpeed]
             return _cfg.Group2SimpleMode.Value
-                ? _cfg.Group2Multiplier.Value
+                ? (_cfg.Group2Multiplier.Value * _cfg.BackhoeLoader_LoadSpeed.Value)
                 : _cfg.BackhoeLoader_LoadSpeed.Value;
         }
 
-        public float GetMobileConveyorSpeed()
+        public float GetDumpTruckCapacity()
         {
-            // TODO: Hook into [GameClass: MobileConveyor] [Field/Method: speed or beltSpeed]
+            // TODO: Hook into [GameClass: DumpTruckController] [Field/Method: capacity]
             return _cfg.Group2SimpleMode.Value
-                ? _cfg.Group2Multiplier.Value
-                : _cfg.MobileConveyor_Speed.Value;
+                ? (_cfg.Group2Multiplier.Value * _cfg.DumpTruck_Capacity.Value)
+                : _cfg.DumpTruck_Capacity.Value;
         }
 
         // ===========================================================
-        // GRUPPE 3 – Wash Plant Modules (Tier 3-6)
+        // GRUPPE 3 – Wash Plant Modules
         // ===========================================================
 
         public float GetHopperCapacity()
         {
             // TODO: Hook into [GameClass: Hopper] [Field/Method: maxCapacity]
             return _cfg.Group3SimpleMode.Value
-                ? _cfg.Group3Multiplier.Value
+                ? (_cfg.Group3Multiplier.Value * _cfg.Hopper_Capacity.Value)
                 : _cfg.Hopper_Capacity.Value;
         }
 
-        public float GetConveyorSpeed()
+        public float GetConveyorBucketCapacity()
         {
-            // TODO: Hook into [GameClass: ConveyorBelt] [Field/Method: speed]
+            // TODO: Hook into [GameClass: ConveyorBelt] [Field/Method: bucketCapacity / capacity]
             return _cfg.Group3SimpleMode.Value
-                ? _cfg.Group3Multiplier.Value
-                : _cfg.Conveyor_Speed.Value;
+                ? (_cfg.Group3Multiplier.Value * _cfg.ConveyorBucket_Capacity.Value)
+                : _cfg.ConveyorBucket_Capacity.Value;
         }
 
-        public float GetVibratingScreenSpeed()
+        /// <summary>Gilt fuer alle Waschanlagen (Derocker, Glacier Creek usw.).</summary>
+        public float GetWashplantCapacity()
         {
-            // TODO: Hook into [GameClass: VibratingScreen] [Field/Method: processingSpeed]
+            // TODO: Hook into [GameClass: WashPlant / Derocker / GlacierCreek] [Field/Method: capacity]
             return _cfg.Group3SimpleMode.Value
-                ? _cfg.Group3Multiplier.Value
-                : _cfg.VibratingScreen_Speed.Value;
+                ? (_cfg.Group3Multiplier.Value * _cfg.Washplant_Capacity.Value)
+                : _cfg.Washplant_Capacity.Value;
         }
 
-        public float GetDerockerSpeed()
+        /// <summary>Gilt fuer alle Waschanlagen (Derocker, Glacier Creek usw.).</summary>
+        public float GetWashplantSpeed()
         {
-            // TODO: Hook into [GameClass: Derocker] [Field/Method: processingSpeed]
+            // TODO: Hook into [GameClass: WashPlant / Derocker / GlacierCreek] [Field/Method: processingSpeed]
             return _cfg.Group3SimpleMode.Value
-                ? _cfg.Group3Multiplier.Value
-                : _cfg.Derocker_Speed.Value;
+                ? (_cfg.Group3Multiplier.Value * _cfg.Washplant_Speed.Value)
+                : _cfg.Washplant_Speed.Value;
         }
 
-        public float GetSluiceSpeed()
+        /// <summary>Gilt fuer alle Waschrinnen (Sluice Boxes).</summary>
+        public float GetSluiceboxCapacity()
         {
-            // TODO: Hook into [GameClass: SluiceBox] [Field/Method: throughput]
+            // TODO: Hook into [GameClass: SluiceBox] [Field/Method: capacity]
             return _cfg.Group3SimpleMode.Value
-                ? _cfg.Group3Multiplier.Value
-                : _cfg.Sluice_Speed.Value;
-        }
-
-        public float GetTrommelSpeed()
-        {
-            // TODO: Hook into [GameClass: TrommelWasher] [Field/Method: rotationSpeed]
-            return _cfg.Group3SimpleMode.Value
-                ? _cfg.Group3Multiplier.Value
-                : _cfg.Trommel_Speed.Value;
-        }
-
-        public float GetJigSpeed()
-        {
-            // TODO: Hook into [GameClass: Jig] [Field/Method: processingSpeed]
-            return _cfg.Group3SimpleMode.Value
-                ? _cfg.Group3Multiplier.Value
-                : _cfg.Jig_Speed.Value;
+                ? (_cfg.Group3Multiplier.Value * _cfg.Sluicebox_Capacity.Value)
+                : _cfg.Sluicebox_Capacity.Value;
         }
 
         public float GetMinersMossCapacity()
         {
             // TODO: Hook into [GameClass: MinersMoss] [Field/Method: capacity]
             return _cfg.Group3SimpleMode.Value
-                ? _cfg.Group3Multiplier.Value
+                ? (_cfg.Group3Multiplier.Value * _cfg.MinersMoss_Capacity.Value)
                 : _cfg.MinersMoss_Capacity.Value;
         }
 
@@ -191,17 +167,25 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         {
             // TODO: Hook into [GameClass: Nuggetator] [Field/Method: processingSpeed]
             return _cfg.Group4SimpleMode.Value
-                ? _cfg.Group4Multiplier.Value
+                ? (_cfg.Group4Multiplier.Value * _cfg.Nuggetator_Speed.Value)
                 : _cfg.Nuggetator_Speed.Value;
         }
 
-        /// <summary>Kaskadenschutz: mindestens so gross wie der Eimer-Multiplikator.</summary>
         public float GetMagnetiteSeparatorSpeed()
         {
             // TODO: Hook into [GameClass: MagnetiteSeparator] [Field/Method: separationSpeed]
-            float val = _cfg.Group4SimpleMode.Value
-                ? _cfg.Group4Multiplier.Value
+            return _cfg.Group4SimpleMode.Value
+                ? (_cfg.Group4Multiplier.Value * _cfg.MagnetiteSeparator_Speed.Value)
                 : _cfg.MagnetiteSeparator_Speed.Value;
+        }
+
+        /// <summary>Kaskadenschutz: mindestens so gross wie der Eimer-Multiplikator.</summary>
+        public float GetMagnetiteSeparatorCapacity()
+        {
+            // TODO: Hook into [GameClass: MagnetiteSeparator] [Field/Method: inputCapacity / maxVolume]
+            float val = _cfg.Group4SimpleMode.Value
+                ? (_cfg.Group4Multiplier.Value * _cfg.MagnetiteSeparator_Capacity.Value)
+                : _cfg.MagnetiteSeparator_Capacity.Value;
             return _cfg.AutoScaleDependentInputs.Value
                 ? System.Math.Max(val, GetBucketCapacity())
                 : val;
@@ -211,7 +195,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         {
             // TODO: Hook into [GameClass: WaveTable] [Field/Method: vibrationSpeed]
             return _cfg.Group4SimpleMode.Value
-                ? _cfg.Group4Multiplier.Value
+                ? (_cfg.Group4Multiplier.Value * _cfg.WaveTable_Speed.Value)
                 : _cfg.WaveTable_Speed.Value;
         }
 
@@ -220,7 +204,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         {
             // TODO: Hook into [GameClass: WaveTable] [Field/Method: maxCapacity]
             float val = _cfg.Group4SimpleMode.Value
-                ? _cfg.Group4Multiplier.Value
+                ? (_cfg.Group4Multiplier.Value * _cfg.WaveTable_Capacity.Value)
                 : _cfg.WaveTable_Capacity.Value;
             return _cfg.AutoScaleDependentInputs.Value
                 ? System.Math.Max(val, GetBucketCapacity())
