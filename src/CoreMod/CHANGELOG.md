@@ -13,6 +13,8 @@ Alle Änderungen am zentralen Mod-Framework `Milex GMS1 CoreMod`.
   - Wenn in einer Gruppe der einfache Modus aktiv ist, werden die spezifischen Einzelregler automatisch ausgegraut und gesperrt, da der Gruppenregler die Führung übernimmt.
 - **Gruppen-Reset-Knopf**:
   - Jede Gruppe im Menü besitzt nun einen eigenen Knopf `[ Gruppe zurücksetzen ]`, um die Werte dieser Gruppe direkt auf die Standardwerte zurückzustellen.
+- **Englische Konfigurations-Beschreibungen**:
+  - Alle internen Beschreibungen in der Konfigurationsdatei (`.cfg`) sind nun einheitlich auf Englisch verfasst. Menü-Texte im Spiel richten sich weiterhin nach den Lokalisierungsdateien.
 
 ---
 

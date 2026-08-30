@@ -44,12 +44,12 @@ namespace Milex.GMS1.Core
             Instance = this;
 
             // Bind Core Settings (writes to Milex_GMS1_CoreMod.cfg)
-            MenuToggleKey = Config.Bind("General", "MenuToggleKey", KeyCode.Insert, "Taste zum Öffnen und Schließen des Mod-Menüs");
-            PauseGameOnMenu = Config.Bind("General", "PauseGameOnMenu", false, "Pausiert die Spielwelt (TimeScale = 0), wenn das Mod-Menü offen ist");
-            IgnoreExternalTranslations = Config.Bind("General", "IgnoreExternalTranslations", false, "Ignoriert externe Sprachdateien auf der Festplatte und lädt direkt aus den DLL-Ressourcen");
-            UseGameLanguage = Config.Bind("Localization", "UseGameLanguage", true, "Gibt an, ob die Spiel-Sprache automatisch verwendet wird");
-            SelectedLanguage = Config.Bind("Localization", "SelectedLanguage", "en", "Manuell gewählte Sprache (nur aktiv, wenn UseGameLanguage false ist)");
-            UIScale = Config.Bind("UI", "UIScale", 1.0f, "Skalierungsfaktor des Mod-Menüs (0.75 bis 1.5 für High-DPI/4K)");
+            MenuToggleKey = Config.Bind("General", "MenuToggleKey", KeyCode.Insert, "Key to open and close the mod menu.");
+            PauseGameOnMenu = Config.Bind("General", "PauseGameOnMenu", false, "Pauses the game world (TimeScale = 0) while the mod menu is open.");
+            IgnoreExternalTranslations = Config.Bind("General", "IgnoreExternalTranslations", false, "Ignores external localization files on disk and loads directly from embedded DLL resources.");
+            UseGameLanguage = Config.Bind("Localization", "UseGameLanguage", true, "Determines whether the game language is detected and used automatically.");
+            SelectedLanguage = Config.Bind("Localization", "SelectedLanguage", "en", "Manually selected language code (only active when UseGameLanguage is false).");
+            UIScale = Config.Bind("UI", "UIScale", 1.0f, "Scale factor of the mod menu interface (0.75 to 1.5 for High-DPI / 4K displays).");
 
             IgnoreExternalTranslations.SettingChanged += (s, e) => LocalizationManager.ReloadAll();
 
