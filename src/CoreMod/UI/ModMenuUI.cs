@@ -236,7 +236,8 @@ namespace Milex.GMS1.Core.UI
                 fontSize = 14,
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = new Color(0.95f, 0.80f, 0.20f) },
-                margin = new RectOffset(0, 0, 10, 4)
+                margin = new RectOffset(0, 0, 10, 4),
+                wordWrap = false
             };
 
             _entryLabelStyle = new GUIStyle(GUI.skin.label)
@@ -322,11 +323,11 @@ namespace Milex.GMS1.Core.UI
                 normal   = { background = trackTex },
                 border   = new RectOffset(2, 2, 2, 2),
                 padding  = new RectOffset(0, 0, 0, 0),
-                fixedHeight = 12f,
+                fixedHeight = 10f,
                 margin   = new RectOffset(0, 0, 6, 6)
             };
 
-            // Slider thumb: vibrant gold grabber with bright edge
+            // Slider thumb: vibrant gold grabber symmetrically centered via overflow
             Texture2D thumbNormal = MakeBorderedTex(12, 12, new Color(0.88f, 0.70f, 0.15f, 1.0f), new Color(1.0f, 0.92f, 0.50f, 1.0f), 1);
             Texture2D thumbHover  = MakeBorderedTex(12, 12, new Color(1.00f, 0.82f, 0.25f, 1.0f), new Color(1.0f, 1.0f, 0.80f, 1.0f), 1);
             Texture2D thumbActive = MakeBorderedTex(12, 12, new Color(1.00f, 0.95f, 0.50f, 1.0f), Color.white, 1);
@@ -336,8 +337,9 @@ namespace Milex.GMS1.Core.UI
                 normal   = { background = thumbNormal },
                 hover    = { background = thumbHover },
                 active   = { background = thumbActive },
-                fixedWidth  = 16f,
-                fixedHeight = 22f
+                fixedWidth  = 14f,
+                fixedHeight = 10f,
+                overflow = new RectOffset(0, 0, 5, 5)
             };
 
             _stylesInitialized = true;
@@ -377,8 +379,29 @@ namespace Milex.GMS1.Core.UI
             GUILayout.BeginHorizontal();
 
             // === LEFT SIDEBAR ===
-            // Width is fixed in screen-space (200px) regardless of scale.
-            float sidebarGuiWidth = 200f / _currentScale;
+            // Calculate dynamic width based on loaded mod names
+            var featureMods = GetFeatureMods();
+            float maxNameWidth = 160f;
+            Vector2 coreSize = _sidebarButtonStyle.CalcSize(new GUIContent(L("menu.tab.core_settings", "Allgemein")));
+            if (coreSize.x > maxNameWidth) maxNameWidth = coreSize.x;
+
+            foreach (var m in featureMods)
+            {
+                string displayModName = m.Translate("mod.name", m.Name);
+                Vector2 textSize = _sidebarButtonStyle.CalcSize(new GUIContent("[v] " + displayModName));
+                if (textSize.x > maxNameWidth) maxNameWidth = textSize.x;
+            }
+
+            float sidebarScreenWidth = Mathf.Clamp(maxNameWidth + 36f, 200f, 340f);
+            float sidebarGuiWidth = sidebarScreenWidth / _currentScale;
+
+            // Ensure window width accommodates dynamic sidebar + content
+            float desiredWindowWidth = sidebarGuiWidth + 640f;
+            if (_baseWindowRect.width < desiredWindowWidth)
+            {
+                _baseWindowRect.width = desiredWindowWidth;
+            }
+
             GUILayout.BeginVertical(GUILayout.Width(sidebarGuiWidth), GUILayout.ExpandHeight(true));
             _sidebarScrollPos = GUILayout.BeginScrollView(_sidebarScrollPos, false, false, GUILayout.Width(sidebarGuiWidth));
 
@@ -393,7 +416,6 @@ namespace Milex.GMS1.Core.UI
             GUILayout.Space(4);
 
             // Feature Mods List (CoreMod excluded!)
-            var featureMods = GetFeatureMods();
             if (featureMods.Count == 0)
             {
                 GUILayout.Label(L("menu.no_mods", "Keine Feature-Mods geladen"), _subHeaderStyle);
@@ -892,6 +914,12 @@ namespace Milex.GMS1.Core.UI
                     floatEntry.ConfigFile?.Save();
                 }
 
+                // Show default value label
+                GUILayout.Space(8);
+                string defaultStr = ((float)floatEntry.DefaultValue).ToString("0.0#", CultureInfo.InvariantCulture);
+                string defaultLabel = string.Format(L("ui.default_value", "(Standard: {0})"), defaultStr);
+                GUILayout.Label(defaultLabel, _subHeaderStyle);
+
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
@@ -917,6 +945,12 @@ namespace Milex.GMS1.Core.UI
                     intEntry.Value = newVal;
                     intEntry.ConfigFile?.Save();
                 }
+
+                // Show default value label
+                GUILayout.Space(8);
+                string defaultStr = intEntry.DefaultValue.ToString();
+                string defaultLabel = string.Format(L("ui.default_value", "(Standard: {0})"), defaultStr);
+                GUILayout.Label(defaultLabel, _subHeaderStyle);
 
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();

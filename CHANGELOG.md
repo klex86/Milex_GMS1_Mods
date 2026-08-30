@@ -4,6 +4,22 @@ Alle relevanten Änderungen und Neuerungen der Mod-Sammlung werden in dieser Dat
 
 ---
 
+## [1.3.1] - 2026-08-30
+
+### Verbesserungen & Fehlerbehebungen
+- **Perfekt zentrierte Schieberegler**:
+  - Der goldene Schiebegriff ist nun vertikal exakt symmetrisch auf der Führungsrinne des Reglers ausgerichtet.
+- **Schutz vor Zeilenumbrüchen**:
+  - Gruppen-Überschriften und Beschriftungen brechen nicht mehr ungewollt in mehrere Zeilen um.
+- **Dynamische Sidebar-Breite**:
+  - Die Leiste für geladene Mods berechnet ihre Breite nun automatisch dynamisch anhand der Mod-Namen, damit lange Namen nie abgeschnitten werden.
+- **Standardwert-Anzeige**:
+  - Hinter jedem Eingabefeld wird der werkseitige Standardwert des Mods angezeigt (z. B. `(Standard: 1.0)`).
+- **Einfacher Modus als Standard**:
+  - Beim Zurücksetzen einer Einstellungs-Gruppe wird immer der einfache Modus als Standard wiederhergestellt.
+
+---
+
 ## [1.3.0] - 2026-08-30
 
 ### Neue Mods

@@ -32,16 +32,17 @@
   "dialog.missing_trans.prompt": "The following mods do not have a translation file for '{0}' yet:",
   "dialog.missing_trans.question": "Would you like to generate editable translation template files for them now?",
   "dialog.missing_trans.info": "Files will be created in 'BepInEx/plugins/Milex GMS1 Mod Localization/'. You can translate them and share them on NexusMods!",
-  "dialog.missing_trans.btn_yes": "✓ Create Templates",
-  "dialog.missing_trans.btn_no": "✕ No, keep defaults",
+  "dialog.missing_trans.btn_yes": "Create Templates",
+  "dialog.missing_trans.btn_no": "No, keep defaults",
 
-  "btn.enabled": "[✓] Enabled",
+  "btn.enabled": "[v] Enabled",
   "btn.disabled": "[  ] Disabled",
   "btn.rebind_prompt": "Press a key...",
   "btn.reset": "Reset",
   "btn.rebind": "Key: [ {0} ]",
+  "ui.default_value": "(Default: {0})",
 
   "mod.toggle.label": "Mod Status",
   "mod.toggle.desc": "Toggles the mod including all Harmony patches instantly. State is persisted.",
-  "mod.disabled.hint": "⚠ This mod is disabled. Settings are locked."
+  "mod.disabled.hint": "This mod is disabled. Settings are locked."
 }

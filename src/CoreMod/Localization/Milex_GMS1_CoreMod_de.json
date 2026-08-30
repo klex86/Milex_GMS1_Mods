@@ -32,16 +32,17 @@
   "dialog.missing_trans.prompt": "Für folgende Mods existiert noch keine Übersetzung für '{0}':",
   "dialog.missing_trans.question": "Möchtest du, dass wir dir dafür Vorlagen-Dateien zur Übersetzung anlegen?",
   "dialog.missing_trans.info": "Die Dateien werden in 'BepInEx/plugins/Milex GMS1 Mod Localization/' erstellt. Du kannst sie übersetzen und im NexusMods-Eintrag des Mods posten!",
-  "dialog.missing_trans.btn_yes": "✓ Vorlagen erstellen",
-  "dialog.missing_trans.btn_no": "✕ Nein, Standard behalten",
+  "dialog.missing_trans.btn_yes": "Vorlagen erstellen",
+  "dialog.missing_trans.btn_no": "Nein, Standard behalten",
 
-  "btn.enabled": "[✓] Aktiviert",
+  "btn.enabled": "[v] Aktiviert",
   "btn.disabled": "[  ] Deaktiviert",
   "btn.rebind_prompt": "Taste drücken...",
   "btn.reset": "Zurücksetzen",
   "btn.rebind": "Taste: [ {0} ]",
+  "ui.default_value": "(Standard: {0})",
 
   "mod.toggle.label": "Mod-Status",
   "mod.toggle.desc": "Schaltet den Mod inkl. aller Harmony-Patches sofort an oder aus. Der Zustand wird gespeichert.",
-  "mod.disabled.hint": "⚠ Dieser Mod ist deaktiviert. Einstellungen sind gesperrt."
+  "mod.disabled.hint": "Dieser Mod ist deaktiviert. Einstellungen sind gesperrt."
 }

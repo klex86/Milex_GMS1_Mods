@@ -340,6 +340,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                 switch (groupIndex)
                 {
                     case 1:
+                        Group1SimpleMode.Value       = true;
                         Group1Multiplier.Value       = DefaultMultiplier;
                         Shovel_FillSpeed.Value       = DefaultMultiplier;
                         Bucket_Capacity.Value        = DefaultMultiplier;
@@ -348,6 +349,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                         MobileWashPlant_Speed.Value  = DefaultMultiplier;
                         break;
                     case 2:
+                        Group2SimpleMode.Value          = true;
                         Group2Multiplier.Value          = DefaultMultiplier;
                         MiniExcavator_DigSpeed.Value    = DefaultMultiplier;
                         Excavator_DigSpeed.Value        = DefaultMultiplier;
@@ -356,6 +358,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                         MobileConveyor_Speed.Value      = DefaultMultiplier;
                         break;
                     case 3:
+                        Group3SimpleMode.Value       = true;
                         Group3Multiplier.Value       = DefaultMultiplier;
                         Hopper_Capacity.Value        = DefaultMultiplier;
                         Conveyor_Speed.Value         = DefaultMultiplier;
@@ -367,6 +370,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                         MinersMoss_Capacity.Value    = DefaultMultiplier;
                         break;
                     case 4:
+                        Group4SimpleMode.Value           = true;
                         Group4Multiplier.Value           = DefaultMultiplier;
                         Nuggetator_Speed.Value           = DefaultMultiplier;
                         MagnetiteSeparator_Speed.Value   = DefaultMultiplier;
