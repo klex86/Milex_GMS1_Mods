@@ -64,11 +64,11 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         public ConfigEntry<float> Group2Multiplier { get; private set; }
 
         // Advanced
-        public ConfigEntry<float> MiniBagger_DigSpeed    { get; private set; }
-        public ConfigEntry<float> Bagger_DigSpeed        { get; private set; }
-        public ConfigEntry<float> Radlader_LoadSpeed     { get; private set; }
-        public ConfigEntry<float> Baggerlader_LoadSpeed  { get; private set; }
-        public ConfigEntry<float> MobileConveyor_Speed   { get; private set; }
+        public ConfigEntry<float> MiniExcavator_DigSpeed  { get; private set; }
+        public ConfigEntry<float> Excavator_DigSpeed      { get; private set; }
+        public ConfigEntry<float> WheelLoader_LoadSpeed   { get; private set; }
+        public ConfigEntry<float> BackhoeLoader_LoadSpeed { get; private set; }
+        public ConfigEntry<float> MobileConveyor_Speed    { get; private set; }
 
         // ===========================================================
         // GRUPPE 3 – Wash Plant Modules (Tier 3-6)
@@ -148,11 +148,11 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                 "Simple mode: only the group multiplier slider is active. Advanced mode: individual sliders per component.");
             Group2Multiplier    = BindStep("Group2_Vehicles", "Group_Multiplier",
                 "Shared multiplier for all construction vehicles and the mobile conveyor belt.");
-            MiniBagger_DigSpeed   = BindStep("Group2_Vehicles", "MiniBagger_DigSpeed",   "How fast the mini excavator digs.");
-            Bagger_DigSpeed       = BindStep("Group2_Vehicles", "Bagger_DigSpeed",       "How fast the excavator digs.");
-            Radlader_LoadSpeed    = BindStep("Group2_Vehicles", "Radlader_LoadSpeed",    "How fast the wheel loader picks up material.");
-            Baggerlader_LoadSpeed = BindStep("Group2_Vehicles", "Baggerlader_LoadSpeed", "How fast the backhoe loader picks up material.");
-            MobileConveyor_Speed  = BindStep("Group2_Vehicles", "MobileConveyor_Speed",  "Transport speed of the mobile conveyor belt.");
+            MiniExcavator_DigSpeed  = BindStep("Group2_Vehicles", "MiniExcavator_DigSpeed",  "How fast the mini excavator digs.");
+            Excavator_DigSpeed      = BindStep("Group2_Vehicles", "Excavator_DigSpeed",      "How fast the excavator digs.");
+            WheelLoader_LoadSpeed   = BindStep("Group2_Vehicles", "WheelLoader_LoadSpeed",   "How fast the wheel loader picks up material.");
+            BackhoeLoader_LoadSpeed = BindStep("Group2_Vehicles", "BackhoeLoader_LoadSpeed", "How fast the backhoe loader picks up material.");
+            MobileConveyor_Speed    = BindStep("Group2_Vehicles", "MobileConveyor_Speed",    "Transport speed of the mobile conveyor belt.");
 
             // Gruppe 3
             Group3SimpleMode    = _cfg.Bind("Group3_WashPlantModules", "SimpleMode", true,
@@ -207,12 +207,12 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                     MobileWashPlant_Speed.Value  = DefaultMultiplier;
                     break;
                 case 2:
-                    Group2Multiplier.Value       = DefaultMultiplier;
-                    MiniBagger_DigSpeed.Value    = DefaultMultiplier;
-                    Bagger_DigSpeed.Value        = DefaultMultiplier;
-                    Radlader_LoadSpeed.Value     = DefaultMultiplier;
-                    Baggerlader_LoadSpeed.Value  = DefaultMultiplier;
-                    MobileConveyor_Speed.Value   = DefaultMultiplier;
+                    Group2Multiplier.Value          = DefaultMultiplier;
+                    MiniExcavator_DigSpeed.Value    = DefaultMultiplier;
+                    Excavator_DigSpeed.Value        = DefaultMultiplier;
+                    WheelLoader_LoadSpeed.Value     = DefaultMultiplier;
+                    BackhoeLoader_LoadSpeed.Value   = DefaultMultiplier;
+                    MobileConveyor_Speed.Value      = DefaultMultiplier;
                     break;
                 case 3:
                     Group3Multiplier.Value       = DefaultMultiplier;

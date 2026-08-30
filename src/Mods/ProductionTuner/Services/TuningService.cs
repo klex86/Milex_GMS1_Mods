@@ -79,36 +79,36 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         // GRUPPE 2 – Vehicles & Mobile Conveyor
         // ===========================================================
 
-        public float GetMiniBaggerDigSpeed()
+        public float GetMiniExcavatorDigSpeed()
         {
             // TODO: Hook into [GameClass: MiniExcavatorController] [Field/Method: digSpeed]
             return _cfg.Group2SimpleMode.Value
                 ? _cfg.Group2Multiplier.Value
-                : Combine(_cfg.Group2Multiplier.Value, _cfg.MiniBagger_DigSpeed.Value);
+                : Combine(_cfg.Group2Multiplier.Value, _cfg.MiniExcavator_DigSpeed.Value);
         }
 
-        public float GetBaggerDigSpeed()
+        public float GetExcavatorDigSpeed()
         {
             // TODO: Hook into [GameClass: ExcavatorController] [Field/Method: digSpeed]
             return _cfg.Group2SimpleMode.Value
                 ? _cfg.Group2Multiplier.Value
-                : Combine(_cfg.Group2Multiplier.Value, _cfg.Bagger_DigSpeed.Value);
+                : Combine(_cfg.Group2Multiplier.Value, _cfg.Excavator_DigSpeed.Value);
         }
 
-        public float GetRadladerLoadSpeed()
+        public float GetWheelLoaderLoadSpeed()
         {
             // TODO: Hook into [GameClass: WheelLoaderController] [Field/Method: loadSpeed]
             return _cfg.Group2SimpleMode.Value
                 ? _cfg.Group2Multiplier.Value
-                : Combine(_cfg.Group2Multiplier.Value, _cfg.Radlader_LoadSpeed.Value);
+                : Combine(_cfg.Group2Multiplier.Value, _cfg.WheelLoader_LoadSpeed.Value);
         }
 
-        public float GetBaggerladerLoadSpeed()
+        public float GetBackhoeLoaderLoadSpeed()
         {
             // TODO: Hook into [GameClass: BackhoeController] [Field/Method: loadSpeed]
             return _cfg.Group2SimpleMode.Value
                 ? _cfg.Group2Multiplier.Value
-                : Combine(_cfg.Group2Multiplier.Value, _cfg.Baggerlader_LoadSpeed.Value);
+                : Combine(_cfg.Group2Multiplier.Value, _cfg.BackhoeLoader_LoadSpeed.Value);
         }
 
         public float GetMobileConveyorSpeed()
