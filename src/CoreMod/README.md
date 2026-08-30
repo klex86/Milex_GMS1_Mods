@@ -9,6 +9,14 @@ Der **CoreMod** ist das zentrale Verwaltungssystem für alle Milex-Mods in *Gold
 
 ---
 
+## Installation & Voraussetzungen
+
+1. **Voraussetzung**: BepInEx 5 (x64) im Hauptverzeichnis des Spiels.
+2. **Installation**: Kopiere `Milex_GMS1_CoreMod.dll` in den Ordner `BepInEx/plugins/`.
+3. **Start**: Das Mod-Menü wird im Spiel mit der Taste **`Einfügen`** (`Insert`) geöffnet.
+
+---
+
 ## Funktionen im Spiel
 
 1. **Ingame-Menü (Taste `Einfügen` / `Insert`)**:

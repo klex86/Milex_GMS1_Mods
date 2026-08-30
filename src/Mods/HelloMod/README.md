@@ -10,6 +10,13 @@ Ein Beispiel-Mod für *Gold Mining Simulator*, der demonstriert, wie Erweiterung
 
 ---
 
+## Installation & Voraussetzungen
+
+1. **Voraussetzung**: Installiertes BepInEx 5 und `Milex_GMS1_CoreMod.dll`.
+2. **Installation**: Kopiere `Milex_GMS1_HelloMod.dll` in den Ordner `BepInEx/plugins/`.
+
+---
+
 ## Funktionen
 
 - **Test-Taste (`F2`)**: Gibt bei Druck eine konfigurierbare Begrüßungsnachricht im Log aus.
