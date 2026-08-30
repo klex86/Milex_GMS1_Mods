@@ -5,20 +5,19 @@ using UnityEngine;
 namespace Milex.GMS1.Mods.ProductionTuner.Config
 {
     /// <summary>
-    /// Schicht 1: Verwaltet alle Einstellungen des Production Tuner Mods.
+    /// Layer 1: Manages all configuration settings for the Production Tuner mod.
     ///
-    /// Jede Einstellung wird als Multiplikator auf den jeweiligen Basiswert des Spiels
-    /// in der Datei BepInEx/config/Milex_GMS1_ProductionTuner.cfg gespeichert.
-    /// Jeder Wert besitzt seinen eigenen Default-Multiplikator und laesst sich einzeln konfigurieren.
+    /// Each setting is stored as a multiplier against base game values in BepInEx/config/Milex_GMS1_ProductionTuner.cfg.
+    /// Each value has its own specific default multiplier and is configured individually.
     ///
-    /// Alle Config-Keys und Beschreibungen sind auf Englisch. Anzeigenamen kommen aus den Lokalisierungsdateien.
-    /// Kaskadenschutz synchronisiert abhaengige Stationen live und sichtbar in der GUI.
-    /// Wenn der Eimer-Multiplikator erhoeht wird, duerfen die Folgegeraete nicht ueber ihr Maximum schiessen –
-    /// der Eimer wird automatisch auf das zulaessige Maximum der abhaengigen Eingaenge begrenzt.
+    /// All config keys and descriptions are in English. Display labels come from localization files.
+    /// Reactive cascade protection synchronizes dependent stations live in the GUI.
+    /// When bucket capacity is increased, dependent equipment scales automatically,
+    /// and bucket capacity is clamped to the maximum allowed input capacity of dependent equipment.
     /// </summary>
     public class TuningConfig
     {
-        // Erlaubte Multiplikatorwerte in 0.5-Schritten
+        // Allowed multiplier steps in increments of 0.5
         private static readonly float[] StandardSteps = GenerateSteps(0.5f, 10.0f, 0.5f);
         private static readonly float[] DependentCapacitySteps = GenerateSteps(0.5f, 20.0f, 0.5f);
 
@@ -34,18 +33,18 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         private bool _isSyncing = false;
 
         // ===========================================================
-        // ALLGEMEINE EINSTELLUNGEN
+        // GENERAL SETTINGS
         // ===========================================================
 
         /// <summary>
-        /// Wenn aktiv, werden Folgegeraete (Hog Pan, Magnetitabscheider, Wave Table, Anhaenger)
-        /// automatisch mindestens auf den Eimer-Multiplikator skaliert.
+        /// When active, dependent equipment (hog pan, magnetite separator, wave table, trailers)
+        /// automatically scales to at least the bucket multiplier to prevent material overflow.
         /// </summary>
         public ConfigEntry<bool> AutoScaleDependentInputs { get; private set; }
 
         // ===========================================================
-        // GRUPPE 1 – Hand Tools & Mobile Wash Plants
-        // Schaufel, Eimer, Hog Pan, Mobile Waschanlage
+        // GROUP 1 – Hand Tools & Mobile Wash Plants
+        // Shovel, bucket, hog pan, mobile wash plant
         // ===========================================================
 
         public ConfigEntry<float> Shovel_FillSpeed { get; private set; }
@@ -55,8 +54,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         public ConfigEntry<float> MobileWashPlant_Capacity { get; private set; }
 
         // ===========================================================
-        // GRUPPE 2 – Vehicles
-        // Bagger (alle), Radlader, Baggerlader, Muldenkipper (Dump Truck)
+        // GROUP 2 – Vehicles
+        // Excavators (all), wheel loader, backhoe loader, dump truck
         // ===========================================================
 
         public ConfigEntry<float> Excavator_DigSpeed { get; private set; }
@@ -65,8 +64,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         public ConfigEntry<float> DumpTruck_Capacity { get; private set; }
 
         // ===========================================================
-        // GRUPPE 3 – Wash Plant Modules
-        // Einfuelltrichter, Foerderband-Eimer, Waschanlagen (Kapazitaet & Speed), Waschrinnen, Miner's Moss
+        // GROUP 3 – Wash Plant Modules
+        // Hopper, conveyor bucket, wash plants (capacity & speed), sluice boxes, miner's moss
         // ===========================================================
 
         public ConfigEntry<float> Hopper_Capacity { get; private set; }
@@ -77,8 +76,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         public ConfigEntry<float> MinersMoss_Capacity { get; private set; }
 
         // ===========================================================
-        // GRUPPE 4 – Fine Processing
-        // Nuggetator, Magnetitabscheider (Speed & Kapazitaet), Wave Table (Speed & Kapazitaet)
+        // GROUP 4 – Fine Processing
+        // Nuggetator, magnetite separator (speed & capacity), wave table (speed & capacity)
         // ===========================================================
 
         public ConfigEntry<float> Nuggetator_Speed { get; private set; }
@@ -88,15 +87,15 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         public ConfigEntry<float> WaveTable_Capacity { get; private set; }
 
         // ===========================================================
-        // GRUPPE 5 – Trailers
-        // Magnetitanhaenger, Kraftstoffanhaenger
+        // GROUP 5 – Trailers
+        // Magnetite trailer, fuel trailer
         // ===========================================================
 
         public ConfigEntry<float> MagnetiteTrailer_Capacity { get; private set; }
         public ConfigEntry<float> FuelTrailer_Capacity { get; private set; }
 
         // ===========================================================
-        // KONSTRUKTOR
+        // CONSTRUCTOR
         // ===========================================================
 
         public TuningConfig(ConfigFile cfg)
@@ -108,12 +107,12 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
 
         private void BindAll()
         {
-            // Allgemein
+            // General
             AutoScaleDependentInputs = _cfg.Bind("General", "AutoScaleDependentInputs", true,
                 "Automatically scales dependent devices (hog pan, wave table, magnetite separator, trailers) " +
                 "to at least the bucket multiplier to prevent material loss.");
 
-            // Gruppe 1
+            // Group 1
             Shovel_FillSpeed = BindStep("Group1_HandTools", "Shovel_FillSpeed", 2.0f,
                 "How fast the shovel picks up material.");
             Bucket_Capacity = BindStep("Group1_HandTools", "Bucket_Capacity", 2.0f,
@@ -125,7 +124,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
             MobileWashPlant_Capacity = BindStep("Group1_HandTools", "MobileWashPlant_Capacity", 2.0f,
                 "Maximum material capacity of the mobile wash plant.");
 
-            // Gruppe 2
+            // Group 2
             Excavator_DigSpeed = BindStep("Group2_Vehicles", "Excavator_DigSpeed", 3.0f,
                 "How fast the excavator digs.");
             WheelLoader_LoadSpeed = BindStep("Group2_Vehicles", "WheelLoader_LoadSpeed", 3.0f,
@@ -135,7 +134,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
             DumpTruck_Capacity = BindStep("Group2_Vehicles", "DumpTruck_Capacity", 3.0f,
                 "Maximum load capacity of the dump truck.");
 
-            // Gruppe 3
+            // Group 3
             Hopper_Capacity = BindStep("Group3_WashPlantModules", "Hopper_Capacity", 2.0f,
                 "Fill capacity of the feed hopper.");
             ConveyorBucket_Capacity = BindStep("Group3_WashPlantModules", "ConveyorBucket_Capacity", 2.0f,
@@ -149,7 +148,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
             MinersMoss_Capacity = BindStep("Group3_WashPlantModules", "MinersMoss_Capacity", 2.0f,
                 "Gold retention capacity of the miner's moss mats.");
 
-            // Gruppe 4
+            // Group 4
             Nuggetator_Speed = BindStep("Group4_FineProcessing", "Nuggetator_Speed", 2.0f,
                 "Processing speed of the nuggetator.");
             MagnetiteSeparator_Speed = BindStep("Group4_FineProcessing", "MagnetiteSeparator_Speed", 2.0f,
@@ -161,17 +160,17 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
             WaveTable_Capacity = BindStep("Group4_FineProcessing", "WaveTable_Capacity", 3.0f,
                 "Maximum material volume on the wave table.", DependentCapacitySteps);
 
-            // Gruppe 5
+            // Group 5
             MagnetiteTrailer_Capacity = BindStep("Group5_Trailers", "MagnetiteTrailer_Capacity", 2.0f,
                 "Load capacity of the magnetite trailer.", DependentCapacitySteps);
             FuelTrailer_Capacity = BindStep("Group5_Trailers", "FuelTrailer_Capacity", 3.0f,
                 "Load capacity of the fuel trailer.");
 
-            // Event-Listener: Reaktiver Kaskadenschutz
+            // Event listeners: reactive cascade protection
             AutoScaleDependentInputs.SettingChanged += (s, e) => ApplyCascadeProtection();
             Bucket_Capacity.SettingChanged += (s, e) => ApplyCascadeProtection();
 
-            // Manuelle Eingabe auf abhängigen Reglern gegen Bucket-Minimum absichern
+            // Prevent manual reduction of dependent inputs below bucket multiplier
             HogPan_Capacity.SettingChanged += (s, e) => EnforceMinimum(HogPan_Capacity);
             MagnetiteSeparator_Capacity.SettingChanged += (s, e) => EnforceMinimum(MagnetiteSeparator_Capacity);
             WaveTable_Capacity.SettingChanged += (s, e) => EnforceMinimum(WaveTable_Capacity);
@@ -186,8 +185,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         }
 
         /// <summary>
-        /// Ermittelt die maximal zulaessige Obergrenze fuer den Eimer,
-        /// basierend auf den Maximalwerten der abhaengigen Folgekomponenten.
+        /// Determines the maximum allowed capacity for the bucket,
+        /// based on the maximum acceptable capacity of all dependent equipment.
         /// </summary>
         public float GetMaxAllowedBucketCapacity()
         {
@@ -210,9 +209,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         }
 
         /// <summary>
-        /// Erzwingt, dass der Eimer nie groesser wird als das Maximum der abhaengigen Eingaenge.
-        /// Erzwingt bei aktivem AutoScaleDependentInputs, dass alle Folgegeraete
-        /// (Hog Pan, Magnetitabscheider, Wave Table, Anhaenger) mindestens den Eimer-Multiplikator erreichen.
+        /// Clamps bucket capacity to the maximum capacity supported by dependent inputs.
+        /// When AutoScaleDependentInputs is enabled, ensures all dependent inputs
+        /// (hog pan, magnetite separator, wave table, trailers) match at least the bucket capacity.
         /// </summary>
         public void ApplyCascadeProtection()
         {
@@ -221,14 +220,14 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
 
             try
             {
-                // 1. Eimer-Obergrenze gegen maximal moegliche Kapazitaet der Folgegeraete absichern
+                // 1. Clamp bucket capacity against maximum allowed dependent capacity
                 float maxBucket = GetMaxAllowedBucketCapacity();
                 if (Bucket_Capacity.Value > maxBucket)
                 {
                     Bucket_Capacity.Value = maxBucket;
                 }
 
-                // 2. Kaskadenschutz fuer Eimer-Folgestationen
+                // 2. Cascade protection: dependent inputs must at least match bucket
                 if (AutoScaleDependentInputs.Value)
                 {
                     float bucketVal = Bucket_Capacity.Value;
@@ -264,7 +263,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         }
 
         // ===========================================================
-        // GRUPPEN-RESET-API
+        // GROUP RESET API
         // ===========================================================
 
         public void ResetGroup(int groupIndex)

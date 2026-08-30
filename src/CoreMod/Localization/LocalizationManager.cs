@@ -132,7 +132,7 @@ namespace Milex.GMS1.Core.Localization
                     }
                 }
 
-                // 2. Fallback OS-Sprache
+                // 2. Fallback to OS language
                 return UnityEngine.Application.systemLanguage switch
                 {
                     UnityEngine.SystemLanguage.German => "de",

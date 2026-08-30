@@ -6,11 +6,8 @@ using Milex.GMS1.Mods.ProductionTuner.Services;
 namespace Milex.GMS1.Mods.ProductionTuner
 {
     /// <summary>
-    /// Production Tuner – Stellt Regler fuer Verarbeitungsgeschwindigkeiten, Kapazitaeten
-    /// und Hydrauliktempo fuer alle Komponenten, Fahrzeuge und Werkzeuge bereit.
-    ///
-    /// In Phase 1 werden Konfiguration, Domänenlogik und Lokalisierung vollstaendig aufgebaut.
-    /// Harmony-Patches werden in Phase 2 nach Dekompilierung der Spiel-DLLs hinzugefuegt.
+    /// Production Tuner – Provides sliders for processing speeds, capacities,
+    /// and hydraulic rates for all components, vehicles, and tools in Gold Rush: The Game.
     /// </summary>
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
     [BepInDependency(CorePlugin.PluginGuid, BepInDependency.DependencyFlags.HardDependency)]
@@ -25,35 +22,35 @@ namespace Milex.GMS1.Mods.ProductionTuner
         public override string ModVersion => PluginVersion;
 
         /// <summary>
-        /// Globale Instanz – wird von Harmony-Patch-Klassen in Phase 2 genutzt,
-        /// um Multiplikatoren aus dem TuningService abzufragen.
+        /// Global instance – used by Harmony patch classes in Phase 2
+        /// to query multipliers from TuningService.
         /// </summary>
         public static ProductionTunerPlugin Instance { get; private set; }
 
-        /// <summary>Zugriff auf alle Einstellungen des Mods.</summary>
+        /// <summary>Access to all configuration settings of the mod.</summary>
         public TuningConfig TuningConfig { get; private set; }
 
-        /// <summary>Zugriff auf den Domänen-Service (Multiplikator-Berechnung).</summary>
+        /// <summary>Access to domain service (multiplier calculation).</summary>
         public static TuningService Service { get; private set; }
 
         protected override void Awake()
         {
             Instance = this;
 
-            // Schicht 1: Einstellungen laden / erstellen
+            // Layer 1: Load / initialize configuration
             TuningConfig = new TuningConfig(Config);
 
-            // Schicht 2: Domänen-Service initialisieren
+            // Layer 2: Initialize domain service
             Service = new TuningService(TuningConfig);
 
-            // Basis-Initialisierung (Harmony, ModRegistry, Lokalisierung)
+            // Base initialization (Harmony, ModRegistry, localization)
             base.Awake();
 
             LogInfo(Translate("log.ready", "Production Tuner loaded. Open the Mod Menu to adjust multipliers."));
         }
 
         /// <summary>
-        /// Wird aufgerufen, wenn der Mod ueber das Mod-Menue im laufenden Spiel reaktiviert wird.
+        /// Called when the mod is re-enabled via the Mod Menu during runtime.
         /// </summary>
         protected override void OnModEnabled()
         {
@@ -61,9 +58,8 @@ namespace Milex.GMS1.Mods.ProductionTuner
         }
 
         /// <summary>
-        /// Wird aufgerufen, wenn der Mod ueber das Mod-Menue im laufenden Spiel deaktiviert wird.
-        /// Alle Harmony-Patches werden dabei automatisch entfernt – das Spiel laeuft mit
-        /// seinen Original-Werten weiter.
+        /// Called when the mod is disabled via the Mod Menu during runtime.
+        /// All Harmony patches are removed automatically and the game continues with default values.
         /// </summary>
         protected override void OnModDisabled()
         {

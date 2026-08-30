@@ -18,11 +18,11 @@ using Milex.GMS1.Mods.ProductionTuner.Services;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches
 {
-    // TODO: Ersetze GameClass und MethodName nach Dekompilierung der Assembly-CSharp.dll
+    // TODO: Replace GameClass and MethodName after decompiling Assembly-CSharp.dll
     [HarmonyPatch(typeof(GameClass), "MethodName")]
     internal static class GameClass_MethodName_Patch
     {
-        // Beispiel: Postfix-Patch der einen Rückgabewert mit dem Multiplikator skaliert
+        // Example: Postfix patch scaling return value with the multiplier
         static void Postfix(ref float __result)
         {
             __result *= ProductionTunerPlugin.Service.GetShovelFillSpeed();
