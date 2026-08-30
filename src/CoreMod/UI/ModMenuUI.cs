@@ -756,7 +756,7 @@ namespace Milex.GMS1.Core.UI
                         }
 
                         GUI.enabled = entryEnabled;
-                        DrawConfigEntryCard(entryBase, mod.AssemblyName);
+                        DrawConfigEntryCard(entryBase, mod.AssemblyName, mod);
                         GUI.enabled = mod.IsEnabled;
                         GUILayout.Space(6);
                     }
@@ -769,7 +769,7 @@ namespace Milex.GMS1.Core.UI
             GUILayout.EndVertical();
         }
 
-        private void DrawConfigEntryCard(ConfigEntryBase entry, string modName)
+        private void DrawConfigEntryCard(ConfigEntryBase entry, string modName, ModInfo mod = null)
         {
             GUILayout.BeginVertical("box");
 
@@ -814,13 +814,13 @@ namespace Milex.GMS1.Core.UI
                     GUILayout.Space(4);
                 }
 
-                DrawSettingControl(entry);
+                DrawSettingControl(entry, mod);
             }
 
             GUILayout.EndVertical();
         }
 
-        private void DrawSettingControl(ConfigEntryBase entry)
+        private void DrawSettingControl(ConfigEntryBase entry, ModInfo mod = null)
         {
             Type settingType = entry.SettingType;
 
@@ -877,6 +877,14 @@ namespace Milex.GMS1.Core.UI
                 {
                     minVal = range.MinValue;
                     maxVal = range.MaxValue;
+                }
+
+                // Query dynamic min and max bounds from mod if supported
+                if (mod?.Instance != null)
+                {
+                    minVal = mod.Instance.GetMinSliderValue(entry.Definition, minVal);
+                    maxVal = mod.Instance.GetMaxSliderValue(entry.Definition, maxVal);
+                    if (minVal > maxVal) minVal = maxVal;
                 }
 
                 GUILayout.BeginHorizontal();

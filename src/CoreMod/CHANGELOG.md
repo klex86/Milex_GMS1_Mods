@@ -17,6 +17,8 @@ Alle Änderungen am zentralen Mod-Framework `Milex GMS1 CoreMod`.
   - Alle internen Beschreibungen in der Konfigurationsdatei (`.cfg`) sind nun einheitlich auf Englisch verfasst. Menü-Texte im Spiel richten sich weiterhin nach den Lokalisierungsdateien.
 - **Live-Aktualisierung der Statusleiste**:
   - Die Anzahl aktiver Mods in der Fußzeile wird nun bei jedem Aktivieren oder Deaktivieren eines Mods sofort in Echtzeit aktualisiert (Format: `Aktive Mods: X / Y`).
+- **Dynamische Schieberegler-Grenzwerte (Min/Max)**:
+  - Mods können über `GetMinSliderValue` und `GetMaxSliderValue` die Grenzwerte von Reglern im Menü zur Laufzeit dynamisch steuern (z. B. für automatischen Kaskadenschutz und Mindestkapazitäten).
 
 ---
 

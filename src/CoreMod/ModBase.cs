@@ -203,6 +203,20 @@ namespace Milex.GMS1.Core
         /// </summary>
         protected virtual void OnModDisabled() { }
 
+        // ---- Slider Bounds Customization ----
+
+        /// <summary>
+        /// Allows a mod to dynamically adjust the minimum slider value for a configuration entry.
+        /// Defaults to returning the defined min value from AcceptableValues.
+        /// </summary>
+        public virtual float GetMinSliderValue(ConfigDefinition definition, float currentMin) => currentMin;
+
+        /// <summary>
+        /// Allows a mod to dynamically adjust the maximum slider value for a configuration entry.
+        /// Defaults to returning the defined max value from AcceptableValues.
+        /// </summary>
+        public virtual float GetMaxSliderValue(ConfigDefinition definition, float currentMax) => currentMax;
+
         // ---- Localization ----
 
         /// <summary>

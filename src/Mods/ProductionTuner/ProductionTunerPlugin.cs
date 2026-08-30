@@ -65,5 +65,37 @@ namespace Milex.GMS1.Mods.ProductionTuner
         {
             LogInfo(Translate("log.disabled", "Production Tuner disabled. Original game values restored."));
         }
+
+        /// <summary>
+        /// Dynamically synchronizes the minimum slider value of dependent equipment
+        /// to at least match bucket capacity when cascade protection is enabled.
+        /// </summary>
+        public override float GetMinSliderValue(BepInEx.Configuration.ConfigDefinition definition, float currentMin)
+        {
+            if (TuningConfig != null && TuningConfig.AutoScaleDependentInputs.Value)
+            {
+                if (definition.Key == "HogPan_Capacity" ||
+                    definition.Key == "MagnetiteSeparator_Capacity" ||
+                    definition.Key == "WaveTable_Capacity" ||
+                    definition.Key == "MagnetiteTrailer_Capacity")
+                {
+                    return System.Math.Max(currentMin, TuningConfig.Bucket_Capacity.Value);
+                }
+            }
+            return currentMin;
+        }
+
+        /// <summary>
+        /// Dynamically clamps bucket capacity slider maximum to not exceed
+        /// the maximum capacity supported by dependent equipment.
+        /// </summary>
+        public override float GetMaxSliderValue(BepInEx.Configuration.ConfigDefinition definition, float currentMax)
+        {
+            if (TuningConfig != null && definition.Key == "Bucket_Capacity")
+            {
+                return System.Math.Min(currentMax, TuningConfig.GetMaxAllowedBucketCapacity());
+            }
+            return currentMax;
+        }
     }
 }
