@@ -13,6 +13,8 @@ Alle relevanten Änderungen und Neuerungen der Mod-Sammlung werden in dieser Dat
   - Fahrzeuge: Minibagger und Bagger zu einem gemeinsamen Bagger-Regler zusammengefasst, Muldenkipper (Dump Truck) neu aufgenommen, mobiles Förderband entfernt.
   - Waschanlagen-Module: Zentralisierte Regler für Waschanlagen-Kapazität, Verarbeitungsgeschwindigkeit und Waschrinnen; überflüssige Einzelschalter bereinigt.
   - Feinverarbeitung: Eingangskapazität für den Magnetitabscheider neu implementiert und in den Kaskadenschutz integriert.
+- **Direkte Einzelregler ohne Gruppen-Multiplikatoren**: Die Gruppen-Multiplikatoren und Modi wurden entfernt; alle Einstellungen lassen sich direkt und übersichtlich pro Komponente anpassen.
+- **Dynamische Eimer-Deckelung & bis zu 20x Kapazität**: Der Eimer-Multiplikator wird dynamisch auf das Maximum der Folgebehälter gedeckelt. Folgebehälter unterstützen nun bis zu 20.0x Puffer.
 
 ---
 

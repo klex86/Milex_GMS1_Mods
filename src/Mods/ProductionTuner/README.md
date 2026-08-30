@@ -25,11 +25,9 @@ seinen eigenen, optimal abgestimmten Standard-Multiplikator und laesst sich in 0
 
 1. Druecke **`Einfuegen`** (`Insert`), um das Mod-Menue zu oeffnen.
 2. Waehle links in der Leiste den Eintrag **Production Tuner** aus.
-3. Im Hauptbereich erscheinen die fuenf Gruppen. Jede Gruppe besitzt ihren eigenen Schalter fuer den **Einfachen Modus**.
-4. **Einfacher Modus (aktiv)**: Nur der Gruppen-Multiplikator laesst sich bedienen; die Einzelregler sind ausgegraut.
-5. **Erweiterter Modus (inaktiv)**: Alle spezifischen Einzelregler der Gruppe werden freigeschaltet und koennen individuell eingestellt werden.
-6. Hinter jedem Eingabefeld wird der Standardwert des Mods angezeigt (z. B. `(Standard: 2.0)`).
-7. Klicke auf **`[ Gruppe zuruecksetzen ]`**, um alle Werte einer Gruppe auf ihre mod-seitigen Standard-Multiplikatoren zurueckzusetzen.
+3. Alle Komponenten lassen sich direkt und unabhaengig ueber ihre jeweiligen Schieberegler anpassen.
+4. Hinter jedem Eingabefeld wird der werkseitige Standardwert des Mods angezeigt (z. B. `(Standard: 2.0)`).
+5. Klicke auf **`[ Gruppe zuruecksetzen ]`**, um alle Werte einer Gruppe auf ihre mod-seitigen Standard-Multiplikatoren zurueckzusetzen.
 
 ---
 
@@ -42,11 +40,11 @@ Die Einstellungsdatei wird beim ersten Start automatisch angelegt:
 
 | Schalter | Standardwert | Bedeutung |
 |---|---|---|
-| `AutoScaleDependentInputs` | `true` | Kaskadenschutz: Skaliert Hog Pan, Magnetitabscheider, Wave Table und Magnetitanhaenger automatisch auf mindestens den effektiven Eimer-Wert, um Materialverlust zu verhindern. |
+| `AutoScaleDependentInputs` | `true` | Kaskadenschutz: Skaliert Hog Pan, Magnetitabscheider, Wave Table und Magnetitanhaenger automatisch auf mindestens den Eimer-Wert, um Materialverlust zu verhindern. |
 
 ### Multiplikator-Gruppen
 
-Alle Regler arbeiten in festen **0.5-Schritten** (0.5 bis 10.0).
+Alle Regler arbeiten in festen **0.5-Schritten**. Standard-Komponenten reichen von **0.5 bis 10.0**. Abhaengige Behaelterkapazitaeten (Hog Pan, Magnetitabscheider, Wave Table, Magnetitanhaenger) bieten einen erweiterten Bereich von **0.5 bis 20.0**, um auch bei grossem Eimer ausreichend Puffer fuer mehrfaches Entleeren zu gewaehrleisten.
 
 | Sektion | Enthaltene Komponenten & Default-Multiplikatoren |
 |---|---|
@@ -56,12 +54,10 @@ Alle Regler arbeiten in festen **0.5-Schritten** (0.5 bis 10.0).
 | `[Group4_FineProcessing]` | Nuggetator Speed (2.0x), Magnetitabscheider Speed (2.0x), Magnetitabscheider Kapazitaet (2.0x), Wave Table Speed (3.0x), Wave Table Kapazitaet (3.0x) |
 | `[Group5_Trailers]` | Magnetitanhaenger (2.0x), Kraftstoffanhaenger (3.0x) |
 
-### Kaskadenschutz (`AutoScaleDependentInputs = true`)
+### Kaskadenschutz & Eimer-Begrenzung (`AutoScaleDependentInputs = true`)
 
-Vergroesserst du das Fassungsvermoegen des Eimers, koennen die Folgebehaelter (Hog Pan, Magnetitabscheider,
-Wave Table oder Magnetitanhaenger) ueberlaufen und Material wuerde geloescht werden.
-Mit aktivem Kaskadenschutz werden die Kapazitaeten dieser Folgestationen in der Benutzeroberflaeche und im Spiel
-automatisch in Echtzeit auf mindestens das effektive Eimervolumen hochskaliert.
+- **Automatisches Hochskalieren**: Vergroesserst du den Eimer, werden die Folgebehaelter (Hog Pan, Magnetitabscheider, Wave Table und Magnetitanhaenger) in Echtzeit auf mindestens denselben Wert gesetzt.
+- **Eimer-Obergrenze**: Der Eimer-Multiplikator wird dynamisch auf das zulaessige Maximum der abhaengigen Eingaenge begrenzt. Der Eimer kann somit niemals groesser eingestellt werden als das, was die Folgestationen maximal fassen koennen.
 
 ---
 

@@ -7,14 +7,10 @@
   "config.general.autoscaledependentinputs.desc": "Automatically scales dependent devices (hog pan, wave table, magnetite separator, trailers) to at least the bucket multiplier to prevent material loss.",
 
   "config.group1_handtools.section": "Group 1 - Hand Tools & Mobile Wash Plants",
-  "config.group1_handtools.simplemode.name": "Simple Mode",
-  "config.group1_handtools.simplemode.desc": "On: only the group multiplier is active. Off: individual sliders per component are enabled.",
-  "config.group1_handtools.group_multiplier.name": "Group Multiplier",
-  "config.group1_handtools.group_multiplier.desc": "Shared multiplier for all hand tools and mobile wash plants (shovel, bucket, hog pan, mobile wash plant).",
   "config.group1_handtools.shovel_fillspeed.name": "Shovel Fill Speed",
   "config.group1_handtools.shovel_fillspeed.desc": "How fast the shovel picks up material.",
   "config.group1_handtools.bucket_capacity.name": "Bucket Capacity",
-  "config.group1_handtools.bucket_capacity.desc": "Maximum fill volume of the bucket.",
+  "config.group1_handtools.bucket_capacity.desc": "Maximum fill volume of the bucket (capped at maximum allowed dependent input capacity).",
   "config.group1_handtools.hogpan_capacity.name": "Hog Pan Capacity",
   "config.group1_handtools.hogpan_capacity.desc": "Maximum fill volume of the hog pan (scales with bucket).",
   "config.group1_handtools.mobilewashplant_speed.name": "Mobile Wash Plant Speed",
@@ -23,10 +19,6 @@
   "config.group1_handtools.mobilewashplant_capacity.desc": "Maximum material capacity of the mobile wash plant.",
 
   "config.group2_vehicles.section": "Group 2 - Vehicles",
-  "config.group2_vehicles.simplemode.name": "Simple Mode",
-  "config.group2_vehicles.simplemode.desc": "On: only the group multiplier is active. Off: individual sliders per component are enabled.",
-  "config.group2_vehicles.group_multiplier.name": "Group Multiplier",
-  "config.group2_vehicles.group_multiplier.desc": "Shared multiplier for all construction vehicles (excavators, wheel loader, backhoe loader, dump truck).",
   "config.group2_vehicles.excavator_digspeed.name": "Excavator Dig Speed",
   "config.group2_vehicles.excavator_digspeed.desc": "How fast all excavators dig (Mini and Large Excavator).",
   "config.group2_vehicles.wheelloader_loadspeed.name": "Wheel Loader Speed",
@@ -37,10 +29,6 @@
   "config.group2_vehicles.dumptruck_capacity.desc": "Maximum load capacity of the dump truck.",
 
   "config.group3_washplantmodules.section": "Group 3 - Wash Plant Modules (Tier 3-6)",
-  "config.group3_washplantmodules.simplemode.name": "Simple Mode",
-  "config.group3_washplantmodules.simplemode.desc": "On: only the group multiplier is active. Off: individual sliders per component are enabled.",
-  "config.group3_washplantmodules.group_multiplier.name": "Group Multiplier",
-  "config.group3_washplantmodules.group_multiplier.desc": "Shared multiplier for all wash plant modules (hopper, conveyor, wash plants, sluice boxes, miner's moss).",
   "config.group3_washplantmodules.hopper_capacity.name": "Hopper Capacity",
   "config.group3_washplantmodules.hopper_capacity.desc": "Fill capacity of the feed hopper.",
   "config.group3_washplantmodules.conveyorbucket_capacity.name": "Conveyor Bucket Capacity",
@@ -55,10 +43,6 @@
   "config.group3_washplantmodules.minersmoss_capacity.desc": "Gold retention capacity of the miner's moss mats.",
 
   "config.group4_fineprocessing.section": "Group 4 - Fine Processing",
-  "config.group4_fineprocessing.simplemode.name": "Simple Mode",
-  "config.group4_fineprocessing.simplemode.desc": "On: only the group multiplier is active. Off: individual sliders per component are enabled.",
-  "config.group4_fineprocessing.group_multiplier.name": "Group Multiplier",
-  "config.group4_fineprocessing.group_multiplier.desc": "Shared multiplier for all fine processing equipment (nuggetator, magnetite separator, wave table).",
   "config.group4_fineprocessing.nuggetator_speed.name": "Nuggetator Speed",
   "config.group4_fineprocessing.nuggetator_speed.desc": "Processing speed of the nuggetator.",
   "config.group4_fineprocessing.magnetiteseparator_speed.name": "Magnetite Separator Speed",
@@ -78,8 +62,6 @@
 
   "ui.reset_group": "[ Reset Group ]",
   "ui.reset_all": "[ Reset All ]",
-  "ui.mode_simple": "Mode: Simple",
-  "ui.mode_advanced": "Mode: Advanced",
 
   "log.ready": "Production Tuner loaded. Open the Mod Menu to adjust multipliers.",
   "log.enabled": "Production Tuner enabled.",

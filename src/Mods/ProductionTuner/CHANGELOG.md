@@ -16,6 +16,10 @@ Das Format folgt den Grundsaetzen von [Keep a Changelog](https://keepachangelog.
   - **Gruppe 3 (Waschanlagen-Module)**: `Conveyor_Speed` in `ConveyorBucket_Capacity` (2.0x) umbenannt. Nicht benötigte Einzelschalter (`VibratingScreen_Speed`, `Derocker_Speed`, `Sluice_Speed`, `Trommel_Speed`, `Jig_Speed`) entfernt. Neue zentrale Regler: `Washplant_Capacity` (2.0x), `Washplant_Speed` (2.0x) und `Sluicebox_Capacity` (2.0x) hinzugefügt.
   - **Gruppe 4 (Feinverarbeitung)**: `MagnetiteSeparator_Capacity` (2.0x) als neuer Regler für die Eingangskapazität des Magnetitabscheiders hinzugefügt.
 - **Präzisierter Kaskadenschutz**: Der Kaskadenschutz sichert nun exakt die relevanten Behälter ab (`HogPan_Capacity`, `MagnetiteSeparator_Capacity`, `WaveTable_Capacity`, `MagnetiteTrailer_Capacity`) und verhindert Materialverlust bei vergrößertem Eimer.
+- **Entfall der Gruppen-Multiplikatoren & Modi**: Sämtliche Gruppen-Multiplikatoren sowie der einfache/erweiterte Modus wurden entfernt. Alle Komponenten lassen sich nun direkt und übersichtlich als Einzelregler anpassen.
+- **Dynamische Eimer-Obergrenze & Erweiterter Wertebereich für Folgegeräte**:
+  - Folgebehälter (Hog Pan, Magnetitabscheider, Wave Table, Magnetitanhänger) unterstützen nun Multiplikatoren bis zu 20.0x, um bei vergrößertem Eimer ausreichend Puffer für mehrfaches Entleeren zu bieten.
+  - Der Eimer-Multiplikator wird automatisch auf das maximal zulässige Fassungsvermögen der Folgebehälter begrenzt – ein Überschreiten des Maximums der Folgestationen ist ausgeschlossen.
 
 ---
 

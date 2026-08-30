@@ -7,14 +7,10 @@
   "config.general.autoscaledependentinputs.desc": "Skaliert Folgegeraete (Hog Pan, Wave Table, Magnetitabscheider, Anhaenger) automatisch mindestens auf den Eimer-Multiplikator, um Materialverlust zu vermeiden.",
 
   "config.group1_handtools.section": "Gruppe 1 - Handwerkzeuge & Mobile Waschanlagen",
-  "config.group1_handtools.simplemode.name": "Einfacher Modus",
-  "config.group1_handtools.simplemode.desc": "An: Nur der Gruppen-Regler ist aktiv. Aus: Einzelregler pro Komponente werden freigeschaltet.",
-  "config.group1_handtools.group_multiplier.name": "Gruppen-Multiplikator",
-  "config.group1_handtools.group_multiplier.desc": "Gemeinsamer Regler fuer alle Handwerkzeuge und mobile Waschanlagen (Schaufel, Eimer, Hog Pan, Mobile Waschanlage).",
   "config.group1_handtools.shovel_fillspeed.name": "Schaufel Fuellgeschwindigkeit",
   "config.group1_handtools.shovel_fillspeed.desc": "Wie schnell die Schaufel Material aufnimmt.",
   "config.group1_handtools.bucket_capacity.name": "Eimer Kapazitaet",
-  "config.group1_handtools.bucket_capacity.desc": "Maximales Fassungsvermoegen des Eimers.",
+  "config.group1_handtools.bucket_capacity.desc": "Maximales Fassungsvermoegen des Eimers (automatisch auf das Maximum der Folgegeraete begrenzt).",
   "config.group1_handtools.hogpan_capacity.name": "Hog Pan Kapazitaet",
   "config.group1_handtools.hogpan_capacity.desc": "Maximales Fassungsvermoegen der Hog Pan (skaliert mit dem Eimer).",
   "config.group1_handtools.mobilewashplant_speed.name": "Mobile Waschanlage Geschwindigkeit",
@@ -23,10 +19,6 @@
   "config.group1_handtools.mobilewashplant_capacity.desc": "Maximale Materialkapazitaet der mobilen Waschanlage.",
 
   "config.group2_vehicles.section": "Gruppe 2 - Baufahrzeuge",
-  "config.group2_vehicles.simplemode.name": "Einfacher Modus",
-  "config.group2_vehicles.simplemode.desc": "An: Nur der Gruppen-Regler ist aktiv. Aus: Einzelregler pro Komponente werden freigeschaltet.",
-  "config.group2_vehicles.group_multiplier.name": "Gruppen-Multiplikator",
-  "config.group2_vehicles.group_multiplier.desc": "Gemeinsamer Regler fuer alle Baufahrzeuge (Bagger, Radlader, Baggerlader, Muldenkipper).",
   "config.group2_vehicles.excavator_digspeed.name": "Bagger Aushubgeschwindigkeit",
   "config.group2_vehicles.excavator_digspeed.desc": "Wie schnell alle Bagger Material ausgraben (Minibagger und Grossbagger).",
   "config.group2_vehicles.wheelloader_loadspeed.name": "Radlader Ladegeschwindigkeit",
@@ -37,10 +29,6 @@
   "config.group2_vehicles.dumptruck_capacity.desc": "Maximale Ladekapazitaet des Muldenkippers (Dump Truck).",
 
   "config.group3_washplantmodules.section": "Gruppe 3 - Waschanlagen-Module (Tier 3-6)",
-  "config.group3_washplantmodules.simplemode.name": "Einfacher Modus",
-  "config.group3_washplantmodules.simplemode.desc": "An: Nur der Gruppen-Regler ist aktiv. Aus: Einzelregler pro Komponente werden freigeschaltet.",
-  "config.group3_washplantmodules.group_multiplier.name": "Gruppen-Multiplikator",
-  "config.group3_washplantmodules.group_multiplier.desc": "Gemeinsamer Regler fuer alle Waschanlagen-Module (Einfuelltrichter, Foerderband, Waschanlagen, Waschrinnen, Miner's Moss).",
   "config.group3_washplantmodules.hopper_capacity.name": "Einfuelltrichter Kapazitaet",
   "config.group3_washplantmodules.hopper_capacity.desc": "Fassungsvermoegen des Einfuelltrichters.",
   "config.group3_washplantmodules.conveyorbucket_capacity.name": "Foerderband-Eimer Kapazitaet",
@@ -55,10 +43,6 @@
   "config.group3_washplantmodules.minersmoss_capacity.desc": "Goldrueckhaltevermoegen der Miner's Moss Matten.",
 
   "config.group4_fineprocessing.section": "Gruppe 4 - Feinverarbeitung",
-  "config.group4_fineprocessing.simplemode.name": "Einfacher Modus",
-  "config.group4_fineprocessing.simplemode.desc": "An: Nur der Gruppen-Regler ist aktiv. Aus: Einzelregler pro Komponente werden freigeschaltet.",
-  "config.group4_fineprocessing.group_multiplier.name": "Gruppen-Multiplikator",
-  "config.group4_fineprocessing.group_multiplier.desc": "Gemeinsamer Regler fuer alle Feinverarbeitungsgeraete (Nuggetator, Magnetitabscheider, Wave Table).",
   "config.group4_fineprocessing.nuggetator_speed.name": "Nuggetator Geschwindigkeit",
   "config.group4_fineprocessing.nuggetator_speed.desc": "Verarbeitungsgeschwindigkeit des Nuggetators.",
   "config.group4_fineprocessing.magnetiteseparator_speed.name": "Magnetitabscheider Geschwindigkeit",
@@ -78,8 +62,6 @@
 
   "ui.reset_group": "[ Gruppe zuruecksetzen ]",
   "ui.reset_all": "[ Alle zuruecksetzen ]",
-  "ui.mode_simple": "Modus: Einfach",
-  "ui.mode_advanced": "Modus: Erweitert",
 
   "log.ready": "Production Tuner geladen. Oeffne das Mod-Menue, um die Regler anzupassen.",
   "log.enabled": "Production Tuner aktiviert.",
