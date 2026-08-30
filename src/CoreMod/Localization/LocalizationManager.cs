@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using BepInEx;
 
+
 namespace Milex.GMS1.Core.Localization
 {
     /// <summary>
@@ -111,44 +112,34 @@ namespace Milex.GMS1.Core.Localization
 
         public static string GetGameLanguage()
         {
+            string[] shortNames = new string[]
+            {
+                "en", "pl", "de", "fr", "es", "ru", "it", "pt", "zh-CN", "zh-TD",
+                "ja", "ko", "nl", "tr", "no", "cs", "ro", "da", "bg", "el", "sv"
+            };
+
             try
             {
-                
+                // 1. Wenn LocaleManager instanziiert ist
                 if (Singleton<LocaleManager>.IsInstanced())
                 {
                     var localeMgr = Singleton<LocaleManager>.Instance;
-                    int langId = localeMgr.LanguageId;
-                    if (localeMgr.LanguagesShortNames != null && langId >= 0 && langId < localeMgr.LanguagesShortNames.Length)
+                    int langId = localeMgr.GetLanguageId();
+
+                    if (langId >= 0 && langId < shortNames.Length)
                     {
-                        return localeMgr.LanguagesShortNames[langId];
+                        return shortNames[langId];
                     }
                 }
 
-                // 2. Fallback: Vor Initialisierung des LocaleManagers direkt aus den SaveData-Settings lesen:
-                var settingsData = SaveManager.GetSettingsData();
-                if (settingsData != null && settingsData.HasKey("LANGUAGE_ID"))
-                {
-                    int savedId = settingsData.GetInt("LANGUAGE_ID");
-                    // Mapping der 21 Indizes auf die ISO-Codes (entspricht LocaleManager.LanguagesShortNames)
-                    string[] fallbackShortNames = new string[]
-                    {
-                        "en", "pl", "de", "fr", "es", "ru", "it", "pt", "zh-CN", "zh-TD",
-                        "ja", "ko", "nl", "tr", "no", "cs", "ro", "da", "bg", "el", "sv"
-                    };
-
-                    if (savedId >= 0 && savedId < fallbackShortNames.Length)
-                    {
-                        return fallbackShortNames[savedId];
-                    }
-                }
-
-                // 3. Fallback: Betriebssystem-Sprache
+                // 2. Fallback OS-Sprache
                 return UnityEngine.Application.systemLanguage switch
                 {
                     UnityEngine.SystemLanguage.German => "de",
                     UnityEngine.SystemLanguage.Polish => "pl",
                     UnityEngine.SystemLanguage.French => "fr",
                     UnityEngine.SystemLanguage.Spanish => "es",
+                    UnityEngine.SystemLanguage.Russian => "ru",
                     _ => "en"
                 };
             }
@@ -156,6 +147,7 @@ namespace Milex.GMS1.Core.Localization
             {
                 return "en";
             }
+        
         }
 
         public static void RegisterMod(string modName, Assembly assembly)
