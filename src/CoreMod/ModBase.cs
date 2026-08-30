@@ -73,11 +73,17 @@ namespace Milex.GMS1.Core
         {
             LogInfo($"Initializing {ModName} (v{ModVersion})...");
 
-            // Bind enabled state to config (default: true)
-            _enabledEntry = Config.Bind("General", "Enabled", true,
-                $"Determines whether {ModName} is active. Can be toggled in the Mod Menu at runtime.");
-
-            IsEnabled = _enabledEntry.Value;
+            // Bind enabled state to config (default: true) if mod can be disabled
+            if (CanBeDisabled)
+            {
+                _enabledEntry = Config.Bind("General", "Enabled", true,
+                    $"Determines whether {ModName} is active. Can be toggled in the Mod Menu at runtime.");
+                IsEnabled = _enabledEntry.Value;
+            }
+            else
+            {
+                IsEnabled = true;
+            }
 
             // Register with Core Mod Registry & Localization
             ModRegistry.Register(this);

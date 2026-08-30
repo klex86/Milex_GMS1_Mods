@@ -568,6 +568,11 @@ namespace Milex.GMS1.Core.UI
             GUILayout.EndVertical();
             GUILayout.Space(12);
 
+            // === SECTION: GENERAL BEHAVIOR ===
+            GUILayout.Label("▶ " + L("core.section.general", "Allgemeines Verhalten"), _sectionHeaderStyle);
+            DrawConfigEntryCard(CorePlugin.PauseGameOnMenu, CoreAssemblyName);
+            GUILayout.Space(6);
+
             // === SECTION: HOTKEYS ===
             GUILayout.Label("▶ " + L("core.section.controls", "Tastenbelegung"), _sectionHeaderStyle);
             DrawConfigEntryCard(CorePlugin.MenuToggleKey, CoreAssemblyName);
