@@ -13,6 +13,7 @@ Die folgenden Links führen direkt zu den Anleitungen und Änderungshistorien (C
 | **Gesamtes Projekt** | Gesamt-Übersicht und Haupt-Anleitung | [Haupt-Dokumentation](README.md) | [Gesamt-Changelog](CHANGELOG.md) |
 | **Milex GMS1 CoreMod** | Zentrales Verwaltungssystem, Ingame-Menü & Sprachverwaltung | [CoreMod Anleitung](src/CoreMod/README.md) | [CoreMod Changelog](src/CoreMod/CHANGELOG.md) |
 | **Milex GMS1 HelloMod** | Beispiel-Mod zur Demonstration der Funktionen | [HelloMod Anleitung](src/Mods/HelloMod/README.md) | [HelloMod Changelog](src/Mods/HelloMod/CHANGELOG.md) |
+| **Milex GMS1 Production Tuner** | Regler fuer Geschwindigkeiten, Kapazitaeten und Hydraulik aller 40 Komponenten | [Production Tuner Anleitung](src/Mods/ProductionTuner/README.md) | [Production Tuner Changelog](src/Mods/ProductionTuner/CHANGELOG.md) |
 | **Tastenbelegung** | Übersicht der Hotkeys und deren Umbelegung im Spiel | [Tasten-Übersicht](KEYBINDINGS.md) | - |
 
 ---
@@ -20,7 +21,7 @@ Die folgenden Links führen direkt zu den Anleitungen und Änderungshistorien (C
 ## Installation & Erste Schritte
 
 1. **Voraussetzung**: Stelle sicher, dass **BepInEx 5** (x64) im Hauptverzeichnis deines Spiels installiert ist.
-2. **Mods kopieren**: Kopiere die fertigen Mod-Dateien (z. B. `Milex_GMS1_CoreMod.dll` und `Milex_GMS1_HelloMod.dll`) in den Ordner `BepInEx/plugins/`.
+2. **Mods kopieren**: Kopiere die fertigen Mod-Dateien (mindestens `Milex_GMS1_CoreMod.dll`, weitere Mods nach Bedarf) in den Ordner `BepInEx/plugins/`.
 3. **Spiel starten**: Starte das Spiel wie gewohnt.
 4. **Mod-Menü öffnen**: Drücke im Spiel die Taste **`Einfügen`** (`Insert`), um das Mod-Menü zu öffnen.
 

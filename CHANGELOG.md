@@ -4,6 +4,21 @@ Alle relevanten Änderungen und Neuerungen der Mod-Sammlung werden in dieser Dat
 
 ---
 
+## [1.3.0] - 2026-08-30
+
+### Neue Mods
+
+- **Production Tuner** – Neuer Mod zum Anpassen von Verarbeitungsgeschwindigkeiten, Kapazitaeten
+  und Hydraulikleistung fuer alle 40 Maschinen, Fahrzeuge und Werkzeuge im Spiel.
+  - Einfacher Modus: ein Regler pro Gruppe (5 Gruppen gesamt).
+  - Erweiterter Modus: Einzelregler pro Komponente und Parameter.
+  - Kaskadenschutz: Folgegeraete (Pfanne, Wave Table, Magnetitabscheider, Anhaenger) werden
+    automatisch skaliert, um Materialverlust bei grossen Eimern zu verhindern.
+  - Gruppen- und Gesamt-Reset-Buttons fuer schnelles Zuruecksetzen auf Standardwerte.
+  - Vollstaendige Deutsch- und Englisch-Lokalisierung inklusive.
+
+---
+
 ## [1.2.0] - 2026-08-30
 
 ### Neue Funktionen & Erweiterungen

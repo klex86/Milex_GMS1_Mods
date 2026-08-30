@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Milex.GMS1.Mods.ProductionTuner</RootNamespace>
+    <AssemblyName>Milex_GMS1_ProductionTuner</AssemblyName>
+    <Version>1.0.0</Version>
+    <Authors>Milex</Authors>
+    <Product>Milex GMS1 Production Tuner</Product>
+    <Description>Adjusts processing speeds, throughput, hydraulic rates and capacities for all 40 machines, tools and vehicles in Gold Mining Simulator.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\CoreMod\Milex_GMS1_CoreMod.csproj" />
+    <EmbeddedResource Include="Localization\*.json" />
+  </ItemGroup>
+</Project>
