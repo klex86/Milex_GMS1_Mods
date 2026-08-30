@@ -329,7 +329,7 @@ namespace Milex.GMS1.Core.UI
             GUILayout.EndVertical();
             GUILayout.FlexibleSpace();
 
-            if (GUILayout.Button(L("menu.close", "✕ Schließen"), _buttonStyle, GUILayout.Width(95), GUILayout.Height(28)))
+            if (GUILayout.Button(L("menu.close", "Schließen"), _buttonStyle, GUILayout.Width(95), GUILayout.Height(28)))
             {
                 CorePlugin.ToggleMenu();
             }
@@ -380,7 +380,7 @@ namespace Milex.GMS1.Core.UI
                     GUIStyle btnStyle = isSelected ? _sidebarButtonActiveStyle : _sidebarButtonStyle;
 
                     string displayModName = mod.Translate("mod.name", mod.Name);
-                    string statusDot = mod.IsEnabled ? "<color=green>\u25CF</color>" : "<color=red>\u25CB</color>";
+                    string statusDot = mod.IsEnabled ? "<color=green>[v]</color>" : "<color=red>[ ]</color>";
                     // Version in smaller rich-text below the name
                     string btnLabel = $"{statusDot} <b>{displayModName}</b>\n<size=10>v{mod.Version}</size>";
                     if (GUILayout.Button(btnLabel, btnStyle, GUILayout.Height(44)))
@@ -442,13 +442,13 @@ namespace Milex.GMS1.Core.UI
             GUILayout.Space(12);
 
             // === SECTION: LANGUAGE ===
-            GUILayout.Label("▶ " + L("core.section.language", "Sprach-Einstellungen"), _sectionHeaderStyle);
+            GUILayout.Label(L("core.section.language", "Sprach-Einstellungen"), _sectionHeaderStyle);
             
             // 1. Stylized Checkbox: Use Game Language
             GUILayout.BeginVertical("box");
             bool useGameLang = CorePlugin.UseGameLanguage.Value;
             string checkText = useGameLang 
-                ? L("btn.enabled", "[✓] Aktiviert") + " - " + L("core.use_game_language.name", "Spiel-Sprache verwenden") 
+                ? L("btn.enabled", "[v] Aktiviert") + " - " + L("core.use_game_language.name", "Spiel-Sprache verwenden") 
                 : L("btn.disabled", "[  ] Deaktiviert") + " - " + L("core.use_game_language.name", "Spiel-Sprache verwenden");
 
             if (GUILayout.Button(checkText, useGameLang ? _checkboxActiveStyle : _checkboxStyle, GUILayout.Height(30)))
@@ -476,7 +476,7 @@ namespace Milex.GMS1.Core.UI
             string currentLangName = LocalizationManager.GetLanguageNativeName(currentLangCode);
 
             // Dropdown trigger button
-            string dropdownLabel = $"{currentLangName} ({currentLangCode}) " + (_isLanguageDropdownOpen ? "▲" : "▼");
+            string dropdownLabel = $"{currentLangName} ({currentLangCode}) " + (_isLanguageDropdownOpen ? "^" : "v");
             if (GUILayout.Button(dropdownLabel, _dropdownHeaderStyle, GUILayout.Width(280), GUILayout.Height(30)))
             {
                 _isLanguageDropdownOpen = !_isLanguageDropdownOpen;
@@ -521,7 +521,7 @@ namespace Milex.GMS1.Core.UI
             GUILayout.Space(12);
 
             // === SECTION: APPEARANCE & UI SCALING ===
-            GUILayout.Label("▶ " + L("core.section.appearance", "Darstellung & UI-Skalierung"), _sectionHeaderStyle);
+            GUILayout.Label(L("core.section.appearance", "Darstellung & UI-Skalierung"), _sectionHeaderStyle);
             GUILayout.BeginVertical("box");
             GUILayout.Label(L("core.ui_scale.name", "UI-Skalierung (Schrift- & Fenstergröße)"), _entryLabelStyle);
             GUILayout.Label(L("core.ui_scale.desc", "Vergrößert oder verkleinert das Menü für 1440p / 4K Monitore"), _entryDescStyle);
@@ -531,7 +531,7 @@ namespace Milex.GMS1.Core.UI
             GUILayout.BeginHorizontal();
 
             // Button: -5%
-            if (GUILayout.Button("➖ -5 %", _buttonStyle, GUILayout.Width(80), GUILayout.Height(28)))
+            if (GUILayout.Button("-5 %", _buttonStyle, GUILayout.Width(80), GUILayout.Height(28)))
             {
                 float targetScale = Mathf.Max(0.70f, Mathf.Round((currentScale - 0.05f) * 20.0f) / 20.0f);
                 CorePlugin.UIScale.Value = targetScale;
@@ -547,7 +547,7 @@ namespace Milex.GMS1.Core.UI
             GUILayout.Space(6);
 
             // Button: +5%
-            if (GUILayout.Button("➕ +5 %", _buttonStyle, GUILayout.Width(80), GUILayout.Height(28)))
+            if (GUILayout.Button("+5 %", _buttonStyle, GUILayout.Width(80), GUILayout.Height(28)))
             {
                 float targetScale = Mathf.Min(1.60f, Mathf.Round((currentScale + 0.05f) * 20.0f) / 20.0f);
                 CorePlugin.UIScale.Value = targetScale;
@@ -569,14 +569,14 @@ namespace Milex.GMS1.Core.UI
             GUILayout.Space(12);
 
             // === SECTION: GENERAL BEHAVIOR ===
-            GUILayout.Label("▶ " + L("core.section.general", "Allgemeines Verhalten"), _sectionHeaderStyle);
+            GUILayout.Label(L("core.section.general", "Allgemeines Verhalten"), _sectionHeaderStyle);
             DrawConfigEntryCard(CorePlugin.PauseGameOnMenu, CoreAssemblyName);
             GUILayout.Space(6);
             DrawConfigEntryCard(CorePlugin.IgnoreExternalTranslations, CoreAssemblyName);
             GUILayout.Space(6);
 
             // === SECTION: HOTKEYS ===
-            GUILayout.Label("▶ " + L("core.section.controls", "Tastenbelegung"), _sectionHeaderStyle);
+            GUILayout.Label(L("core.section.controls", "Tastenbelegung"), _sectionHeaderStyle);
             DrawConfigEntryCard(CorePlugin.MenuToggleKey, CoreAssemblyName);
 
             GUILayout.EndVertical();
@@ -596,7 +596,7 @@ namespace Milex.GMS1.Core.UI
             {
                 bool isEnabled = mod.IsEnabled;
                 string stateLabel = isEnabled
-                    ? L("btn.enabled", "[✓] Aktiviert")
+                    ? L("btn.enabled", "[v] Aktiviert")
                     : L("btn.disabled", "[  ] Deaktiviert");
                 string toggleLabel = L("mod.toggle.label", "Mod-Status") + ": " + stateLabel;
 
@@ -616,7 +616,7 @@ namespace Milex.GMS1.Core.UI
             if (!mod.IsEnabled)
             {
                 GUILayout.BeginVertical("box");
-                GUILayout.Label(L("mod.disabled.hint", "⚠ Dieser Mod ist deaktiviert. Einstellungen sind gesperrt."), _subHeaderStyle);
+                GUILayout.Label(L("mod.disabled.hint", "Dieser Mod ist deaktiviert. Einstellungen sind gesperrt."), _subHeaderStyle);
                 GUILayout.EndVertical();
                 GUILayout.Space(6);
             }
@@ -638,7 +638,7 @@ namespace Milex.GMS1.Core.UI
             {
                 string sectionKey = sectionGroup.Key;
                 string sectionTranslated = mod.Translate($"config.{sectionKey.ToLowerInvariant()}.section", sectionKey);
-                GUILayout.Label($"▶ {sectionTranslated}", _sectionHeaderStyle);
+                GUILayout.Label(sectionTranslated, _sectionHeaderStyle);
 
                 foreach (var definition in sectionGroup)
                 {
@@ -677,7 +677,7 @@ namespace Milex.GMS1.Core.UI
             {
                 var boolEntry = (ConfigEntry<bool>)entry;
                 bool isChecked = boolEntry.Value;
-                string checkLabel = isChecked ? L("btn.enabled", "[✓] Aktiviert") : L("btn.disabled", "[  ] Deaktiviert");
+                string checkLabel = isChecked ? L("btn.enabled", "[v] Aktiviert") : L("btn.disabled", "[  ] Deaktiviert");
 
                 GUILayout.BeginHorizontal();
                 if (GUILayout.Button($"{checkLabel} - {titleTranslated}", isChecked ? _checkboxActiveStyle : _checkboxStyle, GUILayout.Height(28)))
@@ -842,13 +842,13 @@ namespace Milex.GMS1.Core.UI
 
             // Action Buttons
             GUILayout.BeginHorizontal();
-            if (GUILayout.Button(L("dialog.missing_trans.btn_yes", "✓ Vorlagen erstellen"), _buttonActiveStyle, GUILayout.Height(32)))
+            if (GUILayout.Button(L("dialog.missing_trans.btn_yes", "Vorlagen erstellen"), _buttonActiveStyle, GUILayout.Height(32)))
             {
                 LocalizationManager.GenerateTemplatesForMods(_missingModsList, _missingDialogTargetLang);
                 _showMissingDialog = false;
             }
             GUILayout.Space(10);
-            if (GUILayout.Button(L("dialog.missing_trans.btn_no", "✕ Nein, Standard behalten"), _buttonStyle, GUILayout.Height(32)))
+            if (GUILayout.Button(L("dialog.missing_trans.btn_no", "Nein, Standard behalten"), _buttonStyle, GUILayout.Height(32)))
             {
                 _showMissingDialog = false;
             }

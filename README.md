@@ -4,7 +4,7 @@ Modding-Framework und modulare Mod-Sammlung für **Gold Mining Simulator** (*Gol
 
 ---
 
-## 📌 Architektur & Multi-Assembly Aufbau
+## Architektur & Multi-Assembly Aufbau
 
 Das Repository ist als modulare Multi-Project Solution aufgesetzt:
 
@@ -17,65 +17,61 @@ d:\Modding\GMSModding\
 ├── CHANGELOG.md                           # Zentrales Changelog
 │
 ├── src\
-│   ├── CoreMod\                           # 📦 Milex_GMS1_CoreMod.dll (v1.2.0)
+│   ├── CoreMod\                           # Milex_GMS1_CoreMod.dll (v1.2.0)
 │   │   ├── Milex_GMS1_CoreMod.csproj
 │   │   ├── CorePlugin.cs                  # BepInEx-Einstiegspunkt, Menü-Toggle (Insert)
-│   │   ├── ModBase.cs                     # Basisklasse mit Auto-Harmony & ModRegistry
+│   │   ├── ModBase.cs                     # Basisklasse mit Enable/Disable-Lifecycle & ModRegistry
 │   │   ├── ModRegistry.cs                 # Zentrale Mod-Registrierung
 │   │   ├── Localization\                  # LocalizationManager & Embedded JSONs
 │   │   │   ├── LocalizationManager.cs
-│   │   │   ├── CoreMod_en.json
-│   │   │   └── CoreMod_de.json
+│   │   │   ├── Milex_GMS1_CoreMod_en.json
+│   │   │   └── Milex_GMS1_CoreMod_de.json
+│   │   ├── Patches\                       # Input-Blocker & Cursor-Patches
 │   │   └── UI\
-│   │       └── ModMenuUI.cs               # Ingame IMGUI-Menü mit Core Settings Tab
+│   │       └── ModMenuUI.cs               # Ingame IMGUI-Menü mit Skalierung & Mod-Verwaltung
 │   │
 │   └── Mods\
-│       └── HelloMod\                      # 📦 Milex_GMS1_HelloMod.dll (v1.1.0)
+│       └── HelloMod\                      # Milex_GMS1_HelloMod.dll (v1.1.0)
 │           ├── Milex_GMS1_HelloMod.csproj
 │           ├── Localization\
-│           │   ├── HelloMod_en.json
-│           │   └── HelloMod_de.json
+│           │   ├── Milex_GMS1_HelloMod_en.json
+│           │   └── Milex_GMS1_HelloMod_de.json
 │           └── HelloModPlugin.cs
 ```
 
 ---
 
-## 🌐 Lokalisierung (Multi-Language)
+## Hauptfunktionen des CoreMod Frameworks
 
-- **Ordner auf der Festplatte**: Beim Mod-Start wird automatisch der Ordner  
-  `BepInEx\plugins\Milex GMS1 Mod Localization\` erstellt.
-- **Dateibenennung**: `%Modname%_%language%.json` (z. B. `CoreMod_en.json`, `CoreMod_de.json`, `HelloMod_en.json`, `HelloMod_de.json`).
-- **Auto-Template-Generierung**: Fehlt eine EN- oder DE-Sprachdatei auf der Festplatte, schreibt `LocalizationManager` sie automatisch aus den eingebetteten DLL-Ressourcen als editierbare Vorlage heraus.
-- **Unterstützte Sprachcodes**:
-  `fr`, `en`, `de`, `es`, `ru`, `pl`, `it`, `pt`, `tr`, `nl`, `sv`, `da`, `no`, `ro`, `cs`, `bg`, `el`, `ja`, `ko`, `zh-CN`, `zh-TD`.
-- **Fallback**: Bei fehlenden Übersetzungen wird immer garantiert auf **Englisch (`en`)** zurückgegriffen.
+1. **Ingame Mod-Menü (`Insert`)**:
+   - Tab **Allgemein**: Sprachauswahl, UI-Skalierung, Spiel-Pause bei offenem Menü, Option zum Ignorieren externer Sprachdateien, Menü-Taste Rebinding.
+   - Tab **Geladene Mods**: Liste aller aktiven Feature-Mods mit Live Enable/Disable-Schalter und dynamischer Konfiguration.
+
+2. **Live Enable / Disable Lifecycle**:
+   - Jeder Sub-Mod kann direkt im Ingame-Menü per Klick aktiviert oder deaktiviert werden.
+   - Bei Deaktivierung werden alle Harmony-Patches entfernt (`UnpatchSelf`) und die MonoBehaviour-Ausführung gestoppt (`enabled = false`).
+
+3. **Mehrsprachigkeit (Localization System)**:
+   - Eingebettete JSON-Übersetzungen in den DLL-Ressourcen.
+   - Automatische Template-Generierung auf der Festplatte (`BepInEx\plugins\Milex GMS1 Mod Localization\`).
+   - Unterbindung externer JSON-Dateien für Entwickler per Schalter `IgnoreExternalTranslations`.
+
+4. **Input & Kamera-Freeze**:
+   - Vollständiges Einfrieren der Kamera, Spielerbewegung und Werkzeuge (inkl. Mausrad) bei geöffnetem Mod-Menü.
 
 ---
 
-## 🛠 Voraussetzungen & Setup
+## Voraussetzungen & Setup
 
 1. **Spiel**: Installiertes *Gold Rush: The Game* / *Gold Mining Simulator*.
 2. **BepInEx 5**: BepInEx 5.x x64 im Hauptverzeichnis des Spiels.
-3. **.NET SDK**: .NET Core / .NET 6+ SDK zur Kompilierung (`netstandard2.0`).
+3. **.NET SDK**: .NET Core / .NET Framework / .NET SDK zur Kompilierung (`netstandard2.0`).
 
 ---
 
-## 🚀 Build & Deployment
+## Build & Deployment
 
 ```powershell
 dotnet build GMSModding.sln
 ```
-Alle DLLs (`Milex_GMS1_CoreMod.dll`, `Milex_GMS1_HelloMod.dll` usw.) werden automatisch nach `BepInEx\plugins\` kopiert.
-
----
-
-## 🧪 Ingame-Bedienung
-
-1. Drücke **`Insert`** (Einfügen) $\rightarrow$ Das **MILEX GMS1 MODS**-Menü öffnet sich.
-2. Im Tab **`⚙ Core-Optionen`**:
-   - `Spiel-Sprache verwenden` an-/abschalten.
-   - Falls abgeschaltet: Sprache manuell aus der Button-Matrix wählen (z. B. `de`, `en`, `fr`...).
-   - Menü-Taste per Rebind ändern.
-3. Im Tab **`📦 Geladene Mods`**:
-   - Mod auswählen (z. B. `HelloMod`).
-   - Alle Sektionen, Einstellungen, Beschreibungen und Tastenbelegungen werden in der gewählten Sprache gerendert und bei Änderung sofort auf die Festplatte gespeichert.
+Alle fertigen DLLs (`Milex_GMS1_CoreMod.dll`, `Milex_GMS1_HelloMod.dll` usw.) werden automatisch nach `BepInEx\plugins\` kopiert.

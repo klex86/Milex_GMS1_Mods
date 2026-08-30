@@ -7,31 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.2.0] - 2026-08-29
+## [1.2.0] - 2026-08-30
 
 ### Added
-- **Developer Branding**: Renamed project to **Milex GMS1 Mods** (`Milex_GMS1_CoreMod.dll`, `Milex_GMS1_HelloMod.dll`).
-- **Cursor Management & Lock/Unlock**:
-  - Automatically frees (`CursorLockMode.None`) and displays (`Cursor.visible = true`) cursor when opening the Mod Menu.
-  - Automatically restores previous game cursor lock state when closing the menu.
-- **Input Blocker Harmony Patches**:
-  - Blocks game actions (digging, tools, firing) during menu clicks via `UnityEngine.Input` Harmony prefixes.
-  - Blocks mouse movement axis input (`Mouse X/Y`) to stop camera rotation while navigating the menu.
-  - Consumes UI mouse events over the menu rect via `Event.current.Use()`.
-- **Exact DLL-Named Configuration & Localization Files**: Mods write directly to `BepInEx/config/%AssemblyName%.cfg` and use `%AssemblyName%_%lang%.json`.
-- **UI Scaling for 1440p / 4K**: Matrix-based UI scaling slider in Core Options (80% - 180%) for high-resolution displays.
-- **Native Endonym Language Dropdown**: Scrollable dropdown menu showing languages in their native names (e.g. *Deutsch*, *Français*, *Polski*, *Русский*, *日本語*).
-- **Missing Translation Dialog & Template Generator**:
-  - Automatically detects when a newly selected language has no translation file for loaded mods.
-  - Interactive popup modal asking the user if template JSON files should be created.
-  - Generated templates contain instruction comments on how to translate and a request to post translations to the mod's NexusMods page.
-- **Stylized Single-Toggle Checkboxes**: Clean `[✓] Aktiviert` / `[  ] Deaktiviert` toggle controls.
-- **Sidebar Cleanup**: CoreMod is now excluded from the feature mods list to prevent duplication with the "⚙ Core-Optionen" tab.
-- **Comprehensive Multi-Language Localization System**:
-  - Automatic creation of `BepInEx\plugins\Milex GMS1 Mod Localization\`.
-  - Automatic extraction of `%Modname%_en.json` and `%Modname%_de.json` templates from embedded DLL resources to disk.
-  - Strict fallback cascade with English (`en`) as the guaranteed fallback language.
-  - Support for 21 languages with native names.
+- **Sub-Mod Enable/Disable Lifecycle**:
+  - Live Enable/Disable toggle button in the Mod Menu for all registered sub-mods.
+  - Automatically applies (`PatchAll`) or removes (`UnpatchSelf`) Harmony patches upon state change.
+  - Toggles `MonoBehaviour.enabled` to completely halt/resume `Update()` loop execution on disabled mods.
+  - State persisted to each mod's individual `.cfg` under `[General] Enabled`.
+- **Developer Option (`IgnoreExternalTranslations`)**:
+  - Config entry in CoreMod (`General / IgnoreExternalTranslations`) allowing developers to bypass external disk JSON files and force loading embedded DLL resources directly.
+  - Live reloading of all localization tables upon toggle.
+- **Improved UI Scaling & Anchoring**:
+  - Matrix-based scaling anchors the window's top-left screen-space position, expanding towards right/bottom without window drift.
+  - Fixed 200px screen-space sidebar width.
+- **TimeScale & Pause Management**:
+  - Reliable state tracking (`_isGamePausedByMenu`) ensuring time scale is always correctly restored when closing the menu or toggling options while open.
+- **Input Blocker & Camera Freeze**:
+  - Native game input blocker (`InputManager.SetPauseMenuBlocked`), native Unity input patches, and `Cursor.lockState` getter deception ensuring camera and mouse wheel remain completely frozen during menu navigation.
+- **Clean UI Text Formatting**:
+  - Stripped unnecessary unicode icons and emojis from menu labels and localization files for clean rendering across all fonts.
 
 ---
 
