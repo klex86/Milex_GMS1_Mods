@@ -29,6 +29,7 @@ namespace Milex.GMS1.Core
 
         public static ConfigEntry<KeyCode> MenuToggleKey { get; private set; }
         public static ConfigEntry<bool> PauseGameOnMenu { get; private set; }
+        public static ConfigEntry<bool> IgnoreExternalTranslations { get; private set; }
         public static ConfigEntry<bool> UseGameLanguage { get; private set; }
         public static ConfigEntry<string> SelectedLanguage { get; private set; }
         public static ConfigEntry<float> UIScale { get; private set; }
@@ -45,9 +46,12 @@ namespace Milex.GMS1.Core
             // Bind Core Settings (writes to Milex_GMS1_CoreMod.cfg)
             MenuToggleKey = Config.Bind("General", "MenuToggleKey", KeyCode.Insert, "Taste zum Öffnen und Schließen des Mod-Menüs");
             PauseGameOnMenu = Config.Bind("General", "PauseGameOnMenu", false, "Pausiert die Spielwelt (TimeScale = 0), wenn das Mod-Menü offen ist");
+            IgnoreExternalTranslations = Config.Bind("General", "IgnoreExternalTranslations", false, "Ignoriert externe Sprachdateien auf der Festplatte und lädt direkt aus den DLL-Ressourcen");
             UseGameLanguage = Config.Bind("Localization", "UseGameLanguage", true, "Gibt an, ob die Spiel-Sprache automatisch verwendet wird");
             SelectedLanguage = Config.Bind("Localization", "SelectedLanguage", "en", "Manuell gewählte Sprache (nur aktiv, wenn UseGameLanguage false ist)");
             UIScale = Config.Bind("UI", "UIScale", 1.0f, "Skalierungsfaktor des Mod-Menüs (0.75 bis 1.5 für High-DPI/4K)");
+
+            IgnoreExternalTranslations.SettingChanged += (s, e) => LocalizationManager.ReloadAll();
 
             base.Awake();
 

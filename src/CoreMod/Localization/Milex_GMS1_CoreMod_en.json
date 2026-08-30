@@ -11,6 +11,8 @@
   "core.section.general": "General Behavior",
   "config.general.pausegameonmenu.name": "Pause game world when menu is open",
   "config.general.pausegameonmenu.desc": "Sets game time scale to 0 while the mod menu is open",
+  "config.general.ignoreexternaltranslations.name": "Ignore External Translation Files",
+  "config.general.ignoreexternaltranslations.desc": "Bypasses external JSON files in 'Milex GMS1 Mod Localization' and loads translations directly from embedded DLL resources",
 
   "core.section.language": "Language Settings",
   "core.use_game_language.name": "Use Game Language",

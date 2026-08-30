@@ -272,6 +272,24 @@ namespace Milex.GMS1.Core.Localization
             }
         }
 
+        public static void ReloadAll()
+        {
+            lock (_lock)
+            {
+                _translations.Clear();
+                foreach (var kvp in _registeredMods)
+                {
+                    LoadTranslationsForMod(kvp.Key, "en", kvp.Value);
+                    string currentLang = CurrentLanguage;
+                    if (!currentLang.Equals("en", StringComparison.OrdinalIgnoreCase))
+                    {
+                        LoadTranslationsForMod(kvp.Key, currentLang, kvp.Value);
+                    }
+                }
+            }
+            OnLanguageChanged?.Invoke(CurrentLanguage);
+        }
+
         public static void NotifyLanguageChanged(string newLang)
         {
             lock (_lock)
@@ -377,19 +395,24 @@ namespace Milex.GMS1.Core.Localization
             var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             langDict[langCode] = dict;
 
-            // 1. Disk
-            string diskFile = Path.Combine(LocalizationDirectory, $"{modName}_{langCode}.json");
-            if (File.Exists(diskFile))
+            bool ignoreExternal = CorePlugin.IgnoreExternalTranslations != null && CorePlugin.IgnoreExternalTranslations.Value;
+
+            // 1. Disk (skipped if IgnoreExternalTranslations is true)
+            if (!ignoreExternal)
             {
-                try
+                string diskFile = Path.Combine(LocalizationDirectory, $"{modName}_{langCode}.json");
+                if (File.Exists(diskFile))
                 {
-                    string json = File.ReadAllText(diskFile, Encoding.UTF8);
-                    ParseFlatJson(json, dict);
-                    return;
-                }
-                catch (Exception ex)
-                {
-                    CorePlugin.Instance?.LogWarning($"[Localization] Error reading {diskFile}: {ex.Message}");
+                    try
+                    {
+                        string json = File.ReadAllText(diskFile, Encoding.UTF8);
+                        ParseFlatJson(json, dict);
+                        return;
+                    }
+                    catch (Exception ex)
+                    {
+                        CorePlugin.Instance?.LogWarning($"[Localization] Error reading {diskFile}: {ex.Message}");
+                    }
                 }
             }
 
