@@ -10,224 +10,236 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
     /// Jede Einstellung wird als Multiplikator (1.0 = Standardwert des Spiels, 2.0 = doppelte Leistung)
     /// in der Datei BepInEx/config/Milex_GMS1_ProductionTuner.cfg gespeichert.
     ///
-    /// Im Simple Mode (Standard) gibt es einen Regler pro Gruppe.
-    /// Im Advanced Mode gibt es einen Regler pro Komponente/Parameter.
+    /// Alle Config-Keys sind auf Englisch. Anzeigenamen kommen aus den Lokalisierungsdateien.
+    /// Jede Gruppe hat einen eigenen Simple/Advanced-Schalter.
+    /// Gruppe 5 (Anhaenger) hat keinen Gruppen-Multiplikator, da die Komponenten nichts miteinander zu tun haben.
     /// </summary>
     public class TuningConfig
     {
-        // ---- Allgemeine Einstellungen ----
+        // Erlaubte Multiplikatorwerte in 0.5-Schritten von 0.5 bis 10.0
+        private static readonly float[] Steps = GenerateSteps();
+
+        private static float[] GenerateSteps()
+        {
+            var list = new List<float>();
+            for (float v = 0.5f; v <= 10.0f + 0.01f; v += 0.5f)
+                list.Add((float)System.Math.Round(v, 1));
+            return list.ToArray();
+        }
+
+        private const float DefaultMultiplier = 1.0f;
+        private readonly ConfigFile _cfg;
+
+        // ===========================================================
+        // ALLGEMEINE EINSTELLUNGEN
+        // ===========================================================
 
         /// <summary>
-        /// Schaltet den erweiterten Modus um. Im einfachen Modus steuert ein
-        /// Regler alle Komponenten einer Gruppe gemeinsam.
-        /// Im erweiterten Modus sind alle Einzelregler verfügbar.
-        /// </summary>
-        public ConfigEntry<bool> AdvancedMode { get; private set; }
-
-        /// <summary>
-        /// Wenn aktiv, werden die maximalen Füllmengen von Folgegeräten (Pfanne, Wave Table,
-        /// Magnetitabscheider, Anhänger) automatisch mindestens so gross wie der Eimer-Multiplikator
-        /// gesetzt. Verhindert Materialverlust bei grossen Eimern.
+        /// Wenn aktiv, werden Folgegeraete (Pfanne, Wave Table, Magnetitabscheider, Anhaenger)
+        /// automatisch mindestens auf den Eimer-Multiplikator skaliert.
         /// </summary>
         public ConfigEntry<bool> AutoScaleDependentInputs { get; private set; }
 
-        // ---- Gruppe 1: Handwerkzeuge & Mobile Waschanlagen ----
-        // Schaufel, Eimer, Pfanne (pan), Hog Pan, Mobile Waschanlagen
+        // ===========================================================
+        // GRUPPE 1 – Hand Tools & Mobile Wash Plants
+        // Schaufel, Eimer, Pfanne, Hog Pan, Mobile Waschanlage
+        // ===========================================================
 
+        public ConfigEntry<bool> Group1SimpleMode { get; private set; }
         public ConfigEntry<float> Group1Multiplier { get; private set; }
 
-        // Advanced: Einzelregler
-        public ConfigEntry<float> ShovelFillSpeed { get; private set; }
-        public ConfigEntry<float> BucketCapacity { get; private set; }
-        public ConfigEntry<float> PanCapacity { get; private set; }
-        public ConfigEntry<float> HogPanCapacity { get; private set; }
-        public ConfigEntry<float> MobileWashPlantSpeed { get; private set; }
+        // Advanced: individual controls
+        public ConfigEntry<float> Shovel_FillSpeed    { get; private set; }
+        public ConfigEntry<float> Bucket_Capacity     { get; private set; }
+        public ConfigEntry<float> Pan_Capacity        { get; private set; }
+        public ConfigEntry<float> HogPan_Capacity     { get; private set; }
+        public ConfigEntry<float> MobileWashPlant_Speed { get; private set; }
 
-        // ---- Gruppe 2: Baufahrzeuge & Mobiles Förderband ----
-        // Minibagger, Bagger, Radlader, Baggerlader, Mobiles Förderband
+        // ===========================================================
+        // GRUPPE 2 – Vehicles & Mobile Conveyor
+        // Minibagger, Bagger, Radlader, Baggerlader, Mobiles Foerderband
+        // ===========================================================
 
+        public ConfigEntry<bool> Group2SimpleMode { get; private set; }
         public ConfigEntry<float> Group2Multiplier { get; private set; }
 
-        // Advanced: Einzelregler
-        public ConfigEntry<float> MiniBaggerDigSpeed { get; private set; }
-        public ConfigEntry<float> BaggerDigSpeed { get; private set; }
-        public ConfigEntry<float> RadladerLoadSpeed { get; private set; }
-        public ConfigEntry<float> BaggerladerLoadSpeed { get; private set; }
-        public ConfigEntry<float> MobileConveyorSpeed { get; private set; }
+        // Advanced
+        public ConfigEntry<float> MiniBagger_DigSpeed    { get; private set; }
+        public ConfigEntry<float> Bagger_DigSpeed        { get; private set; }
+        public ConfigEntry<float> Radlader_LoadSpeed     { get; private set; }
+        public ConfigEntry<float> Baggerlader_LoadSpeed  { get; private set; }
+        public ConfigEntry<float> MobileConveyor_Speed   { get; private set; }
 
-        // ---- Gruppe 3: Waschanlagen-Module (Tier 3-6) ----
-        // Einfülltrichter, Förderbänder, Rüttler, Derocker, Waschrinnen, Trommeln, Jigs, Miner's Moss
+        // ===========================================================
+        // GRUPPE 3 – Wash Plant Modules (Tier 3-6)
+        // Einfuelltrichter, Foerderband, Ruettler, Derocker, Waschrinne, Trommel, Jig, Miner's Moss
+        // ===========================================================
 
+        public ConfigEntry<bool> Group3SimpleMode { get; private set; }
         public ConfigEntry<float> Group3Multiplier { get; private set; }
 
-        // Advanced: Einzelregler
-        public ConfigEntry<float> HopperCapacity { get; private set; }
-        public ConfigEntry<float> ConveyorSpeed { get; private set; }
-        public ConfigEntry<float> VibratingScreenSpeed { get; private set; }
-        public ConfigEntry<float> DerockerSpeed { get; private set; }
-        public ConfigEntry<float> SluiceSpeed { get; private set; }
-        public ConfigEntry<float> TrommelSpeed { get; private set; }
-        public ConfigEntry<float> JigSpeed { get; private set; }
-        public ConfigEntry<float> MinersMossCapacity { get; private set; }
+        // Advanced
+        public ConfigEntry<float> Hopper_Capacity       { get; private set; }
+        public ConfigEntry<float> Conveyor_Speed        { get; private set; }
+        public ConfigEntry<float> VibratingScreen_Speed { get; private set; }
+        public ConfigEntry<float> Derocker_Speed        { get; private set; }
+        public ConfigEntry<float> Sluice_Speed          { get; private set; }
+        public ConfigEntry<float> Trommel_Speed         { get; private set; }
+        public ConfigEntry<float> Jig_Speed             { get; private set; }
+        public ConfigEntry<float> MinersMoss_Capacity   { get; private set; }
 
-        // ---- Gruppe 4: Feinverarbeitung ----
-        // Nuggetator, Magnetitabscheider, Wave Table Rütteltisch
+        // ===========================================================
+        // GRUPPE 4 – Fine Processing
+        // Nuggetator, Magnetitabscheider, Wave Table
+        // ===========================================================
 
+        public ConfigEntry<bool> Group4SimpleMode { get; private set; }
         public ConfigEntry<float> Group4Multiplier { get; private set; }
 
-        // Advanced: Einzelregler
-        public ConfigEntry<float> NuggeterSpeed { get; private set; }
-        public ConfigEntry<float> MagnetiteSeparatorSpeed { get; private set; }
-        public ConfigEntry<float> WaveTableSpeed { get; private set; }
-        public ConfigEntry<float> WaveTableCapacity { get; private set; }
+        // Advanced
+        public ConfigEntry<float> Nuggetator_Speed          { get; private set; }
+        public ConfigEntry<float> MagnetiteSeparator_Speed  { get; private set; }
+        public ConfigEntry<float> WaveTable_Speed           { get; private set; }
+        public ConfigEntry<float> WaveTable_Capacity        { get; private set; }
 
-        // ---- Gruppe 5: Anhänger ----
-        // Magnetitanhänger, Kraftstoffanhänger
+        // ===========================================================
+        // GRUPPE 5 – Trailers (KEIN Gruppen-Multiplikator – Komponenten sind unabhaengig)
+        // Magnetitanhaenger, Kraftstoffanhaenger
+        // ===========================================================
 
-        public ConfigEntry<float> Group5Multiplier { get; private set; }
+        public ConfigEntry<float> MagnetiteTrailer_Capacity { get; private set; }
+        public ConfigEntry<float> FuelTrailer_Capacity      { get; private set; }
 
-        // Advanced: Einzelregler
-        public ConfigEntry<float> MagnetiteTrailerCapacity { get; private set; }
-        public ConfigEntry<float> FuelTrailerCapacity { get; private set; }
+        // ===========================================================
+        // KONSTRUKTOR
+        // ===========================================================
 
-        // ---- Standardwerte aller Multiplikatoren ----
-
-        private const float DefaultMultiplier = 1.0f;
-        private const float MinMultiplier = 0.1f;
-        private const float MaxMultiplier = 10.0f;
-
-        private readonly ConfigFile _config;
-
-        public TuningConfig(ConfigFile config)
+        public TuningConfig(ConfigFile cfg)
         {
-            _config = config;
+            _cfg = cfg;
             BindAll();
         }
 
         private void BindAll()
         {
-            // Allgemeine Schalter
-            AdvancedMode = _config.Bind("General", "AdvancedMode", false,
-                "Einfacher Modus (false): Ein Regler pro Gruppe. Erweiterter Modus (true): Einzelregler pro Komponente und Parameter.");
+            // Allgemein
+            AutoScaleDependentInputs = _cfg.Bind("General", "AutoScaleDependentInputs", true,
+                "Automatically scales dependent devices (pan, wave table, magnetite separator, trailers) " +
+                "to at least the bucket multiplier to prevent material loss.");
 
-            AutoScaleDependentInputs = _config.Bind("General", "AutoScaleDependentInputs", true,
-                "Skaliert Folgegeraete (Pfanne, Wave Table, Magnetitabscheider, Anhaenger) automatisch mit dem Eimer-Multiplikator, um Materialverlust zu vermeiden.");
+            // Gruppe 1
+            Group1SimpleMode    = _cfg.Bind("Group1_HandTools", "SimpleMode", true,
+                "Simple mode: only the group multiplier slider is active. Advanced mode: individual sliders per component.");
+            Group1Multiplier    = BindStep("Group1_HandTools", "Group_Multiplier",
+                "Shared multiplier for all hand tools and mobile wash plants.");
+            Shovel_FillSpeed    = BindStep("Group1_HandTools", "Shovel_FillSpeed",
+                "How fast the shovel picks up material.");
+            Bucket_Capacity     = BindStep("Group1_HandTools", "Bucket_Capacity",
+                "Maximum fill volume of the bucket.");
+            Pan_Capacity        = BindStep("Group1_HandTools", "Pan_Capacity",
+                "Maximum fill volume of the gold panning pan.");
+            HogPan_Capacity     = BindStep("Group1_HandTools", "HogPan_Capacity",
+                "Maximum fill volume of the hog pan.");
+            MobileWashPlant_Speed = BindStep("Group1_HandTools", "MobileWashPlant_Speed",
+                "Processing speed of the mobile wash plant.");
 
-            // Gruppe 1 – Simple
-            Group1Multiplier = Bind("Group1_HandTools", "GroupMultiplier", DefaultMultiplier,
-                "Gemeinsamer Multiplikator fuer alle Handwerkzeuge und Mobile Waschanlagen (Schaufel, Eimer, Pfanne, Hog Pan, Mobile Waschanlage).");
+            // Gruppe 2
+            Group2SimpleMode    = _cfg.Bind("Group2_Vehicles", "SimpleMode", true,
+                "Simple mode: only the group multiplier slider is active. Advanced mode: individual sliders per component.");
+            Group2Multiplier    = BindStep("Group2_Vehicles", "Group_Multiplier",
+                "Shared multiplier for all construction vehicles and the mobile conveyor belt.");
+            MiniBagger_DigSpeed   = BindStep("Group2_Vehicles", "MiniBagger_DigSpeed",   "How fast the mini excavator digs.");
+            Bagger_DigSpeed       = BindStep("Group2_Vehicles", "Bagger_DigSpeed",       "How fast the excavator digs.");
+            Radlader_LoadSpeed    = BindStep("Group2_Vehicles", "Radlader_LoadSpeed",    "How fast the wheel loader picks up material.");
+            Baggerlader_LoadSpeed = BindStep("Group2_Vehicles", "Baggerlader_LoadSpeed", "How fast the backhoe loader picks up material.");
+            MobileConveyor_Speed  = BindStep("Group2_Vehicles", "MobileConveyor_Speed",  "Transport speed of the mobile conveyor belt.");
 
-            // Gruppe 1 – Advanced
-            ShovelFillSpeed    = Bind("Group1_HandTools", "Schaufel_Fuellgeschwindigkeit", DefaultMultiplier, "Wie schnell die Schaufel Material aufnimmt.");
-            BucketCapacity     = Bind("Group1_HandTools", "Eimer_Kapazitaet", DefaultMultiplier, "Fassungsvermoegen des Eimers.");
-            PanCapacity        = Bind("Group1_HandTools", "Pfanne_Kapazitaet", DefaultMultiplier, "Fassungsvermoegen der Goldwaesch-Pfanne.");
-            HogPanCapacity     = Bind("Group1_HandTools", "HogPan_Kapazitaet", DefaultMultiplier, "Fassungsvermoegen der Hog Pan.");
-            MobileWashPlantSpeed = Bind("Group1_HandTools", "MobileWaschanlage_Geschwindigkeit", DefaultMultiplier, "Verarbeitungsgeschwindigkeit der mobilen Waschanlage.");
+            // Gruppe 3
+            Group3SimpleMode    = _cfg.Bind("Group3_WashPlantModules", "SimpleMode", true,
+                "Simple mode: only the group multiplier slider is active. Advanced mode: individual sliders per component.");
+            Group3Multiplier    = BindStep("Group3_WashPlantModules", "Group_Multiplier",
+                "Shared multiplier for all wash plant modules.");
+            Hopper_Capacity       = BindStep("Group3_WashPlantModules", "Hopper_Capacity",       "Fill capacity of the feed hopper.");
+            Conveyor_Speed        = BindStep("Group3_WashPlantModules", "Conveyor_Speed",        "Transport speed of stationary conveyor belts.");
+            VibratingScreen_Speed = BindStep("Group3_WashPlantModules", "VibratingScreen_Speed", "Screening throughput of the vibrating screen.");
+            Derocker_Speed        = BindStep("Group3_WashPlantModules", "Derocker_Speed",        "Processing speed of the derocker.");
+            Sluice_Speed          = BindStep("Group3_WashPlantModules", "Sluice_Speed",          "Material flow rate through the sluice box.");
+            Trommel_Speed         = BindStep("Group3_WashPlantModules", "Trommel_Speed",         "Rotation speed of the trommel wash plant.");
+            Jig_Speed             = BindStep("Group3_WashPlantModules", "Jig_Speed",             "Processing speed of the jig.");
+            MinersMoss_Capacity   = BindStep("Group3_WashPlantModules", "MinersMoss_Capacity",   "Gold retention capacity of the miner's moss mats.");
 
-            // Gruppe 2 – Simple
-            Group2Multiplier = Bind("Group2_Vehicles", "GroupMultiplier", DefaultMultiplier,
-                "Gemeinsamer Multiplikator fuer alle Baufahrzeuge und das mobile Foerderband (Minibagger, Bagger, Radlader, Baggerlader, Foerderband).");
+            // Gruppe 4
+            Group4SimpleMode    = _cfg.Bind("Group4_FineProcessing", "SimpleMode", true,
+                "Simple mode: only the group multiplier slider is active. Advanced mode: individual sliders per component.");
+            Group4Multiplier    = BindStep("Group4_FineProcessing", "Group_Multiplier",
+                "Shared multiplier for all fine processing equipment.");
+            Nuggetator_Speed         = BindStep("Group4_FineProcessing", "Nuggetator_Speed",        "Processing speed of the nuggetator.");
+            MagnetiteSeparator_Speed = BindStep("Group4_FineProcessing", "MagnetiteSeparator_Speed","Separation speed of the magnetite separator.");
+            WaveTable_Speed          = BindStep("Group4_FineProcessing", "WaveTable_Speed",         "Vibration speed of the wave table.");
+            WaveTable_Capacity       = BindStep("Group4_FineProcessing", "WaveTable_Capacity",      "Maximum material volume on the wave table.");
 
-            // Gruppe 2 – Advanced
-            MiniBaggerDigSpeed    = Bind("Group2_Vehicles", "Minibagger_Aushubgeschwindigkeit", DefaultMultiplier, "Wie schnell der Minibagger Material ausgräbt.");
-            BaggerDigSpeed        = Bind("Group2_Vehicles", "Bagger_Aushubgeschwindigkeit", DefaultMultiplier, "Wie schnell der Bagger Material ausgraebt.");
-            RadladerLoadSpeed     = Bind("Group2_Vehicles", "Radlader_Ladegeschwindigkeit", DefaultMultiplier, "Wie schnell der Radlader Material laedt.");
-            BaggerladerLoadSpeed  = Bind("Group2_Vehicles", "Baggerlader_Ladegeschwindigkeit", DefaultMultiplier, "Wie schnell der Baggerlader Material laedt.");
-            MobileConveyorSpeed   = Bind("Group2_Vehicles", "MobildeFoerderband_Geschwindigkeit", DefaultMultiplier, "Transportgeschwindigkeit des mobilen Foerderbands.");
-
-            // Gruppe 3 – Simple
-            Group3Multiplier = Bind("Group3_WashPlantModules", "GroupMultiplier", DefaultMultiplier,
-                "Gemeinsamer Multiplikator fuer alle Waschanlagen-Module (Einfuelltrichter, Foerderbänder, Ruettler, Derocker, Waschrinnen, Trommeln, Jigs, Miner's Moss).");
-
-            // Gruppe 3 – Advanced
-            HopperCapacity       = Bind("Group3_WashPlantModules", "Einfuelltrichter_Kapazitaet", DefaultMultiplier, "Fassungsvermoegen des Einfuelltrichters.");
-            ConveyorSpeed        = Bind("Group3_WashPlantModules", "Foerderband_Geschwindigkeit", DefaultMultiplier, "Transportgeschwindigkeit des Foerderbands.");
-            VibratingScreenSpeed = Bind("Group3_WashPlantModules", "Ruettler_Geschwindigkeit", DefaultMultiplier, "Siebleistung des Ruettlers.");
-            DerockerSpeed        = Bind("Group3_WashPlantModules", "Derocker_Geschwindigkeit", DefaultMultiplier, "Verarbeitungsgeschwindigkeit des Derockers.");
-            SluiceSpeed          = Bind("Group3_WashPlantModules", "Waschrinne_Geschwindigkeit", DefaultMultiplier, "Durchsatz der Waschrinne.");
-            TrommelSpeed         = Bind("Group3_WashPlantModules", "Trommel_Geschwindigkeit", DefaultMultiplier, "Drehgeschwindigkeit der Trommelwaschanlage.");
-            JigSpeed             = Bind("Group3_WashPlantModules", "Jig_Geschwindigkeit", DefaultMultiplier, "Verarbeitungsgeschwindigkeit des Jigs.");
-            MinersMossCapacity   = Bind("Group3_WashPlantModules", "MinersMoss_Kapazitaet", DefaultMultiplier, "Rueckhaltekapazitaet des Miner's Moss.");
-
-            // Gruppe 4 – Simple
-            Group4Multiplier = Bind("Group4_FineProcessing", "GroupMultiplier", DefaultMultiplier,
-                "Gemeinsamer Multiplikator fuer alle Feinverarbeitungsgeraete (Nuggetator, Magnetitabscheider, Wave Table).");
-
-            // Gruppe 4 – Advanced
-            NuggeterSpeed          = Bind("Group4_FineProcessing", "Nuggetator_Geschwindigkeit", DefaultMultiplier, "Verarbeitungsgeschwindigkeit des Nuggetators.");
-            MagnetiteSeparatorSpeed = Bind("Group4_FineProcessing", "Magnetitabscheider_Geschwindigkeit", DefaultMultiplier, "Separationsgeschwindigkeit des Magnetitabscheiders.");
-            WaveTableSpeed         = Bind("Group4_FineProcessing", "WaveTable_Geschwindigkeit", DefaultMultiplier, "Ruettelgeschwindigkeit des Wave Tables.");
-            WaveTableCapacity      = Bind("Group4_FineProcessing", "WaveTable_Kapazitaet", DefaultMultiplier, "Maximale Materialmenge auf dem Wave Table.");
-
-            // Gruppe 5 – Simple
-            Group5Multiplier = Bind("Group5_Trailers", "GroupMultiplier", DefaultMultiplier,
-                "Gemeinsamer Multiplikator fuer alle Anhaenger (Magnetitanhaenger, Kraftstoffanhaenger).");
-
-            // Gruppe 5 – Advanced
-            MagnetiteTrailerCapacity = Bind("Group5_Trailers", "Magnetitanhaenger_Kapazitaet", DefaultMultiplier, "Ladekapazitaet des Magnetitanhaengers.");
-            FuelTrailerCapacity      = Bind("Group5_Trailers", "Kraftstoffanhaenger_Kapazitaet", DefaultMultiplier, "Ladekapazitaet des Kraftstoffanhaengers.");
+            // Gruppe 5 – kein SimpleMode/Gruppen-Multiplikator
+            MagnetiteTrailer_Capacity = BindStep("Group5_Trailers", "MagnetiteTrailer_Capacity", "Load capacity of the magnetite trailer.");
+            FuelTrailer_Capacity      = BindStep("Group5_Trailers", "FuelTrailer_Capacity",      "Load capacity of the fuel trailer.");
         }
 
-        private ConfigEntry<float> Bind(string section, string key, float defaultValue, string description)
+        private ConfigEntry<float> BindStep(string section, string key, string description)
         {
-            return _config.Bind(section, key, defaultValue,
+            return _cfg.Bind(section, key, DefaultMultiplier,
                 new ConfigDescription(description,
-                    new AcceptableValueRange<float>(MinMultiplier, MaxMultiplier)));
+                    new AcceptableValueList<float>(Steps)));
         }
 
-        // ---- Gruppen-Reset-API ----
+        // ===========================================================
+        // GRUPPEN-RESET-API
+        // ===========================================================
 
-        /// <summary>
-        /// Setzt alle Multiplikatoren der angegebenen Gruppe auf den Standardwert (1.0) zurück.
-        /// </summary>
         public void ResetGroup(int groupIndex)
         {
             switch (groupIndex)
             {
                 case 1:
-                    Group1Multiplier.Value     = DefaultMultiplier;
-                    ShovelFillSpeed.Value      = DefaultMultiplier;
-                    BucketCapacity.Value       = DefaultMultiplier;
-                    PanCapacity.Value          = DefaultMultiplier;
-                    HogPanCapacity.Value       = DefaultMultiplier;
-                    MobileWashPlantSpeed.Value = DefaultMultiplier;
+                    Group1Multiplier.Value      = DefaultMultiplier;
+                    Shovel_FillSpeed.Value       = DefaultMultiplier;
+                    Bucket_Capacity.Value        = DefaultMultiplier;
+                    Pan_Capacity.Value           = DefaultMultiplier;
+                    HogPan_Capacity.Value        = DefaultMultiplier;
+                    MobileWashPlant_Speed.Value  = DefaultMultiplier;
                     break;
                 case 2:
-                    Group2Multiplier.Value    = DefaultMultiplier;
-                    MiniBaggerDigSpeed.Value  = DefaultMultiplier;
-                    BaggerDigSpeed.Value      = DefaultMultiplier;
-                    RadladerLoadSpeed.Value   = DefaultMultiplier;
-                    BaggerladerLoadSpeed.Value = DefaultMultiplier;
-                    MobileConveyorSpeed.Value = DefaultMultiplier;
+                    Group2Multiplier.Value       = DefaultMultiplier;
+                    MiniBagger_DigSpeed.Value    = DefaultMultiplier;
+                    Bagger_DigSpeed.Value        = DefaultMultiplier;
+                    Radlader_LoadSpeed.Value     = DefaultMultiplier;
+                    Baggerlader_LoadSpeed.Value  = DefaultMultiplier;
+                    MobileConveyor_Speed.Value   = DefaultMultiplier;
                     break;
                 case 3:
                     Group3Multiplier.Value       = DefaultMultiplier;
-                    HopperCapacity.Value         = DefaultMultiplier;
-                    ConveyorSpeed.Value          = DefaultMultiplier;
-                    VibratingScreenSpeed.Value   = DefaultMultiplier;
-                    DerockerSpeed.Value          = DefaultMultiplier;
-                    SluiceSpeed.Value            = DefaultMultiplier;
-                    TrommelSpeed.Value           = DefaultMultiplier;
-                    JigSpeed.Value               = DefaultMultiplier;
-                    MinersMossCapacity.Value     = DefaultMultiplier;
+                    Hopper_Capacity.Value        = DefaultMultiplier;
+                    Conveyor_Speed.Value         = DefaultMultiplier;
+                    VibratingScreen_Speed.Value  = DefaultMultiplier;
+                    Derocker_Speed.Value         = DefaultMultiplier;
+                    Sluice_Speed.Value           = DefaultMultiplier;
+                    Trommel_Speed.Value          = DefaultMultiplier;
+                    Jig_Speed.Value              = DefaultMultiplier;
+                    MinersMoss_Capacity.Value    = DefaultMultiplier;
                     break;
                 case 4:
                     Group4Multiplier.Value           = DefaultMultiplier;
-                    NuggeterSpeed.Value              = DefaultMultiplier;
-                    MagnetiteSeparatorSpeed.Value    = DefaultMultiplier;
-                    WaveTableSpeed.Value             = DefaultMultiplier;
-                    WaveTableCapacity.Value          = DefaultMultiplier;
+                    Nuggetator_Speed.Value           = DefaultMultiplier;
+                    MagnetiteSeparator_Speed.Value   = DefaultMultiplier;
+                    WaveTable_Speed.Value            = DefaultMultiplier;
+                    WaveTable_Capacity.Value         = DefaultMultiplier;
                     break;
                 case 5:
-                    Group5Multiplier.Value           = DefaultMultiplier;
-                    MagnetiteTrailerCapacity.Value   = DefaultMultiplier;
-                    FuelTrailerCapacity.Value        = DefaultMultiplier;
+                    MagnetiteTrailer_Capacity.Value = DefaultMultiplier;
+                    FuelTrailer_Capacity.Value      = DefaultMultiplier;
                     break;
             }
-            _config.Save();
+            _cfg.Save();
         }
 
-        /// <summary>Setzt alle Multiplikatoren aller Gruppen zurück.</summary>
         public void ResetAll()
         {
             for (int i = 1; i <= 5; i++) ResetGroup(i);

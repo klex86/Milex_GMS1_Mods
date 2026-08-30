@@ -5,6 +5,18 @@ Das Format folgt den Grundsaetzen von [Keep a Changelog](https://keepachangelog.
 
 ---
 
+## [1.0.1] – 2026-08-30
+
+### Fehlerbehebungen & Verbesserungen
+
+- **Anzeigenamen im Menue funktionieren jetzt korrekt**: Alle Einstellungen zeigen nun ihren uebersetzten Namen statt des internen Dateinamens an. Ursache war eine falsche Benennung der Config-Keys (die Keys waren auf Deutsch statt auf Englisch).
+- **Einfacher / Erweiterter Modus jetzt pro Gruppe**: Jede der fuenf Gruppen hat einen eigenen Schalter. So kann man z. B. Gruppe 1 auf einfach lassen und Gruppe 3 auf erweitert schalten, ohne dass alle anderen Gruppen beeinflusst werden. Der globale Modus-Schalter wurde entfernt.
+- **Slider in 0.5-Schritten**: Alle Multiplikator-Regler rasten jetzt in Schritten von 0.5 ein (0.5, 1.0, 1.5, … 10.0). Stufenlose Werte zwischen den Schritten sind nicht mehr moeglich.
+- **Gruppe 5 (Anhaenger) hat keinen Gruppen-Multiplikator mehr**: Magnetitanhaenger und Kraftstoffanhaenger haben nichts miteinander zu tun und werden jetzt getrennt und unabhaengig voneinander eingestellt.
+- **Einzelregler im einfachen Modus gesperrt**: Wenn der einfache Modus einer Gruppe aktiv ist, sind die Einzelregler dieser Gruppe ausgegraut und koennen nicht veraendert werden.
+
+---
+
 ## [1.0.0] – 2026-08-30
 
 ### Neu

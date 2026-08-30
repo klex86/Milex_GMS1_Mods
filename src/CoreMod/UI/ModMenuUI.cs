@@ -749,15 +749,57 @@ namespace Milex.GMS1.Core.UI
             {
                 var floatEntry = (ConfigEntry<float>)entry;
                 float currentVal = floatEntry.Value;
+                float minVal = 0.0f;
+                float maxVal = 10.0f;
+                float step = 0.0f; // 0 = continuous
+
+                // Detect AcceptableValueList<float> (e.g. 0.5-step multipliers)
+                if (floatEntry.Description?.AcceptableValues is AcceptableValueList<float> valueList)
+                {
+                    var values = valueList.AcceptableValues;
+                    if (values != null && values.Length > 0)
+                    {
+                        minVal = values[0];
+                        maxVal = values[values.Length - 1];
+                        // Detect uniform step size from first two elements
+                        if (values.Length >= 2)
+                            step = values[1] - values[0];
+                    }
+                }
+                else if (floatEntry.Description?.AcceptableValues is AcceptableValueRange<float> range)
+                {
+                    minVal = range.MinValue;
+                    maxVal = range.MaxValue;
+                }
 
                 GUILayout.BeginHorizontal();
-                float newVal = GUILayout.HorizontalSlider(currentVal, 0.0f, 10.0f, GUILayout.Width(200));
+
+                float rawSlider = GUILayout.HorizontalSlider(currentVal, minVal, maxVal, GUILayout.Width(200));
+
+                // Snap to step if a fixed step size was detected
+                float newVal;
+                if (step > 0.0001f)
+                {
+                    newVal = Mathf.Round(rawSlider / step) * step;
+                    newVal = Mathf.Clamp(newVal, minVal, maxVal);
+                    newVal = (float)System.Math.Round(newVal, 2);
+                }
+                else
+                {
+                    newVal = rawSlider;
+                }
+
                 GUILayout.Space(8);
-                string textVal = GUILayout.TextField(newVal.ToString("0.00", CultureInfo.InvariantCulture), _textFieldStyle, GUILayout.Width(60));
+                string textVal = GUILayout.TextField(newVal.ToString("0.0#", CultureInfo.InvariantCulture), _textFieldStyle, GUILayout.Width(52));
 
                 if (float.TryParse(textVal, NumberStyles.Float, CultureInfo.InvariantCulture, out float parsedVal))
                 {
-                    newVal = parsedVal;
+                    if (step > 0.0001f)
+                    {
+                        parsedVal = Mathf.Round(parsedVal / step) * step;
+                        parsedVal = (float)System.Math.Round(parsedVal, 2);
+                    }
+                    newVal = Mathf.Clamp(parsedVal, minVal, maxVal);
                 }
 
                 if (Math.Abs(newVal - currentVal) > 0.001f)
@@ -769,6 +811,7 @@ namespace Milex.GMS1.Core.UI
                 GUILayout.FlexibleSpace();
                 GUILayout.EndHorizontal();
             }
+
             // 3. Integer Numbers
             else if (settingType == typeof(int))
             {
