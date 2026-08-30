@@ -6,14 +6,14 @@ Ein modulares Mod-System für **Gold Mining Simulator** (*Gold Rush: The Game*),
 
 ## Dokumentation & Navigation
 
-Die folgenden Links führen direkt zu den vertiefenden Anleitungen und Dokumentationen der einzelnen Komponenten:
+Die folgenden Links führen direkt zu den Anleitungen und Änderungshistorien (Changelogs) der einzelnen Komponenten:
 
-| Thema / Mod | Beschreibung | Dokumentation |
-|---|---|---|
-| **Milex GMS1 CoreMod** | Zentrales Verwaltungssystem, Ingame-Menü & Sprachverwaltung | [CoreMod Dokumentation](src/CoreMod/README.md) |
-| **Milex GMS1 HelloMod** | Beispiel-Mod zur Demonstration der Funktionen | [HelloMod Dokumentation](src/Mods/HelloMod/README.md) |
-| **Tastenbelegung** | Übersicht der Hotkeys und deren Umbelegung im Spiel | [Tasten-Übersicht](KEYBINDINGS.md) |
-| **Changelog** | Übersicht aller Neuerungen, Verbesserungen und Fixes | [Changelog ansehen](CHANGELOG.md) |
+| Thema / Mod | Beschreibung | Dokumentation | Changelog |
+|---|---|---|---|
+| **Gesamtes Projekt** | Gesamt-Übersicht und Haupt-Anleitung | [Haupt-Dokumentation](README.md) | [Gesamt-Changelog](CHANGELOG.md) |
+| **Milex GMS1 CoreMod** | Zentrales Verwaltungssystem, Ingame-Menü & Sprachverwaltung | [CoreMod Anleitung](src/CoreMod/README.md) | [CoreMod Changelog](src/CoreMod/CHANGELOG.md) |
+| **Milex GMS1 HelloMod** | Beispiel-Mod zur Demonstration der Funktionen | [HelloMod Anleitung](src/Mods/HelloMod/README.md) | [HelloMod Changelog](src/Mods/HelloMod/CHANGELOG.md) |
+| **Tastenbelegung** | Übersicht der Hotkeys und deren Umbelegung im Spiel | [Tasten-Übersicht](KEYBINDINGS.md) | - |
 
 ---
 

@@ -1,6 +1,6 @@
 # Milex GMS1 HelloMod
 
-- **Version:** `1.1.0`
+- **Version:** `1.1.0` ([Changelog ansehen](CHANGELOG.md))
 - **Mod-Name:** HelloMod
 - **Autor:** Milex
 - **Dateiname:** `Milex_GMS1_HelloMod.dll`

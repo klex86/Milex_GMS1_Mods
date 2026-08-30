@@ -1,6 +1,6 @@
 # Milex GMS1 CoreMod
 
-- **Version:** `1.2.0`
+- **Version:** `1.2.0` ([Changelog ansehen](CHANGELOG.md))
 - **Mod-Name:** Milex GMS1 CoreMod
 - **Autor:** Milex
 - **Dateiname:** `Milex_GMS1_CoreMod.dll`
