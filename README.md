@@ -13,7 +13,8 @@ Die folgenden Links führen direkt zu den Anleitungen und Änderungshistorien (C
 | **Gesamtes Projekt** | Gesamt-Übersicht und Haupt-Anleitung | [Haupt-Dokumentation](README.md) | [Gesamt-Changelog](CHANGELOG.md) |
 | **Milex GMS1 CoreMod** | Zentrales Verwaltungssystem, Ingame-Menü & Sprachverwaltung | [CoreMod Anleitung](src/CoreMod/README.md) | [CoreMod Changelog](src/CoreMod/CHANGELOG.md) |
 | **Milex GMS1 HelloMod** | Beispiel-Mod zur Demonstration der Funktionen | [HelloMod Anleitung](src/Mods/HelloMod/README.md) | [HelloMod Changelog](src/Mods/HelloMod/CHANGELOG.md) |
-| **Milex GMS1 Production Tuner** | Regler fuer Geschwindigkeiten, Kapazitaeten und Hydraulik aller 40 Komponenten | [Production Tuner Anleitung](src/Mods/ProductionTuner/README.md) | [Production Tuner Changelog](src/Mods/ProductionTuner/CHANGELOG.md) |
+| **Milex GMS1 Production Tuner** | Feinstufige Regler fuer Geschwindigkeiten, Kapazitaeten und Laderaten aller 22 Komponenten | [Production Tuner Anleitung](src/Mods/ProductionTuner/README.md) | [Production Tuner Changelog](src/Mods/ProductionTuner/CHANGELOG.md) |
+| **Community Wissenskompendium** | Umfassende Reverse-Engineering-Dokumentation aus 10 Community-Mods & Originalspiel | [Wissenskompendium](Community%20Knowledge/COMMUNITY_KNOWLEDGE_COMPENDIUM.md) | - |
 | **Tastenbelegung** | Übersicht der Hotkeys und deren Umbelegung im Spiel | [Tasten-Übersicht](KEYBINDINGS.md) | - |
 
 ---

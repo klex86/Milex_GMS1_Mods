@@ -1,59 +1,40 @@
-# Patches – Phase 2
+# Patches – Production Tuner (Phase 2)
 
-Dieser Ordner ist für die Harmony-Patch-Klassen des Production Tuner Mods reserviert.
+Dieser Ordner enthält alle aktiven Harmony-Patch-Klassen des `Milex GMS1 Production Tuner`.
 
-## Was hier hingehört
+## Struktur & Domänen
 
-Sobald die Spiel-DLLs (`Assembly-CSharp.dll`) mit einem Dekompiler (z. B. ILSpy oder dnSpy)
-analysiert wurden, werden hier für jede der Komponenten Harmony-Patch-Klassen angelegt.
+Die Patches sind strikt nach funktionalen Domänen organisiert:
 
-Jede Patch-Klasse greift in die interne Methode oder das Feld der Spielklasse ein und
-multipliziert den Originalwert mit dem berechneten Multiplikator aus dem `TuningService`.
-
-## Muster einer Patch-Klasse (Beispiel – nach Dekompilierung ausfüllen)
-
-```csharp
-using HarmonyLib;
-using Milex.GMS1.Mods.ProductionTuner.Services;
-
-namespace Milex.GMS1.Mods.ProductionTuner.Patches
-{
-    // TODO: Replace GameClass and MethodName after decompiling Assembly-CSharp.dll
-    [HarmonyPatch(typeof(GameClass), "MethodName")]
-    internal static class GameClass_MethodName_Patch
-    {
-        // Example: Postfix patch scaling return value with the multiplier
-        static void Postfix(ref float __result)
-        {
-            __result *= ProductionTunerPlugin.Service.GetShovelFillSpeed();
-        }
-    }
-}
+```
+Patches/
+├── Tools/
+│   ├── ShovelPatch.cs              (GoldDigger.Shovel: MaxVolume + Sqrt-Blades)
+│   └── BucketPatch.cs              (GoldDigger.Bucket: MaxVolume)
+├── WashPlants/
+│   ├── HogPanDirtBoxPatch.cs       (GoldDigger.HogPanDirtBox: PlaneVolumeMax + Wasserschutz)
+│   ├── MobileWashPlantPatch.cs     (GoldDigger.MobileWashplant + Mini: MaxFill + FillSpeed)
+│   ├── WashPlantShakerPatch.cs     (GoldDigger.WashplantShakerBase: MaxFill + FillSpeed)
+│   ├── SluiceBoxPatch.cs           (GoldDigger.WashPlantSluiceBoxDirt: MaxFill)
+│   └── MinersMossPatch.cs          (GoldDigger.MinersMoss: MaxGroundVolume)
+├── Vehicles/
+│   ├── ExcavatorPatch.cs           (Koparka: Digging + BladesBoxCollider)
+│   ├── WheelLoaderPatch.cs         (Ladowarka: Digging + _invmax + Hydraulik-Torque)
+│   ├── BackhoeLoaderPatch.cs       (KoparkoLadowarka: Front- & Heck-DiggingController)
+│   └── DumpTruckPatch.cs           (GoldDigger.DumpTruck: Digging)
+├── Processing/
+│   ├── MatScrubberPatch.cs         (GoldDigger.MatScrubber: CleanigDirtSpeed + *InBucket)
+│   ├── MagnetiteSeparatorPatch.cs  (GoldDigger.MagnetiteSeparator: MaxFill + FillOutSpeed)
+│   └── WaveTablePatch.cs           (GoldDigger.WaveTable: MaxGroundVolume + Zyklus-Timer)
+└── Logistics/
+    ├── ConveyorGroundPatch.cs      (GoldDigger.ConveyorGround: MaxDirt)
+    ├── ConveyorElevatorPatch.cs    (GoldDigger.ConveyorElevator: BucketCapacity)
+    ├── MagnetiteTrailerPatch.cs    (GoldDigger.MagnetiteTrailer: MaxMagnetiteTrailerVolume)
+    └── FuelTrailerPatch.cs         (GoldDigger.FuelStationController: MaxCapacity + Betankungstempo)
 ```
 
-## Zuordnungstabelle – TODO: In Phase 2 ausfüllen
-
-| Komponente                         | TuningService-Methode               | Spielklasse (TODO)       | Methode/Feld (TODO)      |
-|------------------------------------|-------------------------------------|--------------------------|--------------------------|
-| Schaufel (Fill Speed)              | GetShovelFillSpeed()                | ?                        | ?                        |
-| Eimer (Kapazitaet)                 | GetBucketCapacity()                 | ?                        | ?                        |
-| Hog Pan (Kapazitaet)               | GetHogPanCapacity()                 | ?                        | ?                        |
-| Mobile Waschanlage (Speed)         | GetMobileWashPlantSpeed()           | ?                        | ?                        |
-| Mobile Waschanlage (Kapazitaet)    | GetMobileWashPlantCapacity()        | ?                        | ?                        |
-| Bagger (alle: Mini & Gross)        | GetExcavatorDigSpeed()              | ?                        | ?                        |
-| Radlader                           | GetWheelLoaderLoadSpeed()           | ?                        | ?                        |
-| Baggerlader                        | GetBackhoeLoaderLoadSpeed()         | ?                        | ?                        |
-| Muldenkipper (Dump Truck)          | GetDumpTruckCapacity()              | ?                        | ?                        |
-| Einfuelltrichter                   | GetHopperCapacity()                 | ?                        | ?                        |
-| Foerderband-Eimer                  | GetConveyorBucketCapacity()         | ?                        | ?                        |
-| Waschanlagen (Kapazitaet)          | GetWashplantCapacity()              | ?                        | ?                        |
-| Waschanlagen (Speed)               | GetWashplantSpeed()                 | ?                        | ?                        |
-| Waschrinnen (Sluice Boxes)         | GetSluiceboxCapacity()              | ?                        | ?                        |
-| Miner's Moss                       | GetMinersMossCapacity()             | ?                        | ?                        |
-| Nuggetator                         | GetNuggetatorSpeed()                | ?                        | ?                        |
-| Magnetitabscheider (Speed)         | GetMagnetiteSeparatorSpeed()        | ?                        | ?                        |
-| Magnetitabscheider (Kapazitaet)    | GetMagnetiteSeparatorCapacity()     | ?                        | ?                        |
-| Wave Table (Speed)                 | GetWaveTableSpeed()                 | ?                        | ?                        |
-| Wave Table (Kapazitaet)            | GetWaveTableCapacity()              | ?                        | ?                        |
-| Magnetitanhaenger                  | GetMagnetiteTrailerCapacity()       | ?                        | ?                        |
-| Kraftstoffanhaenger                | GetFuelTrailerCapacity()            | ?                        | ?                        |
+## Sicherheits- & Entkopplungsprinzipien
+1. **OriginalValueStore**: Vor jedem Multiplizieren wird der originale Vanilla-Basiswert gesichert. Bei Mod-Deaktivierung oder Slider-Reset wird exakt dieser Basiswert wiederhergestellt.
+2. **FieldCache**: Alle Reflection-Lookups werden gecacht. Keine Reflection-Suchen in Update-Schleifen.
+3. **OrangeBeastFilter**: Die Großwaschanlage Tier 5 *Orange Beast* wird von Standard-Rüttler-Patches ausgenommen, um Savegame-Zähler zu schützen.
+4. **Wasserschutz**: In `HogPanDirtBox.ProcessPlane` wird der Wasserverbrauch auf dem Vanilla-Basiswert verankert, damit die Hog Pan bei höherer Kapazität nicht trockenläuft.

@@ -84,5 +84,32 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         public float GetMagnetiteTrailerCapacity() => _cfg.MagnetiteTrailer_Capacity.Value;
 
         public float GetFuelTrailerCapacity() => _cfg.FuelTrailer_Capacity.Value;
+
+        // ===========================================================
+        // Property Accessors for Harmony Patches
+        // ===========================================================
+
+        public float ShovelFillSpeedMultiplier => GetShovelFillSpeed();
+        public float BucketCapacityMultiplier => GetBucketCapacity();
+        public float HogPanCapacityMultiplier => GetHogPanCapacity();
+        public float MobileWashPlantSpeedMultiplier => GetMobileWashPlantSpeed();
+        public float MobileWashPlantCapacityMultiplier => GetMobileWashPlantCapacity();
+        public float ExcavatorDigSpeedMultiplier => GetExcavatorDigSpeed();
+        public float WheelLoaderLoadSpeedMultiplier => GetWheelLoaderLoadSpeed();
+        public float BackhoeLoaderLoadSpeedMultiplier => GetBackhoeLoaderLoadSpeed();
+        public float DumpTruckCapacityMultiplier => GetDumpTruckCapacity();
+        public float HopperCapacityMultiplier => GetHopperCapacity();
+        public float ConveyorBucketCapacityMultiplier => GetConveyorBucketCapacity();
+        public float WashplantCapacityMultiplier => GetWashplantCapacity();
+        public float WashplantSpeedMultiplier => GetWashplantSpeed();
+        public float SluiceboxCapacityMultiplier => GetSluiceboxCapacity();
+        public float MinersMossCapacityMultiplier => GetMinersMossCapacity();
+        public float NuggetatorSpeedMultiplier => GetNuggetatorSpeed();
+        public float MagnetiteSeparatorSpeedMultiplier => GetMagnetiteSeparatorSpeed();
+        public float MagnetiteSeparatorCapacityMultiplier => GetMagnetiteSeparatorCapacity();
+        public float WaveTableSpeedMultiplier => GetWaveTableSpeed();
+        public float WaveTableCapacityMultiplier => GetWaveTableCapacity();
+        public float MagnetiteTrailerCapacityMultiplier => GetMagnetiteTrailerCapacity();
+        public float FuelTrailerCapacityMultiplier => GetFuelTrailerCapacity();
     }
 }

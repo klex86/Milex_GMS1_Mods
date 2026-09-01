@@ -4,6 +4,22 @@ Alle relevanten Änderungen und Neuerungen der Mod-Sammlung werden in dieser Dat
 
 ---
 
+## [1.5.0] - 2026-09-01
+
+### Meilenstein: Production Tuner Phase 2 (Vollstaendige Spielintegration)
+- **Vollstaendige Umsetzung aller 22 Komponenten-Patches**:
+  - Sämtliche Schieberegler des Production Tuners (Schaufeln, Eimer, Bagger, Radlader, Baggerlader, Kipper, Förderbänder, Waschanlagen, Rüttler, Rinnen, Miner's Moss, Nuggetator, Magnetitabscheider, Wave Table, Anhänger) sind nun über dedizierte Harmony-Patches fest im Spiel verankert.
+- **Ressourcen-Neutralitaet & Infrastruktur-Schutz**:
+  - Der Wasserabfluss der Hog Pan wurde an den Vanilla-Basiswert gekoppelt, sodass sie selbst bei maximal vergrößerter Kapazität niemals vorzeitig trockenläuft.
+  - Generatoren und Wasserpumpen werden nicht durch erhöhten Durchsatz überlastet; alle Strom- und Wassernetze bleiben vollkommen stabil.
+  - Das Hubdrehmoment von Radladern wird proportional zur Schaufellast verstärkt, um schwere Lasten problemlos zu heben.
+- **OriginalValueStore & Drift-Schutz**:
+  - Alle Original-Basiswerte werden instanzgenau gepuffert. Beim Deaktivieren des Mods oder beim Bewegen von Slidern werden die Werte im laufenden Spiel sauber wiederhergestellt.
+- **Community-Credits & Freie Lizenz**:
+  - Ausführliche Danksagungen an die Modding-Community und freie Open-Source-Lizenz in die Dokumentation aufgenommen.
+
+---
+
 ## [1.4.0] - 2026-08-30
 
 ### Neuerungen & Optimierungen in Production Tuner

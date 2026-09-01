@@ -5,6 +5,32 @@ Das Format folgt den Grundsaetzen von [Keep a Changelog](https://keepachangelog.
 
 ---
 
+## [1.2.0] – 2026-09-01
+
+### Phase 2: Vollstaendige Spiel-Integration (Harmony-Patches)
+
+- **Alle 22 Komponenten vollstaendig implementiert**:
+  - **Tools**: Handschaufel (`GoldDigger.Shovel`) mit $\sqrt{M}$-Skalierung der Schaufelraender, Eimer (`GoldDigger.Bucket`).
+  - **Waschanlagen**: Hog Pan (`GoldDigger.HogPanDirtBox`), Mobile & Mini Waschanlage (`GoldDigger.MobileWashplant`, `MiniWashplant`), Grosswaschanlagen-Rüttler (`GoldDigger.WashplantShakerBase`), Waschrinnen (`GoldDigger.WashPlantSluiceBoxDirt`), Miner's Moss (`GoldDigger.MinersMoss`).
+  - **Fahrzeuge**: Bagger alle (`Koparka`), Radlader (`Ladowarka`) mit Kehrwert-Erhaltung und Drehmoment-Anpassung, Baggerlader (`KoparkoLadowarka`) fuer Front- und Heckarm, Muldenkipper (`GoldDigger.DumpTruck`).
+  - **Feinverarbeitung**: Nuggetator (`GoldDigger.MatScrubber`), Magnetitabscheider (`GoldDigger.MagnetiteSeparator`), Wave Table (`GoldDigger.WaveTable`) mit timer-basierter Zyklusbeschleunigung.
+  - **Logistik & Anhaenger**: Einfuelltrichter (`GoldDigger.ConveyorGround`), Schraegfoerderer-Eimer (`GoldDigger.ConveyorElevator`), Magnetitanhaenger (`GoldDigger.MagnetiteTrailer`), Kraftstoffanhaenger (`GoldDigger.FuelStationController`) mit proportionaler Betankungsrate.
+- **Ressourcen-Neutralitaet & Infrastruktur-Schutz**:
+  - **Wasserschutz der Hog Pan**: In `ProcessPlane` wird der Wasserabfluss an den Vanilla-Basiswert gekoppelt. Kein vorzeitiges Trockenlaufen mehr bei 2x–10x Dreckkapazitaet.
+  - **Stromnetz & Wasserpumpen**: Nennleistungsaufnahmen bleiben unveraendert. Kein Ausloesen der Generatorsicherung oder Druckabfall an den Wasserpumpen.
+  - **Hydraulik-Kraft**: Bei schwereren Schaufelladungen wird das Drehmoment der Hebezylinder (`AnimatedJoint.MaxTorque`) automatisch angehoben.
+- **OriginalValueStore & Drift-Schutz**:
+  - Alle originalen Vanilla-Werte werden vor dem ersten Multiplizieren instanzgenau erfasst.
+  - Beim Deaktivieren des Mods oder beim Zuruecksetzen von Slidern werden die exakten Originalwerte im laufenden Spiel restauriert.
+- **Performance & Stabilitaet (`FieldCache` & `OrangeBeastFilter`)**:
+  - Gecachte Reflection-Lookups verhindern Framerate-Einbrueche in Update-Schleifen.
+  - Die Grosswaschanlage Tier 5 *Orange Beast* wird gezielt vor unpassenden Sub-Shaker-Patches geschuetzt.
+- **Community-Credits & Open-Source-Lizenz**:
+  - Danksagungen an alle 10 Community-Modder (stregkoden, DeepCore/Jonathan, FedeRama, GMS Community) in der README hinterlegt.
+  - Vollstaendig freie Lizenz (Public Domain / MIT-Stil) fuer jedermann erteilt.
+
+---
+
 ## [1.1.0] – 2026-08-30
 
 ### Neue Funktionen & Überarbeitungen

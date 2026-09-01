@@ -3,6 +3,9 @@
 [Oo]bj/
 out/
 
+Community Knowledge/
+GMS1 Export/
+
 ## Visual Studio
 .vs/
 *.user

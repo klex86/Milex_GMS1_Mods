@@ -1,6 +1,7 @@
 using BepInEx;
 using Milex.GMS1.Core;
 using Milex.GMS1.Mods.ProductionTuner.Config;
+using Milex.GMS1.Mods.ProductionTuner.Helpers;
 using Milex.GMS1.Mods.ProductionTuner.Services;
 
 namespace Milex.GMS1.Mods.ProductionTuner
@@ -59,10 +60,12 @@ namespace Milex.GMS1.Mods.ProductionTuner
 
         /// <summary>
         /// Called when the mod is disabled via the Mod Menu during runtime.
-        /// All Harmony patches are removed automatically and the game continues with default values.
+        /// All Harmony patches are removed automatically and all tracked instances
+        /// are restored back to their exact original vanilla values.
         /// </summary>
         protected override void OnModDisabled()
         {
+            OriginalValueStore.RestoreAll();
             LogInfo(Translate("log.disabled", "Production Tuner disabled. Original game values restored."));
         }
     }
