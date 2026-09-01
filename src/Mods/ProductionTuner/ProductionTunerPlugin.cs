@@ -12,11 +12,11 @@ using Milex.GMS1.Mods.ProductionTuner.Services;
 namespace Milex.GMS1.Mods.ProductionTuner
 {
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
-    [BepInDependency("de.milex.gms1.coremod", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency(CorePlugin.PluginGuid, BepInDependency.DependencyFlags.HardDependency)]
     public class ProductionTunerPlugin : ModBase
     {
-        public const string PluginGuid = "de.milex.gms1.productiontuner";
-        public const string PluginName = "Production Tuner";
+        public const string PluginGuid = "com.milex.gms1.productiontuner";
+        public const string PluginName = "Milex GMS1 Production Tuner";
         public const string PluginVersion = "1.3.0";
 
         public override string ModGuid => PluginGuid;
