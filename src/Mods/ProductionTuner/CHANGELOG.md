@@ -21,6 +21,7 @@ Das Format folgt den Grundsaetzen von [Keep a Changelog](https://keepachangelog.
     - **Schaufel-Kippgeschwindigkeit** (Kipp- und Schöpfzylinder der Baggerschaufel, Default: 1.0x)
   - Automatische Anpassung von `Rigidbody.maxAngularVelocity`, damit die Drehgeschwindigkeit physikalisch nicht künstlich abgeriegelt wird.
 - **High-Performance Fast-Path**: Alle neuen Regler nutzen die Zero-Allocation-Architektur mit sofortigem `O(1)`-Ausstieg bei unveränderten Werten.
+- **Präzise Lokalisierung & kompakte Texte**: Alle Bezeichnungen wurden 1:1 an die offiziellen Begriffe des Originalspiels angepasst (*Muldenkipper*, *Radlader*, *Baggerlader*, *Rütteltisch*, *Gold Nuggetator*, *Miner's Moss* usw.). Sämtliche Beschreibungen wurden auf prägnante Erklärungen gestrafft, die direkt sagen, was der Regler im Spiel bewirkt.
 
 ---
 

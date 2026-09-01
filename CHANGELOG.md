@@ -14,6 +14,9 @@ Alle relevanten Änderungen und Neuerungen der Mod-Sammlung werden in dieser Dat
 - **Getrennte Bagger-Hydraulik-Regelung**:
   - 3 neue Einzelregler für Bagger (`Koparka`): Ausleger-Geschwindigkeit (2.0x), Turmdrehung (2.0x) und Schaufel-Kippgeschwindigkeit (1.0x).
   - Volle Bewegungsfreiheit durch dynamische Anpassung von `Rigidbody.maxAngularVelocity`.
+- **Lokalisierungs-Abgleich mit Originalspiel**:
+  - Sämtliche Komponenten wurden mit den Begriffen der Spiel-Dateien abgeglichen (*Muldenkipper*, *Radlader*, *Baggerlader*, *Rütteltisch*, *Gold Nuggetator*, *Miner's Moss* usw.).
+  - Alle Erklärungen wurden kompakt formuliert, ohne technische Formeln oder Interna.
 
 ---
 
