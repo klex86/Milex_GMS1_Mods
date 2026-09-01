@@ -1,90 +1,82 @@
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
-using Milex.GMS1.Mods.ProductionTuner.Helpers;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
     /// <summary>
-    /// Scales capacity (MaxFill) and processing speed (FillSpeed) for both MobileWashplant and MiniWashplant.
+    /// Scales capacity (MaxFill) and processing speed (FillSpeed) for MobileWashplant and MiniWashplant.
+    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
     /// </summary>
     public static class MobileWashPlantPatch
     {
-        [HarmonyPatch]
+        private struct PlantBase
+        {
+            public float BaseFill;
+            public float BaseSpeed;
+        }
+
+        private static readonly Dictionary<int, PlantBase> BaseValues = new Dictionary<int, PlantBase>();
+        private static float _lastCapMultiplier = -1f;
+        private static float _lastSpdMultiplier = -1f;
+
+        [HarmonyPatch(typeof(GoldDigger.MobileWashplant), "Update")]
         public static class MobileWashplantSubPatch
         {
-            [HarmonyTargetMethod]
-            private static MethodBase TargetMethod()
-            {
-                Type type = AccessTools.TypeByName("GoldDigger.MobileWashplant");
-                return type != null ? AccessTools.Method(type, "Update") : null;
-            }
-
             [HarmonyPostfix]
-            public static void Postfix(object __instance)
+            public static void Postfix(GoldDigger.MobileWashplant __instance)
             {
-                ApplyValues(__instance, "MobileWashplant");
+                if (__instance == null) return;
+                ApplyValues(__instance.GetInstanceID(), ref __instance.MaxFill, ref __instance.FillSpeed);
             }
         }
 
-        [HarmonyPatch]
+        [HarmonyPatch(typeof(GoldDigger.MiniWashplant), "Update")]
         public static class MiniWashplantSubPatch
         {
-            [HarmonyTargetMethod]
-            private static MethodBase TargetMethod()
-            {
-                Type type = AccessTools.TypeByName("GoldDigger.MiniWashplant");
-                return type != null ? AccessTools.Method(type, "Update") : null;
-            }
-
             [HarmonyPostfix]
-            public static void Postfix(object __instance)
+            public static void Postfix(GoldDigger.MiniWashplant __instance)
             {
-                ApplyValues(__instance, "MiniWashplant");
+                if (__instance == null) return;
+                ApplyValues(__instance.GetInstanceID(), ref __instance.MaxFill, ref __instance.FillSpeed);
             }
         }
 
-        private static void ApplyValues(object instance, string prefix)
+        private static void ApplyValues(int id, ref float maxFill, ref float fillSpeed)
         {
-            if (instance == null) return;
+            float capMultiplier = ProductionTunerPlugin.Service != null
+                ? ProductionTunerPlugin.Service.MobileWashPlantCapacityMultiplier
+                : 1f;
 
-            Type type = instance.GetType();
-            FieldInfo maxFillField = FieldCache.GetField(type, "MaxFill");
-            FieldInfo fillSpeedField = FieldCache.GetField(type, "FillSpeed");
+            float spdMultiplier = ProductionTunerPlugin.Service != null
+                ? ProductionTunerPlugin.Service.MobileWashPlantSpeedMultiplier
+                : 1f;
 
-            if (maxFillField != null)
+            // Zero-allocation fast-path
+            if (BaseValues.TryGetValue(id, out var baseVal))
             {
-                float curFill = (float)maxFillField.GetValue(instance);
-                float baseFill = OriginalValueStore.GetOrRegisterFloat(instance, prefix + "_MaxFill", curFill, (obj, val) =>
-                    maxFillField.SetValue(obj, val));
-
-                float capMultiplier = ProductionTunerPlugin.Service != null
-                    ? ProductionTunerPlugin.Service.MobileWashPlantCapacityMultiplier
-                    : 1f;
-
-                float targetFill = baseFill * capMultiplier;
-                if (Math.Abs(curFill - targetFill) > 0.001f)
-                {
-                    maxFillField.SetValue(instance, targetFill);
-                }
+                if (capMultiplier == _lastCapMultiplier && spdMultiplier == _lastSpdMultiplier) return;
+                maxFill = baseVal.BaseFill * capMultiplier;
+                fillSpeed = baseVal.BaseSpeed * spdMultiplier;
+                return;
             }
 
-            if (fillSpeedField != null)
+            baseVal = new PlantBase
             {
-                float curSpeed = (float)fillSpeedField.GetValue(instance);
-                float baseSpeed = OriginalValueStore.GetOrRegisterFloat(instance, prefix + "_FillSpeed", curSpeed, (obj, val) =>
-                    fillSpeedField.SetValue(obj, val));
+                BaseFill = maxFill,
+                BaseSpeed = fillSpeed
+            };
+            BaseValues[id] = baseVal;
+            maxFill = baseVal.BaseFill * capMultiplier;
+            fillSpeed = baseVal.BaseSpeed * spdMultiplier;
+            _lastCapMultiplier = capMultiplier;
+            _lastSpdMultiplier = spdMultiplier;
+        }
 
-                float spdMultiplier = ProductionTunerPlugin.Service != null
-                    ? ProductionTunerPlugin.Service.MobileWashPlantSpeedMultiplier
-                    : 1f;
-
-                float targetSpeed = baseSpeed * spdMultiplier;
-                if (Math.Abs(curSpeed - targetSpeed) > 0.001f)
-                {
-                    fillSpeedField.SetValue(instance, targetSpeed);
-                }
-            }
+        public static void Reset()
+        {
+            BaseValues.Clear();
+            _lastCapMultiplier = -1f;
+            _lastSpdMultiplier = -1f;
         }
     }
 }

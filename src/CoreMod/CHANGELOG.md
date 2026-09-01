@@ -4,6 +4,16 @@ Alle Änderungen am zentralen Mod-Framework `Milex GMS1 CoreMod`.
 
 ---
 
+## [1.2.2] - 2026-09-02
+
+### Fehlerbehebungen & Stabilität
+- **Mauszeiger-Wiederherstellung im Spielmenü behoben**:
+  - Beim Schließen des Mod-Menüs wird der vorherige Mauszeiger-Zustand nun exakt wiederhergestellt. Wenn das Menü im Pausenmenü oder Inventar geöffnet wird, bleibt der Mauszeiger nach dem Schließen sichtbar und frei beweglich.
+- **UI-Texturen gegen Szenenwechsel-Entladung geschützt**:
+  - Prozedurale Menü- und Slider-Texturen sind nun mit `HideFlags.HideAndDontSave` vor der Unity-Garbage-Collection bei Szenenwechseln geschützt und werden bei Bedarf automatisch regeneriert.
+
+---
+
 ## [1.2.1] - 2026-08-30
 
 ### Verbesserungen & Fehlerbehebungen

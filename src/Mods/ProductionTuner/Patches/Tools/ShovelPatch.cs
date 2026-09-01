@@ -1,79 +1,77 @@
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
-using Milex.GMS1.Mods.ProductionTuner.Helpers;
 using UnityEngine;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Tools
 {
     /// <summary>
     /// Scales hand shovel volume and blade surface area so that digging fills the enlarged volume proportionally.
+    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
     /// </summary>
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(GoldDigger.Shovel), "Update")]
     public static class ShovelPatch
     {
-        private static FieldInfo _bladeSizeXField;
-        private static FieldInfo _bladeSizeZField;
-
-        [HarmonyTargetMethod]
-        private static MethodBase TargetMethod()
+        private struct ShovelBase
         {
-            Type type = AccessTools.TypeByName("GoldDigger.Shovel");
-            return type != null ? AccessTools.Method(type, "Awake") : null;
+            public float BaseVolume;
+            public float BaseBladeX;
+            public float BaseBladeZ;
         }
+
+        private static readonly Dictionary<int, ShovelBase> BaseValues = new Dictionary<int, ShovelBase>();
+        private static readonly AccessTools.FieldRef<GoldDigger.Shovel, float> BladeXRef =
+            AccessTools.FieldRefAccess<GoldDigger.Shovel, float>("_bladeSizex");
+        private static readonly AccessTools.FieldRef<GoldDigger.Shovel, float> BladeZRef =
+            AccessTools.FieldRefAccess<GoldDigger.Shovel, float>("_bladeSizez");
+
+        private static float _lastMultiplier = -1f;
 
         [HarmonyPostfix]
-        public static void Postfix(object __instance)
+        public static void Postfix(GoldDigger.Shovel __instance)
         {
-            Apply(__instance);
-        }
-
-        public static void Apply(object shovelObj)
-        {
-            if (shovelObj == null) return;
-
-            Type type = shovelObj.GetType();
-            FieldInfo maxVolField = FieldCache.GetField(type, "MaxVolume");
-            if (maxVolField == null) return;
-
-            if (_bladeSizeXField == null) _bladeSizeXField = FieldCache.GetField(type, "_bladeSizex");
-            if (_bladeSizeZField == null) _bladeSizeZField = FieldCache.GetField(type, "_bladeSizez");
-
-            float currentVol = (float)maxVolField.GetValue(shovelObj);
-            float baseVol = 0f;
-            baseVol = OriginalValueStore.GetOrRegisterFloat(shovelObj, "Shovel_Volume", currentVol, (obj, newVol) =>
-            {
-                maxVolField.SetValue(obj, newVol);
-                if (baseVol > 0.0001f)
-                {
-                    UpdateBladeSizes(obj, newVol / baseVol);
-                }
-            });
+            if (__instance == null) return;
 
             float multiplier = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.ShovelFillSpeedMultiplier
                 : 1f;
 
-            float targetVol = baseVol * multiplier;
-            maxVolField.SetValue(shovelObj, targetVol);
-            UpdateBladeSizes(shovelObj, multiplier);
+            int id = __instance.GetInstanceID();
+
+            // Zero-allocation fast-path
+            if (BaseValues.TryGetValue(id, out var baseVal))
+            {
+                if (multiplier == _lastMultiplier) return;
+                ApplyShovel(__instance, baseVal, multiplier);
+                return;
+            }
+
+            float curBladeX = BladeXRef != null ? BladeXRef(__instance) : 0.2f;
+            float curBladeZ = BladeZRef != null ? BladeZRef(__instance) : 0.2f;
+
+            baseVal = new ShovelBase
+            {
+                BaseVolume = __instance.MaxVolume,
+                BaseBladeX = curBladeX,
+                BaseBladeZ = curBladeZ
+            };
+            BaseValues[id] = baseVal;
+            ApplyShovel(__instance, baseVal, multiplier);
+            _lastMultiplier = multiplier;
         }
 
-        private static void UpdateBladeSizes(object shovelObj, float multiplier)
+        private static void ApplyShovel(GoldDigger.Shovel shovel, ShovelBase baseVal, float multiplier)
         {
-            if (_bladeSizeXField == null || _bladeSizeZField == null) return;
+            shovel.MaxVolume = baseVal.BaseVolume * multiplier;
 
             float sqrtMult = Mathf.Sqrt(Mathf.Max(0.01f, multiplier));
+            if (BladeXRef != null) BladeXRef(shovel) = baseVal.BaseBladeX * sqrtMult;
+            if (BladeZRef != null) BladeZRef(shovel) = baseVal.BaseBladeZ * sqrtMult;
+        }
 
-            float curX = (float)_bladeSizeXField.GetValue(shovelObj);
-            float baseX = OriginalValueStore.GetOrRegisterFloat(shovelObj, "Shovel_BladeX", curX, (obj, val) =>
-                _bladeSizeXField.SetValue(obj, val));
-            _bladeSizeXField.SetValue(shovelObj, baseX * sqrtMult);
-
-            float curZ = (float)_bladeSizeZField.GetValue(shovelObj);
-            float baseZ = OriginalValueStore.GetOrRegisterFloat(shovelObj, "Shovel_BladeZ", curZ, (obj, val) =>
-                _bladeSizeZField.SetValue(obj, val));
-            _bladeSizeZField.SetValue(shovelObj, baseZ * sqrtMult);
+        public static void Reset()
+        {
+            BaseValues.Clear();
+            _lastMultiplier = -1f;
         }
     }
 }

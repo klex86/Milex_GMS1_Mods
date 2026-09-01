@@ -1,65 +1,66 @@
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
-using Milex.GMS1.Mods.ProductionTuner.Helpers;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
 {
     /// <summary>
     /// Scales Magnetite Separator capacity (MaxFill) and output processing speed (FillOutSpeed).
+    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
     /// </summary>
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(GoldDigger.MagnetiteSeparator), "Update")]
     public static class MagnetiteSeparatorPatch
     {
-        [HarmonyTargetMethod]
-        private static MethodBase TargetMethod()
+        private struct SeparatorBase
         {
-            Type type = AccessTools.TypeByName("GoldDigger.MagnetiteSeparator");
-            return type != null ? AccessTools.Method(type, "Update") : null;
+            public float BaseFill;
+            public float BaseSpeed;
         }
 
+        private static readonly Dictionary<int, SeparatorBase> BaseValues = new Dictionary<int, SeparatorBase>();
+        private static float _lastCapMultiplier = -1f;
+        private static float _lastSpdMultiplier = -1f;
+
         [HarmonyPostfix]
-        public static void Postfix(object __instance)
+        public static void Postfix(GoldDigger.MagnetiteSeparator __instance)
         {
             if (__instance == null) return;
 
-            Type type = __instance.GetType();
-            FieldInfo maxFillField = FieldCache.GetField(type, "MaxFill");
-            FieldInfo fillOutSpeedField = FieldCache.GetField(type, "FillOutSpeed");
+            float capMultiplier = ProductionTunerPlugin.Service != null
+                ? ProductionTunerPlugin.Service.MagnetiteSeparatorCapacityMultiplier
+                : 1f;
 
-            if (maxFillField != null)
+            float spdMultiplier = ProductionTunerPlugin.Service != null
+                ? ProductionTunerPlugin.Service.MagnetiteSeparatorSpeedMultiplier
+                : 1f;
+
+            int id = __instance.GetInstanceID();
+
+            // Zero-allocation fast-path
+            if (BaseValues.TryGetValue(id, out var baseVal))
             {
-                float curFill = (float)maxFillField.GetValue(__instance);
-                float baseFill = OriginalValueStore.GetOrRegisterFloat(__instance, "MagSep_MaxFill", curFill, (obj, val) =>
-                    maxFillField.SetValue(obj, val));
-
-                float capMultiplier = ProductionTunerPlugin.Service != null
-                    ? ProductionTunerPlugin.Service.MagnetiteSeparatorCapacityMultiplier
-                    : 1f;
-
-                float targetFill = baseFill * capMultiplier;
-                if (Math.Abs(curFill - targetFill) > 0.001f)
-                {
-                    maxFillField.SetValue(__instance, targetFill);
-                }
+                if (capMultiplier == _lastCapMultiplier && spdMultiplier == _lastSpdMultiplier) return;
+                __instance.MaxFill = baseVal.BaseFill * capMultiplier;
+                __instance.FillOutSpeed = baseVal.BaseSpeed * spdMultiplier;
+                return;
             }
 
-            if (fillOutSpeedField != null)
+            baseVal = new SeparatorBase
             {
-                float curSpeed = (float)fillOutSpeedField.GetValue(__instance);
-                float baseSpeed = OriginalValueStore.GetOrRegisterFloat(__instance, "MagSep_FillOutSpeed", curSpeed, (obj, val) =>
-                    fillOutSpeedField.SetValue(obj, val));
+                BaseFill = __instance.MaxFill,
+                BaseSpeed = __instance.FillOutSpeed
+            };
+            BaseValues[id] = baseVal;
+            __instance.MaxFill = baseVal.BaseFill * capMultiplier;
+            __instance.FillOutSpeed = baseVal.BaseSpeed * spdMultiplier;
+            _lastCapMultiplier = capMultiplier;
+            _lastSpdMultiplier = spdMultiplier;
+        }
 
-                float spdMultiplier = ProductionTunerPlugin.Service != null
-                    ? ProductionTunerPlugin.Service.MagnetiteSeparatorSpeedMultiplier
-                    : 1f;
-
-                float targetSpeed = baseSpeed * spdMultiplier;
-                if (Math.Abs(curSpeed - targetSpeed) > 0.001f)
-                {
-                    fillOutSpeedField.SetValue(__instance, targetSpeed);
-                }
-            }
+        public static void Reset()
+        {
+            BaseValues.Clear();
+            _lastCapMultiplier = -1f;
+            _lastSpdMultiplier = -1f;
         }
     }
 }

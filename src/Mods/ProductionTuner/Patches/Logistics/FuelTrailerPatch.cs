@@ -1,85 +1,80 @@
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
-using Milex.GMS1.Mods.ProductionTuner.Helpers;
 using UnityEngine;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 {
     /// <summary>
-    /// Scales mobile fuel trailer capacity and refuel pump speed proportionally.
-    /// Identifies the trailer through its specific fuel station controller naming and baseline capacity.
+    /// Scales mobile fuel trailer capacity and refuel pump speed proportionally with zero frame rate impact.
     /// </summary>
     public static class FuelTrailerPatch
     {
-        [HarmonyPatch]
+        private static readonly Dictionary<int, float> BaseCapacities = new Dictionary<int, float>();
+        private static float _lastMultiplier = -1f;
+
+        [HarmonyPatch(typeof(GoldDigger.FuelStationController), "Update")]
         public static class FuelStationSubPatch
         {
-            [HarmonyTargetMethod]
-            private static MethodBase TargetMethod()
-            {
-                Type type = AccessTools.TypeByName("GoldDigger.FuelStationController");
-                return type != null ? AccessTools.Method(type, "Start") : null;
-            }
-
             [HarmonyPostfix]
-            public static void Postfix(object __instance)
-            {
-                if (__instance == null || !(__instance is Component comp)) return;
-
-                Type type = __instance.GetType();
-                FieldInfo maxCapField = FieldCache.GetField(type, "MaxCapacity");
-                if (maxCapField == null) return;
-
-                float curCap = (float)maxCapField.GetValue(__instance);
-
-                // Detect mobile fuel trailer via GameObject hierarchy and nominal 1000L baseline
-                Type trailerType = AccessTools.TypeByName("GoldDigger.Trailer");
-                bool isTrailer = trailerType != null && comp.GetComponentInParent(trailerType) != null;
-                if (comp.gameObject.name.Contains("End_Bottom") || (Mathf.Approximately(curCap, 1000f) && isTrailer))
-                {
-                    float baseCap = OriginalValueStore.GetOrRegisterFloat(__instance, "FuelTrailer_MaxCapacity", curCap, (obj, val) =>
-                        maxCapField.SetValue(obj, val));
-
-                    float multiplier = ProductionTunerPlugin.Service != null
-                        ? ProductionTunerPlugin.Service.FuelTrailerCapacityMultiplier
-                        : 1f;
-
-                    maxCapField.SetValue(__instance, baseCap * multiplier);
-                }
-            }
-        }
-
-        [HarmonyPatch]
-        public static class FuelPistolSubPatch
-        {
-            [HarmonyTargetMethod]
-            private static MethodBase TargetMethod()
-            {
-                Type type = AccessTools.TypeByName("GoldDigger.FuelPistolHoldable");
-                return type != null ? AccessTools.Method(type, "Attach") : null;
-            }
-
-            [HarmonyPostfix]
-            public static void Postfix(object __instance)
+            public static void Postfix(GoldDigger.FuelStationController __instance)
             {
                 if (__instance == null) return;
 
-                Type type = __instance.GetType();
-                FieldInfo speedField = FieldCache.GetField(type, "TankingSpeed");
-                if (speedField == null) return;
-
-                float curSpeed = (float)speedField.GetValue(__instance);
-                float baseSpeed = OriginalValueStore.GetOrRegisterFloat(__instance, "FuelPistol_TankingSpeed", curSpeed, (obj, val) =>
-                    speedField.SetValue(obj, val));
+                float curCap = __instance.MaxCapacity;
+                int id = __instance.GetInstanceID();
 
                 float multiplier = ProductionTunerPlugin.Service != null
                     ? ProductionTunerPlugin.Service.FuelTrailerCapacityMultiplier
                     : 1f;
 
-                // Scale pump speed proportionally with capacity multiplier so fueling is not excessively tedious
-                speedField.SetValue(__instance, baseSpeed * Mathf.Max(1f, multiplier));
+                // Zero-allocation fast-path
+                if (BaseCapacities.TryGetValue(id, out float baseCap))
+                {
+                    if (multiplier == _lastMultiplier) return;
+                    __instance.MaxCapacity = baseCap * multiplier;
+                    return;
+                }
+
+                // Detect mobile fuel trailer via GameObject hierarchy and nominal 1000L baseline
+                bool isTrailer = __instance.GetComponentInParent<GoldDigger.Trailer>() != null;
+                if (__instance.gameObject.name.Contains("End_Bottom") || (Mathf.Approximately(curCap, 1000f) && isTrailer))
+                {
+                    BaseCapacities[id] = curCap;
+                    __instance.MaxCapacity = curCap * multiplier;
+                    _lastMultiplier = multiplier;
+                }
             }
+        }
+
+        [HarmonyPatch(typeof(GoldDigger.FuelPistolHoldable), "Attach")]
+        public static class FuelPistolSubPatch
+        {
+            private static readonly Dictionary<int, float> BaseSpeeds = new Dictionary<int, float>();
+
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.FuelPistolHoldable __instance)
+            {
+                if (__instance == null) return;
+
+                int id = __instance.GetInstanceID();
+                if (!BaseSpeeds.TryGetValue(id, out float baseSpeed))
+                {
+                    baseSpeed = __instance.TankingSpeed;
+                    BaseSpeeds[id] = baseSpeed;
+                }
+
+                float multiplier = ProductionTunerPlugin.Service != null
+                    ? ProductionTunerPlugin.Service.FuelTrailerCapacityMultiplier
+                    : 1f;
+
+                __instance.TankingSpeed = baseSpeed * Mathf.Max(1f, multiplier);
+            }
+        }
+
+        public static void Reset()
+        {
+            BaseCapacities.Clear();
+            _lastMultiplier = -1f;
         }
     }
 }

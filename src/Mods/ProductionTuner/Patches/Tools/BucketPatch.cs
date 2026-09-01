@@ -1,45 +1,46 @@
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
-using Milex.GMS1.Mods.ProductionTuner.Helpers;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Tools
 {
     /// <summary>
-    /// Scales hand bucket capacity. Serves as the master baseline for downstream sluice and table cascade protection.
+    /// Scales hand bucket capacity with a zero-allocation fast exit path.
     /// </summary>
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(GoldDigger.Bucket), "Update")]
     public static class BucketPatch
     {
-        [HarmonyTargetMethod]
-        private static MethodBase TargetMethod()
-        {
-            Type type = AccessTools.TypeByName("GoldDigger.Bucket");
-            return type != null ? AccessTools.Method(type, "Update") : null;
-        }
+        private static readonly Dictionary<int, float> BaseVolumes = new Dictionary<int, float>();
+        private static float _lastMultiplier = -1f;
 
         [HarmonyPostfix]
-        public static void Postfix(object __instance)
+        public static void Postfix(GoldDigger.Bucket __instance)
         {
             if (__instance == null) return;
-
-            Type type = __instance.GetType();
-            FieldInfo maxVolField = FieldCache.GetField(type, "MaxVolume");
-            if (maxVolField == null) return;
-
-            float currentVol = (float)maxVolField.GetValue(__instance);
-            float baseVol = OriginalValueStore.GetOrRegisterFloat(__instance, "Bucket_MaxVolume", currentVol, (obj, val) =>
-                maxVolField.SetValue(obj, val));
 
             float multiplier = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.BucketCapacityMultiplier
                 : 1f;
 
-            float targetVol = baseVol * multiplier;
-            if (Math.Abs(currentVol - targetVol) > 0.001f)
+            int id = __instance.GetInstanceID();
+
+            // Zero-allocation fast-path
+            if (BaseVolumes.TryGetValue(id, out float baseVol))
             {
-                maxVolField.SetValue(__instance, targetVol);
+                if (multiplier == _lastMultiplier) return;
+                __instance.MaxVolume = baseVol * multiplier;
+                return;
             }
+
+            baseVol = __instance.MaxVolume;
+            BaseVolumes[id] = baseVol;
+            __instance.MaxVolume = baseVol * multiplier;
+            _lastMultiplier = multiplier;
+        }
+
+        public static void Reset()
+        {
+            BaseVolumes.Clear();
+            _lastMultiplier = -1f;
         }
     }
 }

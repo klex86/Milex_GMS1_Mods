@@ -1,45 +1,46 @@
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
-using Milex.GMS1.Mods.ProductionTuner.Helpers;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 {
     /// <summary>
-    /// Scales Magnetite Trailer maximum volume capacity.
+    /// Scales Magnetite Trailer maximum volume capacity with zero frame rate impact.
     /// </summary>
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(GoldDigger.MagnetiteTrailer), "Update")]
     public static class MagnetiteTrailerPatch
     {
-        [HarmonyTargetMethod]
-        private static MethodBase TargetMethod()
-        {
-            Type type = AccessTools.TypeByName("GoldDigger.MagnetiteTrailer");
-            return type != null ? AccessTools.Method(type, "Update") : null;
-        }
+        private static readonly Dictionary<int, float> BaseVolumes = new Dictionary<int, float>();
+        private static float _lastMultiplier = -1f;
 
         [HarmonyPostfix]
-        public static void Postfix(object __instance)
+        public static void Postfix(GoldDigger.MagnetiteTrailer __instance)
         {
             if (__instance == null) return;
-
-            Type type = __instance.GetType();
-            FieldInfo maxVolField = FieldCache.GetField(type, "MaxMagnetiteTrailerVolume");
-            if (maxVolField == null) return;
-
-            float curVol = (float)maxVolField.GetValue(__instance);
-            float baseVol = OriginalValueStore.GetOrRegisterFloat(__instance, "MagTrailer_MaxVolume", curVol, (obj, val) =>
-                maxVolField.SetValue(obj, val));
 
             float multiplier = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.MagnetiteTrailerCapacityMultiplier
                 : 1f;
 
-            float targetVol = baseVol * multiplier;
-            if (Math.Abs(curVol - targetVol) > 0.001f)
+            int id = __instance.GetInstanceID();
+
+            // Zero-allocation fast-path
+            if (BaseVolumes.TryGetValue(id, out float baseVol))
             {
-                maxVolField.SetValue(__instance, targetVol);
+                if (multiplier == _lastMultiplier) return;
+                __instance.MaxMagnetiteTrailerVolume = baseVol * multiplier;
+                return;
             }
+
+            baseVol = __instance.MaxMagnetiteTrailerVolume;
+            BaseVolumes[id] = baseVol;
+            __instance.MaxMagnetiteTrailerVolume = baseVol * multiplier;
+            _lastMultiplier = multiplier;
+        }
+
+        public static void Reset()
+        {
+            BaseVolumes.Clear();
+            _lastMultiplier = -1f;
         }
     }
 }

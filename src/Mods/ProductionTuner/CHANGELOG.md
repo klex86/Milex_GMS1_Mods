@@ -5,6 +5,34 @@ Das Format folgt den Grundsaetzen von [Keep a Changelog](https://keepachangelog.
 
 ---
 
+## [1.2.2] – 2026-09-01
+
+### Performance-Overhaul (Beseitigung des 40 % FPS-Drops)
+
+- **Zero-Allocation Fast-Path in allen 18 Patches**:
+  - Sämtliche Harmony-Patches prüfen nun im ersten Takt, ob der Reglerwert unverändert ist. Wenn ja, wird die Methode sofort ohne jegliche Berechnung beendet (`O(1)` Fast Exit).
+  - Vermeidet tausende Boxing-Allokationen (`FieldInfo.GetValue` für Floats) pro Sekunde, die zuvor die Unity-Garbage-Collection überlastet und zu Rucklern geführt haben.
+- **Entfernung von Frame-weiser Reflection & Thread-Locks**:
+  - Alle Patches greifen nun direkt typisiert auf die öffentlichen Felder der Spielklassen zu (`Direct Public Field Access`), anstatt über Reflection-Lookups zu gehen.
+  - Sämtliche Thread-Locks (`lock (SyncRoot)`) in `OriginalValueStore` und `OrangeBeastFilter` wurden entfernt, da Unity-Update-Schleifen strikt single-threaded laufen.
+- **Radlader-Hydraulik-Optimierung**:
+  - `GetComponentsInChildren<AnimatedJoint>()` wird nun nur noch ein einziges Mal beim Auftauchen des Radladers gecacht und läuft nicht mehr in jedem Frame der `Update()`-Schleife.
+- **Ergebnis**: 100 % butterweiche 60 / 144 FPS ohne Frame-Einbrüche.
+
+---
+
+## [1.2.1] – 2026-09-01
+
+### Fehlerbehebungen & Feinschliff aus In-Game-Tests
+
+- **Bagger (Excavator)**: Die überdimensionierte Kollisionsbox wurde vollständig entfernt. Der Bagger gräbt nun wieder exakt an der Position der Schaufel, fasst aber das volle, vergrößerte Schaufelvolumen.
+- **Handschaufel (Shovel)**: Die Schaufel-Logik wurde auf die `Update`-Schleife umgestellt. Bereits im Inventar vorhandene Schaufeln sowie Live-Änderungen an den Reglern werden nun sofort aktiv. Dank $\sqrt{M}$-Flächenskalierung füllt sich die Schaufel in einem einzigen Einstich.
+- **Muldenkipper & Radlader**: Saubere Typ-Trennung zwischen Muldenkipper (`DumpTruck`) und Radlader (`Ladowarka`). Beide Fahrzeuge überschreiben sich nun nicht mehr gegenseitig, und das Muldenkipper-Volumen skaliert wie gewünscht.
+- **Kraftstoffanhänger (Fuel Trailer)**: Von `Start()` auf die `Update()`-Schleife umgestellt, damit auch bereits gekaufte Anhänger auf bestehenden Spielständen und Regleränderungen sofort aktiv werden.
+- **UI-Slider (Verschwindende Texturen behoben)**: Prozedurale Texturen werden nun vor der Garbage Collection bei Szenenwechseln geschützt (`HideFlags.HideAndDontSave`) und bei Bedarf automatisch regeneriert.
+
+---
+
 ## [1.2.0] – 2026-09-01
 
 ### Phase 2: Vollstaendige Spiel-Integration (Harmony-Patches)

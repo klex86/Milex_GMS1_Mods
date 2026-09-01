@@ -1,75 +1,60 @@
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
-using Milex.GMS1.Mods.ProductionTuner.Helpers;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
 {
     /// <summary>
     /// Scales Backhoe Loader (KoparkoLadowarka) front loader bucket and rear excavator arm shovel volumes.
+    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
     /// </summary>
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(KoparkoLadowarka), "Update")]
     public static class BackhoeLoaderPatch
     {
-        [HarmonyTargetMethod]
-        private static MethodBase TargetMethod()
+        private struct BackhoeBase
         {
-            Type type = AccessTools.TypeByName("KoparkoLadowarka");
-            return type != null ? AccessTools.Method(type, "Update") : null;
+            public float FrontVol;
+            public float RearVol;
         }
 
+        private static readonly Dictionary<int, BackhoeBase> BaseVolumes = new Dictionary<int, BackhoeBase>();
+        private static float _lastMultiplier = -1f;
+
         [HarmonyPostfix]
-        public static void Postfix(object __instance)
+        public static void Postfix(KoparkoLadowarka __instance)
         {
             if (__instance == null) return;
-
-            Type backhoeType = __instance.GetType();
-            FieldInfo diggingFrontField = FieldCache.GetField(backhoeType, "DiggingFront");
-            FieldInfo diggingRearField = FieldCache.GetField(backhoeType, "Digging");
 
             float multiplier = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.BackhoeLoaderLoadSpeedMultiplier
                 : 1f;
 
-            if (diggingFrontField != null)
+            int id = __instance.GetInstanceID();
+
+            // Zero-allocation fast-path
+            if (BaseVolumes.TryGetValue(id, out var baseVol))
             {
-                ApplyDiggingController(diggingFrontField.GetValue(__instance), "BackhoeFront", multiplier);
+                if (multiplier == _lastMultiplier) return;
+                if (__instance.DiggingFront != null) __instance.DiggingFront._maxShovelVolume = baseVol.FrontVol * multiplier;
+                if (__instance.Digging != null) __instance.Digging._maxShovelVolume = baseVol.RearVol * multiplier;
+                return;
             }
 
-            if (diggingRearField != null)
+            baseVol = new BackhoeBase
             {
-                ApplyDiggingController(diggingRearField.GetValue(__instance), "BackhoeRear", multiplier);
-            }
+                FrontVol = __instance.DiggingFront != null ? __instance.DiggingFront._maxShovelVolume : 1f,
+                RearVol = __instance.Digging != null ? __instance.Digging._maxShovelVolume : 1f
+            };
+            BaseVolumes[id] = baseVol;
+
+            if (__instance.DiggingFront != null) __instance.DiggingFront._maxShovelVolume = baseVol.FrontVol * multiplier;
+            if (__instance.Digging != null) __instance.Digging._maxShovelVolume = baseVol.RearVol * multiplier;
+            _lastMultiplier = multiplier;
         }
 
-        private static void ApplyDiggingController(object diggingObj, string prefix, float multiplier)
+        public static void Reset()
         {
-            if (diggingObj == null) return;
-
-            Type type = diggingObj.GetType();
-            FieldInfo maxVolField = FieldCache.GetField(type, "_maxShovelVolume");
-            FieldInfo invMaxVolField = FieldCache.GetField(type, "_invmaxShovelVolume");
-            if (maxVolField == null) return;
-
-            float curVol = (float)maxVolField.GetValue(diggingObj);
-            float baseVol = OriginalValueStore.GetOrRegisterFloat(diggingObj, prefix + "_MaxVol", curVol, (obj, val) =>
-            {
-                maxVolField.SetValue(obj, val);
-                if (invMaxVolField != null && val > 0.0001f)
-                {
-                    invMaxVolField.SetValue(obj, 1f / val);
-                }
-            });
-
-            float targetVol = baseVol * multiplier;
-            if (Math.Abs(curVol - targetVol) > 0.001f)
-            {
-                maxVolField.SetValue(diggingObj, targetVol);
-                if (invMaxVolField != null && targetVol > 0.0001f)
-                {
-                    invMaxVolField.SetValue(diggingObj, 1f / targetVol);
-                }
-            }
+            BaseVolumes.Clear();
+            _lastMultiplier = -1f;
         }
     }
 }

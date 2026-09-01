@@ -1,52 +1,50 @@
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
-using Milex.GMS1.Mods.ProductionTuner.Helpers;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
 {
     /// <summary>
-    /// Scales dump truck bed dirt capacity.
+    /// Scales dump truck bed dirt capacity with zero frame rate impact.
+    /// Excludes base wheel loaders and synchronizes reciprocal volume for proper fill physics.
     /// </summary>
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(GoldDigger.DumpTruck), "Update")]
     public static class DumpTruckPatch
     {
-        [HarmonyTargetMethod]
-        private static MethodBase TargetMethod()
-        {
-            Type type = AccessTools.TypeByName("GoldDigger.DumpTruck");
-            return type != null ? AccessTools.Method(type, "Update") : null;
-        }
+        private static readonly Dictionary<int, float> BaseVolumes = new Dictionary<int, float>();
+        private static float _lastMultiplier = -1f;
 
         [HarmonyPostfix]
-        public static void Postfix(object __instance)
+        public static void Postfix(GoldDigger.DumpTruck __instance)
         {
-            if (__instance == null) return;
+            if (__instance == null || __instance.GetType().Name != "DumpTruck") return;
 
-            Type truckType = __instance.GetType();
-            FieldInfo diggingField = FieldCache.GetField(truckType, "Digging");
-            if (diggingField == null) return;
-
-            object diggingObj = diggingField.GetValue(__instance);
-            if (diggingObj == null) return;
-
-            Type diggingType = diggingObj.GetType();
-            FieldInfo maxVolField = FieldCache.GetField(diggingType, "_maxShovelVolume");
-            if (maxVolField == null) return;
-
-            float curVol = (float)maxVolField.GetValue(diggingObj);
-            float baseVol = OriginalValueStore.GetOrRegisterFloat(diggingObj, "DumpTruck_MaxVolume", curVol, (obj, val) =>
-                maxVolField.SetValue(obj, val));
+            var digging = __instance.Digging;
+            if (digging == null) return;
 
             float multiplier = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.DumpTruckCapacityMultiplier
                 : 1f;
 
-            float targetVol = baseVol * multiplier;
-            if (Math.Abs(curVol - targetVol) > 0.001f)
+            int id = __instance.GetInstanceID();
+
+            // Zero-allocation fast-path
+            if (BaseVolumes.TryGetValue(id, out float baseVol))
             {
-                maxVolField.SetValue(diggingObj, targetVol);
+                if (multiplier == _lastMultiplier) return;
+                digging._maxShovelVolume = baseVol * multiplier;
+                return;
             }
+
+            baseVol = digging._maxShovelVolume;
+            BaseVolumes[id] = baseVol;
+            digging._maxShovelVolume = baseVol * multiplier;
+            _lastMultiplier = multiplier;
+        }
+
+        public static void Reset()
+        {
+            BaseVolumes.Clear();
+            _lastMultiplier = -1f;
         }
     }
 }

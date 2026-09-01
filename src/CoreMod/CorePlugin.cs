@@ -155,7 +155,7 @@ namespace Milex.GMS1.Core
                 }
 
                 // Restore game cursor state
-                Cursor.lockState = _previousLockMode != CursorLockMode.None ? _previousLockMode : CursorLockMode.Locked;
+                Cursor.lockState = _previousLockMode;
                 Cursor.visible = _previousCursorVisible;
             }
         }

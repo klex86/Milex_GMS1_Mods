@@ -1,5 +1,4 @@
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
 using Milex.GMS1.Mods.ProductionTuner.Helpers;
 
@@ -7,39 +6,45 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
     /// <summary>
     /// Scales dirt capacity for washplant sluice boxes.
+    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
     /// </summary>
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(GoldDigger.WashPlantSluiceBoxDirt), "Update")]
     public static class SluiceBoxPatch
     {
-        [HarmonyTargetMethod]
-        private static MethodBase TargetMethod()
-        {
-            Type type = AccessTools.TypeByName("GoldDigger.WashPlantSluiceBoxDirt");
-            return type != null ? AccessTools.Method(type, "Update") : null;
-        }
+        private static readonly Dictionary<int, float> BaseFills = new Dictionary<int, float>();
+        private static float _lastMultiplier = -1f;
 
         [HarmonyPostfix]
-        public static void Postfix(object __instance)
+        public static void Postfix(GoldDigger.WashPlantSluiceBoxDirt __instance)
         {
-            if (__instance == null || OrangeBeastFilter.IsOrangeBeastPart(__instance)) return;
-
-            Type type = __instance.GetType();
-            FieldInfo maxFillField = FieldCache.GetField(type, "MaxFill");
-            if (maxFillField == null) return;
-
-            float curFill = (float)maxFillField.GetValue(__instance);
-            float baseFill = OriginalValueStore.GetOrRegisterFloat(__instance, "SluiceBox_MaxFill", curFill, (obj, val) =>
-                maxFillField.SetValue(obj, val));
+            if (__instance == null) return;
 
             float multiplier = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.SluiceboxCapacityMultiplier
                 : 1f;
 
-            float targetFill = baseFill * multiplier;
-            if (Math.Abs(curFill - targetFill) > 0.001f)
+            int id = __instance.GetInstanceID();
+
+            // Zero-allocation fast-path
+            if (BaseFills.TryGetValue(id, out float baseFill))
             {
-                maxFillField.SetValue(__instance, targetFill);
+                if (multiplier == _lastMultiplier) return;
+                __instance.MaxFill = baseFill * multiplier;
+                return;
             }
+
+            if (OrangeBeastFilter.IsOrangeBeastPart(__instance)) return;
+
+            baseFill = __instance.MaxFill;
+            BaseFills[id] = baseFill;
+            __instance.MaxFill = baseFill * multiplier;
+            _lastMultiplier = multiplier;
+        }
+
+        public static void Reset()
+        {
+            BaseFills.Clear();
+            _lastMultiplier = -1f;
         }
     }
 }

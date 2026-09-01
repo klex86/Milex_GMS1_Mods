@@ -1,75 +1,70 @@
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
-using Milex.GMS1.Mods.ProductionTuner.Helpers;
 using UnityEngine;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
 {
     /// <summary>
     /// Scales Wave Table concentrate capacity (MaxGroundVolume) and wash cycle speed.
-    /// Accelerates cycle timer proportionally without invasive bytecode transpilers.
+    /// Uses high-speed field reference and instant fast-path exit.
     /// </summary>
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(GoldDigger.WaveTable), "Update")]
     public static class WaveTablePatch
     {
-        private static FieldInfo _maxGroundVolumeField;
-        private static FieldInfo _elapsedTimeThrowField;
+        private static readonly Dictionary<int, float> BaseVolumes = new Dictionary<int, float>();
+        private static readonly AccessTools.FieldRef<GoldDigger.WaveTable, float> ElapsedTimeRef =
+            AccessTools.FieldRefAccess<GoldDigger.WaveTable, float>("_ElapsedTimeThrow");
 
-        [HarmonyTargetMethod]
-        private static MethodBase TargetMethod()
-        {
-            Type type = AccessTools.TypeByName("GoldDigger.WaveTable");
-            return type != null ? AccessTools.Method(type, "Update") : null;
-        }
+        private static float _lastMultiplier = -1f;
 
         [HarmonyPrefix]
-        public static void Prefix(object __instance)
+        public static void Prefix(GoldDigger.WaveTable __instance)
         {
-            if (__instance == null) return;
-
-            Type type = __instance.GetType();
-            if (_elapsedTimeThrowField == null) _elapsedTimeThrowField = FieldCache.GetField(type, "_ElapsedTimeThrow");
-            if (_elapsedTimeThrowField == null) return;
+            if (__instance == null || ElapsedTimeRef == null) return;
 
             float spdMultiplier = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.WaveTableSpeedMultiplier
                 : 1f;
 
-            // Accelerate the throw interval timer so cycles occur proportionally faster
             if (spdMultiplier > 1f)
             {
-                float currentElapsed = (float)_elapsedTimeThrowField.GetValue(__instance);
-                if (currentElapsed > 0f)
+                ref float elapsed = ref ElapsedTimeRef(__instance);
+                if (elapsed > 0f)
                 {
-                    float extraDecrement = Time.deltaTime * (spdMultiplier - 1f);
-                    _elapsedTimeThrowField.SetValue(__instance, currentElapsed - extraDecrement);
+                    elapsed -= Time.deltaTime * (spdMultiplier - 1f);
                 }
             }
         }
 
         [HarmonyPostfix]
-        public static void Postfix(object __instance)
+        public static void Postfix(GoldDigger.WaveTable __instance)
         {
             if (__instance == null) return;
-
-            Type type = __instance.GetType();
-            if (_maxGroundVolumeField == null) _maxGroundVolumeField = FieldCache.GetField(type, "MaxGroundVolume");
-            if (_maxGroundVolumeField == null) return;
-
-            float curCap = (float)_maxGroundVolumeField.GetValue(__instance);
-            float baseCap = OriginalValueStore.GetOrRegisterFloat(__instance, "WaveTable_MaxGroundVolume", curCap, (obj, val) =>
-                _maxGroundVolumeField.SetValue(obj, val));
 
             float capMultiplier = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.WaveTableCapacityMultiplier
                 : 1f;
 
-            float targetCap = baseCap * capMultiplier;
-            if (Math.Abs(curCap - targetCap) > 0.001f)
+            int id = __instance.GetInstanceID();
+
+            // Zero-allocation fast-path
+            if (BaseVolumes.TryGetValue(id, out float baseVol))
             {
-                _maxGroundVolumeField.SetValue(__instance, targetCap);
+                if (capMultiplier == _lastMultiplier) return;
+                __instance.MaxGroundVolume = baseVol * capMultiplier;
+                return;
             }
+
+            baseVol = __instance.MaxGroundVolume;
+            BaseVolumes[id] = baseVol;
+            __instance.MaxGroundVolume = baseVol * capMultiplier;
+            _lastMultiplier = capMultiplier;
+        }
+
+        public static void Reset()
+        {
+            BaseVolumes.Clear();
+            _lastMultiplier = -1f;
         }
     }
 }

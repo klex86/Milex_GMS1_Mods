@@ -4,6 +4,27 @@ Alle relevanten Änderungen und Neuerungen der Mod-Sammlung werden in dieser Dat
 
 ---
 
+## [1.5.2] - 2026-09-01
+
+### Performance-Optimierung (Beseitigung des FPS-Drops)
+- **Zero-Allocation Fast-Path**: Alle 18 Harmony-Patches prüfen nun im ersten Takt, ob der Reglerwert unverändert ist, und beenden sich sofort ohne Allokationen (`O(1)` Fast Exit).
+- **Direkter Feldzugriff ohne Boxing**: Ersetzt Reflection-Lookups durch typisierten Direktzugriff. Keine tausenden Heap-Allokationen pro Sekunde mehr für die Unity-Garbage-Collection.
+- **Entfernung unnötiger Thread-Locks**: Unitys Update-Schleife läuft strikt single-threaded; sperrende Locks in Hilfsklassen wurden eliminiert.
+- **Radlader-Gelenk-Caching**: Hydraulikzylinder werden nur noch einmalig gecacht statt in jedem Frame neu per Hierarchie-Suche durchlaufen.
+
+---
+
+## [1.5.1] - 2026-09-01
+
+### Fehlerbehebungen & Feinschliff aus In-Game-Tests
+- **Bagger-Kollisionsbox bereinigt**: Die vergrößerte Grabbox wurde entfernt. Der Bagger gräbt nun millimetergenau an der Schaufel, fasst aber das volle, vergrößerte Schaufelvolumen.
+- **Handschaufel-Sofortwirkung**: Reagiert nun direkt im laufenden Spiel auf Slider-Änderungen und füllt sich mit einem einzigen Einstich proportional zur neuen Kapazität.
+- **Muldenkipper & Radlader entkoppelt**: Gegenseitiges Überschreiben der Schaufel-/Muldenvolumina behoben.
+- **Kraftstoffanhänger sofort aktiv**: Von `Start()` auf `Update()` umgestellt, damit auch bereits vorhandene Anhänger die neue Kapazität sofort erhalten.
+- **UI-Slider-Darstellung dauerhaft fixiert**: Texturen von Schiebereglern gegen Entladen bei Szenenwechseln gesichert.
+
+---
+
 ## [1.5.0] - 2026-09-01
 
 ### Meilenstein: Production Tuner Phase 2 (Vollstaendige Spielintegration)

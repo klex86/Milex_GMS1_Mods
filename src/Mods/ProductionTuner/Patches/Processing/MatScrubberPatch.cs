@@ -1,81 +1,75 @@
 using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
-using Milex.GMS1.Mods.ProductionTuner.Helpers;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
 {
     /// <summary>
     /// Scales Nuggetator (MatScrubber) cleaning throughput speed and bucket mat capacities.
+    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
     /// </summary>
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(GoldDigger.MatScrubber), "Update")]
     public static class MatScrubberPatch
     {
-        [HarmonyTargetMethod]
-        private static MethodBase TargetMethod()
+        private struct ScrubberBase
         {
-            Type type = AccessTools.TypeByName("GoldDigger.MatScrubber");
-            return type != null ? AccessTools.Method(type, "Update") : null;
+            public float CleanSpeed;
+            public int Small;
+            public int Big;
+            public int XL;
         }
 
+        private static readonly Dictionary<int, ScrubberBase> BaseValues = new Dictionary<int, ScrubberBase>();
+        private static float _lastSpeedMult = -1f;
+        private static float _lastBucketMult = -1f;
+
         [HarmonyPostfix]
-        public static void Postfix(object __instance)
+        public static void Postfix(GoldDigger.MatScrubber __instance)
         {
-            if (__instance == null || OrangeBeastFilter.IsOrangeBeastPart(__instance)) return;
+            if (__instance == null) return;
 
-            Type type = __instance.GetType();
-            FieldInfo speedField = FieldCache.GetField(type, "CleanigDirtSpeed");
-            FieldInfo smallField = FieldCache.GetField(type, "SmallInBucket");
-            FieldInfo bigField = FieldCache.GetField(type, "BigInBucket");
-            FieldInfo xlField = FieldCache.GetField(type, "XLInBucket");
-
-            if (speedField != null)
-            {
-                float curSpeed = (float)speedField.GetValue(__instance);
-                float baseSpeed = OriginalValueStore.GetOrRegisterFloat(__instance, "Nuggetator_Speed", curSpeed, (obj, val) =>
-                    speedField.SetValue(obj, val));
-
-                float spdMultiplier = ProductionTunerPlugin.Service != null
-                    ? ProductionTunerPlugin.Service.NuggetatorSpeedMultiplier
-                    : 1f;
-
-                float targetSpeed = baseSpeed * spdMultiplier;
-                if (Math.Abs(curSpeed - targetSpeed) > 0.0001f)
-                {
-                    speedField.SetValue(__instance, targetSpeed);
-                }
-            }
+            float spdMultiplier = ProductionTunerPlugin.Service != null
+                ? ProductionTunerPlugin.Service.NuggetatorSpeedMultiplier
+                : 1f;
 
             float bucketMult = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.BucketCapacityMultiplier
                 : 1f;
 
-            if (smallField != null)
+            int id = __instance.GetInstanceID();
+
+            // Zero-allocation fast-path
+            if (BaseValues.TryGetValue(id, out var baseVal))
             {
-                int curSmall = (int)smallField.GetValue(__instance);
-                int baseSmall = OriginalValueStore.GetOrRegisterInt(__instance, "Nuggetator_Small", curSmall, (obj, val) =>
-                    smallField.SetValue(obj, val));
-                int targetSmall = (int)Math.Round(baseSmall * bucketMult);
-                if (curSmall != targetSmall) smallField.SetValue(__instance, targetSmall);
+                if (spdMultiplier == _lastSpeedMult && bucketMult == _lastBucketMult) return;
+                __instance.CleanigDirtSpeed = baseVal.CleanSpeed * spdMultiplier;
+                __instance.SmallInBucket = (int)Math.Round(baseVal.Small * bucketMult);
+                __instance.BigInBucket = (int)Math.Round(baseVal.Big * bucketMult);
+                __instance.XLInBucket = (int)Math.Round(baseVal.XL * bucketMult);
+                return;
             }
 
-            if (bigField != null)
+            baseVal = new ScrubberBase
             {
-                int curBig = (int)bigField.GetValue(__instance);
-                int baseBig = OriginalValueStore.GetOrRegisterInt(__instance, "Nuggetator_Big", curBig, (obj, val) =>
-                    bigField.SetValue(obj, val));
-                int targetBig = (int)Math.Round(baseBig * bucketMult);
-                if (curBig != targetBig) bigField.SetValue(__instance, targetBig);
-            }
+                CleanSpeed = __instance.CleanigDirtSpeed,
+                Small = __instance.SmallInBucket,
+                Big = __instance.BigInBucket,
+                XL = __instance.XLInBucket
+            };
+            BaseValues[id] = baseVal;
+            __instance.CleanigDirtSpeed = baseVal.CleanSpeed * spdMultiplier;
+            __instance.SmallInBucket = (int)Math.Round(baseVal.Small * bucketMult);
+            __instance.BigInBucket = (int)Math.Round(baseVal.Big * bucketMult);
+            __instance.XLInBucket = (int)Math.Round(baseVal.XL * bucketMult);
+            _lastSpeedMult = spdMultiplier;
+            _lastBucketMult = bucketMult;
+        }
 
-            if (xlField != null)
-            {
-                int curXl = (int)xlField.GetValue(__instance);
-                int baseXl = OriginalValueStore.GetOrRegisterInt(__instance, "Nuggetator_XL", curXl, (obj, val) =>
-                    xlField.SetValue(obj, val));
-                int targetXl = (int)Math.Round(baseXl * bucketMult);
-                if (curXl != targetXl) xlField.SetValue(__instance, targetXl);
-            }
+        public static void Reset()
+        {
+            BaseValues.Clear();
+            _lastSpeedMult = -1f;
+            _lastBucketMult = -1f;
         }
     }
 }

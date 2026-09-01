@@ -173,7 +173,7 @@ namespace Milex.GMS1.Core.UI
 
         private void InitStyles()
         {
-            if (_stylesInitialized) return;
+            if (_stylesInitialized && _bgTexture != null && _buttonTex != null && _sliderThumbStyle?.normal?.background != null) return;
 
             _bgTexture = MakeTex(2, 2, new Color(0.11f, 0.11f, 0.13f, 0.97f));
             _sidebarBgTexture = MakeTex(2, 2, new Color(0.08f, 0.08f, 0.10f, 0.98f));
@@ -1027,6 +1027,7 @@ namespace Milex.GMS1.Core.UI
                 pix[i] = col;
             }
             Texture2D result = new Texture2D(width, height);
+            result.hideFlags = HideFlags.HideAndDontSave;
             result.SetPixels(pix);
             result.Apply();
             return result;
@@ -1044,6 +1045,7 @@ namespace Milex.GMS1.Core.UI
                 }
             }
             Texture2D result = new Texture2D(width, height);
+            result.hideFlags = HideFlags.HideAndDontSave;
             result.SetPixels(pix);
             result.Apply();
             return result;

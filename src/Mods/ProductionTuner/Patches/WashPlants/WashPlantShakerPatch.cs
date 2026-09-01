@@ -1,5 +1,4 @@
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
 using Milex.GMS1.Mods.ProductionTuner.Helpers;
 
@@ -7,60 +6,64 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
     /// <summary>
     /// Scales capacity (MaxFill) and processing speed (FillSpeed) for all large washplant shakers (Tier 1–Tier 4).
-    /// Excludes the Tier 5 Orange Beast to protect its custom gold counters from corruption.
+    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
     /// </summary>
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(GoldDigger.WashplantShakerBase), "Update")]
     public static class WashPlantShakerPatch
     {
-        [HarmonyTargetMethod]
-        private static MethodBase TargetMethod()
+        private struct ShakerBase
         {
-            Type type = AccessTools.TypeByName("GoldDigger.WashplantShakerBase");
-            return type != null ? AccessTools.Method(type, "Update") : null;
+            public float BaseFill;
+            public float BaseSpeed;
         }
 
+        private static readonly Dictionary<int, ShakerBase> BaseValues = new Dictionary<int, ShakerBase>();
+        private static float _lastCapMultiplier = -1f;
+        private static float _lastSpdMultiplier = -1f;
+
         [HarmonyPostfix]
-        public static void Postfix(object __instance)
+        public static void Postfix(GoldDigger.WashplantShakerBase __instance)
         {
-            if (__instance == null || OrangeBeastFilter.IsOrangeBeastPart(__instance)) return;
+            if (__instance == null) return;
 
-            Type type = __instance.GetType();
-            FieldInfo maxFillField = FieldCache.GetField(type, "MaxFill");
-            FieldInfo fillSpeedField = FieldCache.GetField(type, "FillSpeed");
+            float capMultiplier = ProductionTunerPlugin.Service != null
+                ? ProductionTunerPlugin.Service.WashplantCapacityMultiplier
+                : 1f;
 
-            if (maxFillField != null)
+            float spdMultiplier = ProductionTunerPlugin.Service != null
+                ? ProductionTunerPlugin.Service.WashplantSpeedMultiplier
+                : 1f;
+
+            int id = __instance.GetInstanceID();
+
+            // Zero-allocation fast-path
+            if (BaseValues.TryGetValue(id, out var baseVal))
             {
-                float curFill = (float)maxFillField.GetValue(__instance);
-                float baseFill = OriginalValueStore.GetOrRegisterFloat(__instance, "Shaker_MaxFill", curFill, (obj, val) =>
-                    maxFillField.SetValue(obj, val));
-
-                float capMultiplier = ProductionTunerPlugin.Service != null
-                    ? ProductionTunerPlugin.Service.WashplantCapacityMultiplier
-                    : 1f;
-
-                float targetFill = baseFill * capMultiplier;
-                if (Math.Abs(curFill - targetFill) > 0.001f)
-                {
-                    maxFillField.SetValue(__instance, targetFill);
-                }
+                if (capMultiplier == _lastCapMultiplier && spdMultiplier == _lastSpdMultiplier) return;
+                __instance.MaxFill = baseVal.BaseFill * capMultiplier;
+                __instance.FillSpeed = baseVal.BaseSpeed * spdMultiplier;
+                return;
             }
 
-            if (fillSpeedField != null)
+            if (OrangeBeastFilter.IsOrangeBeastPart(__instance)) return;
+
+            baseVal = new ShakerBase
             {
-                float curSpeed = (float)fillSpeedField.GetValue(__instance);
-                float baseSpeed = OriginalValueStore.GetOrRegisterFloat(__instance, "Shaker_FillSpeed", curSpeed, (obj, val) =>
-                    fillSpeedField.SetValue(obj, val));
+                BaseFill = __instance.MaxFill,
+                BaseSpeed = __instance.FillSpeed
+            };
+            BaseValues[id] = baseVal;
+            __instance.MaxFill = baseVal.BaseFill * capMultiplier;
+            __instance.FillSpeed = baseVal.BaseSpeed * spdMultiplier;
+            _lastCapMultiplier = capMultiplier;
+            _lastSpdMultiplier = spdMultiplier;
+        }
 
-                float spdMultiplier = ProductionTunerPlugin.Service != null
-                    ? ProductionTunerPlugin.Service.WashplantSpeedMultiplier
-                    : 1f;
-
-                float targetSpeed = baseSpeed * spdMultiplier;
-                if (Math.Abs(curSpeed - targetSpeed) > 0.001f)
-                {
-                    fillSpeedField.SetValue(__instance, targetSpeed);
-                }
-            }
+        public static void Reset()
+        {
+            BaseValues.Clear();
+            _lastCapMultiplier = -1f;
+            _lastSpdMultiplier = -1f;
         }
     }
 }

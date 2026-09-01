@@ -2,6 +2,11 @@ using BepInEx;
 using Milex.GMS1.Core;
 using Milex.GMS1.Mods.ProductionTuner.Config;
 using Milex.GMS1.Mods.ProductionTuner.Helpers;
+using Milex.GMS1.Mods.ProductionTuner.Patches.Logistics;
+using Milex.GMS1.Mods.ProductionTuner.Patches.Processing;
+using Milex.GMS1.Mods.ProductionTuner.Patches.Tools;
+using Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles;
+using Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants;
 using Milex.GMS1.Mods.ProductionTuner.Services;
 
 namespace Milex.GMS1.Mods.ProductionTuner
@@ -23,7 +28,7 @@ namespace Milex.GMS1.Mods.ProductionTuner
         public override string ModVersion => PluginVersion;
 
         /// <summary>
-        /// Global instance – used by Harmony patch classes in Phase 2
+        /// Global instance – used by Harmony patch classes
         /// to query multipliers from TuningService.
         /// </summary>
         public static ProductionTunerPlugin Instance { get; private set; }
@@ -55,6 +60,7 @@ namespace Milex.GMS1.Mods.ProductionTuner
         /// </summary>
         protected override void OnModEnabled()
         {
+            ResetAllPatchCaches();
             LogInfo(Translate("log.enabled", "Production Tuner enabled."));
         }
 
@@ -66,7 +72,31 @@ namespace Milex.GMS1.Mods.ProductionTuner
         protected override void OnModDisabled()
         {
             OriginalValueStore.RestoreAll();
+            ResetAllPatchCaches();
             LogInfo(Translate("log.disabled", "Production Tuner disabled. Original game values restored."));
+        }
+
+        private static void ResetAllPatchCaches()
+        {
+            MinersMossPatch.Reset();
+            SluiceBoxPatch.Reset();
+            WashPlantShakerPatch.Reset();
+            HogPanDirtBoxPatch.Reset();
+            MobileWashPlantPatch.Reset();
+            BucketPatch.Reset();
+            ShovelPatch.Reset();
+            WheelLoaderPatch.Reset();
+            DumpTruckPatch.Reset();
+            ExcavatorPatch.Reset();
+            BackhoeLoaderPatch.Reset();
+            MatScrubberPatch.Reset();
+            MagnetiteSeparatorPatch.Reset();
+            WaveTablePatch.Reset();
+            ConveyorGroundPatch.Reset();
+            ConveyorElevatorPatch.Reset();
+            MagnetiteTrailerPatch.Reset();
+            FuelTrailerPatch.Reset();
+            OrangeBeastFilter.Clear();
         }
     }
 }

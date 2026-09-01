@@ -1,45 +1,46 @@
-using System;
-using System.Reflection;
+using System.Collections.Generic;
 using HarmonyLib;
-using Milex.GMS1.Mods.ProductionTuner.Helpers;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 {
     /// <summary>
-    /// Scales bucket elevator conveyor bucket capacity.
+    /// Scales bucket elevator conveyor bucket capacity with zero frame rate impact.
     /// </summary>
-    [HarmonyPatch]
+    [HarmonyPatch(typeof(GoldDigger.ConveyorElevator), "Update")]
     public static class ConveyorElevatorPatch
     {
-        [HarmonyTargetMethod]
-        private static MethodBase TargetMethod()
-        {
-            Type type = AccessTools.TypeByName("GoldDigger.ConveyorElevator");
-            return type != null ? AccessTools.Method(type, "Update") : null;
-        }
+        private static readonly Dictionary<int, float> BaseCaps = new Dictionary<int, float>();
+        private static float _lastMultiplier = -1f;
 
         [HarmonyPostfix]
-        public static void Postfix(object __instance)
+        public static void Postfix(GoldDigger.ConveyorElevator __instance)
         {
             if (__instance == null) return;
-
-            Type type = __instance.GetType();
-            FieldInfo bucketCapField = FieldCache.GetField(type, "BucketCapacity");
-            if (bucketCapField == null) return;
-
-            float curCap = (float)bucketCapField.GetValue(__instance);
-            float baseCap = OriginalValueStore.GetOrRegisterFloat(__instance, "ConveyorElevator_BucketCapacity", curCap, (obj, val) =>
-                bucketCapField.SetValue(obj, val));
 
             float multiplier = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.ConveyorBucketCapacityMultiplier
                 : 1f;
 
-            float targetCap = baseCap * multiplier;
-            if (Math.Abs(curCap - targetCap) > 0.001f)
+            int id = __instance.GetInstanceID();
+
+            // Zero-allocation fast-path
+            if (BaseCaps.TryGetValue(id, out float baseCap))
             {
-                bucketCapField.SetValue(__instance, targetCap);
+                if (multiplier == _lastMultiplier) return;
+                __instance.BucketCapacity = baseCap * multiplier;
+                return;
             }
+
+            baseCap = __instance.BucketCapacity;
+            BaseCaps[id] = baseCap;
+            __instance.BucketCapacity = baseCap * multiplier;
+            _lastMultiplier = multiplier;
+        }
+
+        public static void Reset()
+        {
+            BaseCaps.Clear();
+            _lastMultiplier = -1f;
         }
     }
 }
