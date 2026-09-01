@@ -11,17 +11,20 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - **Mobile Conveyors (Frankenstein & Cordylus)**:
   - Added directly under the Vehicles group in the in-game menu with independent controls for buffer capacity (default: 2.0x) and transport speed (default: 2.0x).
-  - Fully automatic vehicle identification via component hierarchy.
-  - **Throughput Synchronization**: Discharge lump volume (`OneLoadVolume`) and spawn interval (`SpawnInterval`) now scale with belt speed, and the secondary conveyor section (`MyPathAfterDrop`) is dynamically accelerated.
+  - Fully automatic detection for both conveyor types.
+  - **Synchronized Throughput**: The hopper buffer empties proportionally with the selected belt speed, moving larger dirt portions at faster intervals so material moves continuously without bottlenecking.
 - **Dedicated 3-Axis Excavator Hydraulic Controls**:
-  - 3 new individual sliders for excavators (`Koparka`): Boom/Arm speed (2.0x), Turret rotation speed (2.0x), and Bucket tilt speed (1.0x).
-  - Automatically adjusts `Rigidbody.maxAngularVelocity` for smooth physical rotation.
+  - 3 independent sliders for fine-tuned excavator operation:
+    - **Boom / Arm Speed** (lifting and extending, default: 2.0x)
+    - **Turret Rotation Speed** (cabin and upper carriage swing, default: 2.0x)
+    - **Bucket Tilt Speed** (curling and dumping, default: 1.0x)
+  - Full range of motion without physical rotation limits or jitter.
 - **In-Game Localization Alignment**:
   - All components aligned with official in-game terms (*Dump Truck*, *Wheel Loader*, *Backhoe Loader*, *Wave Table*, *Gold Nuggetator*, *Miner's Moss*, etc.).
   - Streamlined descriptions into concise, clear player-facing summaries.
-- **Fixed Vanilla Restoration & Cumulative Drift on Mod Toggles**:
-  - Resolved an issue where toggling the mod off and on caused capacities (such as the Dump Truck bed volume) to repeatedly multiply and halve the fill gauge.
-  - All 19 patches now retain immutable baseline values in memory and cleanly restore exact vanilla values when the mod is disabled.
+- **Fixed Vanilla Restoration on Mod Toggles**:
+  - Toggling the mod off and on now cleanly restores unmodified game defaults without doubling capacities or halving fill levels.
+  - All equipment, vehicles, and tools reliably remember their original game values.
 
 ---
 
@@ -29,10 +32,9 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Performance Optimization (Eliminated FPS Drop)
 
-- **Zero-Allocation Fast-Path**: All 18 Harmony patches check on the very first cycle whether multiplier values are unchanged and exit immediately without allocations (`O(1)` fast exit).
-- **Direct Field Access Without Boxing**: Replaced reflection lookups with direct typed member lookups, preventing thousands of heap allocations per second for the Unity garbage collector.
-- **Removed Thread Locks**: Update loops run single-threaded; eliminated thread locks (`lock (SyncRoot)`) from helper stores.
-- **Wheel Loader Joint Caching**: Caches hydraulic cylinders once upon vehicle spawn rather than querying the hierarchy every frame.
+- **Zero-Stutter Fast Path**: All calculations exit immediately when slider values are unchanged, completely eliminating micro-stutters and frame rate drops.
+- **Optimized Memory Management**: Streamlined internal updates to prevent garbage collection pauses during gameplay.
+- **Hydraulic Cylinder Caching**: Vehicle joints are registered once when spawning, saving CPU power during vehicle operation.
 
 ---
 

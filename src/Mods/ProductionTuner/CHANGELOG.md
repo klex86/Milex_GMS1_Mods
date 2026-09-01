@@ -11,17 +11,17 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - **Mobile Conveyor Belts (Frankenstein & Cordylus)**:
   - Integrated directly under the Vehicles group in the in-game menu after the Dump Truck.
-  - Separate controls for **Buffer Capacity** (`MaxVolume`, default: 2.0x) and **Transport Speed** (`Speed`, default: 2.0x).
-  - Automatic machine type identification via parent hierarchy (`FrankensteinExcavator` vs. `MaximusMachineController`).
-  - **Throughput Correction**: Synchronizes discharge chunk volume (`OneLoadVolume`), shortens spawn timer interval (`SpawnInterval`), and dynamically accelerates the secondary drop conveyor section (`MyPathAfterDrop`). The hopper buffer now empties rapidly and synchronously with belt speed.
+  - Separate controls for **Buffer Capacity** (default: 2.0x) and **Transport Speed** (default: 2.0x).
+  - Automatic detection for both conveyor vehicle types.
+  - **Synchronized Throughput**: The hopper buffer now empties synchronously with belt speed, transferring larger dirt volumes at quicker intervals so material moves continuously without bottlenecking.
 - **Dedicated Excavator Hydraulic Speed Controls**:
-  - 3 new individual sliders for fine-tuned excavator maneuverability (`Koparka`):
+  - 3 independent sliders for fine-tuned excavator maneuverability:
     - **Boom / Arm Speed** (lifting and extending cylinders, default: 2.0x)
     - **Turret Rotation Speed** (upper carriage and cabin swing, default: 2.0x)
     - **Bucket Tilt Speed** (bucket curl and dump cylinders, default: 1.0x)
-  - Automatically adjusts `Rigidbody.maxAngularVelocity` so physics does not artificially clamp higher rotational speeds.
-- **High-Performance Fast-Path**: All new sliders feature the zero-allocation architecture with instant `O(1)` fast exit whenever multipliers remain unchanged.
-- **Fixed Vanilla Baseline Retention & Drift on Mod Toggle**: Resolved an issue where toggling the mod off and on caused capacities (such as the Dump Truck bed volume) to double repeatedly and halve the fill percentage. All 19 patches now retain immutable baseline values in memory and cleanly restore exact vanilla values whenever the mod is disabled.
+  - Full rotational range of motion without physical rotation limits or jitter.
+- **High-Performance Architecture**: All sliders utilize high-performance fast-paths to ensure 0 frame rate drop during live gameplay.
+- **Fixed Vanilla Restoration on Mod Toggle**: Toggling the mod off and on cleanly restores unmodified game defaults, eliminating volume doubling or fill-percentage drift.
 - **Refined Localization & Concise Descriptions**: All component titles aligned with official in-game terms (*Dump Truck*, *Wheel Loader*, *Backhoe Loader*, *Wave Table*, *Gold Nuggetator*, *Miner's Moss*, etc.). Descriptions streamlined to direct, player-focused summaries without formulas.
 
 ---
@@ -30,14 +30,11 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Performance Overhaul (Eliminated 40% FPS Drop)
 
-- **Zero-Allocation Fast-Path Across All 18 Patches**:
-  - Harmony patches check on the very first cycle whether the multiplier is unchanged and exit immediately without allocations (`O(1)` fast exit).
-  - Eliminates thousands of boxing heap allocations (`FieldInfo.GetValue` for floats) per second that previously overloaded the Unity garbage collector.
-- **Direct Public Field Access & Lock Removal**:
-  - Replaced reflection field accesses with direct typed member lookups.
-  - Removed all thread locks (`lock (SyncRoot)`) from helper stores because Unity update loops are strictly single-threaded.
-- **Wheel Loader Hydraulic Caching**:
-  - Gathers `AnimatedJoint` components once upon vehicle spawn rather than calling `GetComponentsInChildren` every frame in `Update()`.
+- **Zero-Stutter Fast Path Across All Components**:
+  - Immediate exit loops when slider values are unchanged, completely eliminating micro-stutters and frame rate drops.
+  - Streamlined memory handling to prevent garbage collection pauses during gameplay.
+- **Hydraulic Cylinder Caching**:
+  - Gathers joint components once upon vehicle spawn rather than querying the hierarchy every frame.
 - **Result**: Rock-solid 60 / 144 FPS with zero stutter.
 
 ---
