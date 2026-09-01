@@ -1,132 +1,112 @@
 # Changelog – Milex GMS1 Production Tuner
 
-Alle wichtigen Aenderungen an diesem Mod sind hier aufgelistet.
-Das Format folgt den Grundsaetzen von [Keep a Changelog](https://keepachangelog.com/).
+All notable changes to this mod are documented in this file.
+This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
 ## [1.3.0] – 2026-09-02
 
-### Neue Funktionen: Mobile Förderbänder & Bagger-Hydraulik
+### Added: Mobile Conveyor Belts & Excavator Hydraulics
 
-- **Mobile Förderbänder Frankenstein & Cordylus**:
-  - Im Menü direkt hinter dem Muldenkipper als eigene Maschinen integriert.
-  - Jeweils getrennte Regler für **Pufferkapazität** (`MaxVolume`, Default: 2.0x) und **Transportgeschwindigkeit** (`Speed`, Default: 2.0x).
-  - Automatische Unterscheidung der beiden Förderbänder über die Fahrzeug-Hierarchie (`FrankensteinExcavator` vs. `MaximusMachineController`).
-  - **Durchsatzkorrektur**: Skaliert nun auch die Klumpen-Ausschüttungsmenge (`OneLoadVolume`), verkürzt das Ausschüttungs-Intervall (`SpawnInterval`) und gleicht den im Spielcode vergessenen Geschwindigkeitsmultiplikator des zweiten Förderband-Segments (`MyPathAfterDrop`) aktiv aus. Der Trichterpuffer leert sich nun spürbar rasant!
-- **Fein abgestufte Bagger-Hydraulik-Geschwindigkeit**:
-  - 3 neue Schieberegler zur gezielten Steuerung der Bagger-Manövrierfähigkeit (`Koparka`):
-    - **Ausleger-Geschwindigkeit** (Ausleger- und Löffelstielzylinder, Default: 2.0x)
-    - **Turmdreh-Geschwindigkeit** (Oberwagen- und Kabinendrehung, Default: 2.0x)
-    - **Schaufel-Kippgeschwindigkeit** (Kipp- und Schöpfzylinder der Baggerschaufel, Default: 1.0x)
-  - Automatische Anpassung von `Rigidbody.maxAngularVelocity`, damit die Drehgeschwindigkeit physikalisch nicht künstlich abgeriegelt wird.
-- **High-Performance Fast-Path**: Alle neuen Regler nutzen die Zero-Allocation-Architektur mit sofortigem `O(1)`-Ausstieg bei unveränderten Werten.
-- **Präzise Lokalisierung & kompakte Texte**: Alle Bezeichnungen wurden 1:1 an die offiziellen Begriffe des Originalspiels angepasst (*Muldenkipper*, *Radlader*, *Baggerlader*, *Rütteltisch*, *Gold Nuggetator*, *Miner's Moss* usw.). Sämtliche Beschreibungen wurden auf prägnante Erklärungen gestrafft, die direkt sagen, was der Regler im Spiel bewirkt.
+- **Mobile Conveyor Belts (Frankenstein & Cordylus)**:
+  - Integrated directly under the Vehicles group in the in-game menu after the Dump Truck.
+  - Separate controls for **Buffer Capacity** (`MaxVolume`, default: 2.0x) and **Transport Speed** (`Speed`, default: 2.0x).
+  - Automatic machine type identification via parent hierarchy (`FrankensteinExcavator` vs. `MaximusMachineController`).
+  - **Throughput Correction**: Synchronizes discharge chunk volume (`OneLoadVolume`), shortens spawn timer interval (`SpawnInterval`), and dynamically accelerates the secondary drop conveyor section (`MyPathAfterDrop`). The hopper buffer now empties rapidly and synchronously with belt speed.
+- **Dedicated Excavator Hydraulic Speed Controls**:
+  - 3 new individual sliders for fine-tuned excavator maneuverability (`Koparka`):
+    - **Boom / Arm Speed** (lifting and extending cylinders, default: 2.0x)
+    - **Turret Rotation Speed** (upper carriage and cabin swing, default: 2.0x)
+    - **Bucket Tilt Speed** (bucket curl and dump cylinders, default: 1.0x)
+  - Automatically adjusts `Rigidbody.maxAngularVelocity` so physics does not artificially clamp higher rotational speeds.
+- **High-Performance Fast-Path**: All new sliders feature the zero-allocation architecture with instant `O(1)` fast exit whenever multipliers remain unchanged.
+- **Refined Localization & Concise Descriptions**: All component titles aligned with official in-game terms (*Dump Truck*, *Wheel Loader*, *Backhoe Loader*, *Wave Table*, *Gold Nuggetator*, *Miner's Moss*, etc.). Descriptions streamlined to direct, player-focused summaries without formulas.
 
 ---
 
 ## [1.2.2] – 2026-09-01
 
-### Performance-Overhaul (Beseitigung des 40 % FPS-Drops)
+### Performance Overhaul (Eliminated 40% FPS Drop)
 
-- **Zero-Allocation Fast-Path in allen 18 Patches**:
-  - Sämtliche Harmony-Patches prüfen nun im ersten Takt, ob der Reglerwert unverändert ist. Wenn ja, wird die Methode sofort ohne jegliche Berechnung beendet (`O(1)` Fast Exit).
-  - Vermeidet tausende Boxing-Allokationen (`FieldInfo.GetValue` für Floats) pro Sekunde, die zuvor die Unity-Garbage-Collection überlastet und zu Rucklern geführt haben.
-- **Entfernung von Frame-weiser Reflection & Thread-Locks**:
-  - Alle Patches greifen nun direkt typisiert auf die öffentlichen Felder der Spielklassen zu (`Direct Public Field Access`), anstatt über Reflection-Lookups zu gehen.
-  - Sämtliche Thread-Locks (`lock (SyncRoot)`) in `OriginalValueStore` und `OrangeBeastFilter` wurden entfernt, da Unity-Update-Schleifen strikt single-threaded laufen.
-- **Radlader-Hydraulik-Optimierung**:
-  - `GetComponentsInChildren<AnimatedJoint>()` wird nun nur noch ein einziges Mal beim Auftauchen des Radladers gecacht und läuft nicht mehr in jedem Frame der `Update()`-Schleife.
-- **Ergebnis**: 100 % butterweiche 60 / 144 FPS ohne Frame-Einbrüche.
+- **Zero-Allocation Fast-Path Across All 18 Patches**:
+  - Harmony patches check on the very first cycle whether the multiplier is unchanged and exit immediately without allocations (`O(1)` fast exit).
+  - Eliminates thousands of boxing heap allocations (`FieldInfo.GetValue` for floats) per second that previously overloaded the Unity garbage collector.
+- **Direct Public Field Access & Lock Removal**:
+  - Replaced reflection field accesses with direct typed member lookups.
+  - Removed all thread locks (`lock (SyncRoot)`) from helper stores because Unity update loops are strictly single-threaded.
+- **Wheel Loader Hydraulic Caching**:
+  - Gathers `AnimatedJoint` components once upon vehicle spawn rather than calling `GetComponentsInChildren` every frame in `Update()`.
+- **Result**: Rock-solid 60 / 144 FPS with zero stutter.
 
 ---
 
 ## [1.2.1] – 2026-09-01
 
-### Fehlerbehebungen & Feinschliff aus In-Game-Tests
+### Bug Fixes & In-Game Refinements
 
-- **Bagger (Excavator)**: Die überdimensionierte Kollisionsbox wurde vollständig entfernt. Der Bagger gräbt nun wieder exakt an der Position der Schaufel, fasst aber das volle, vergrößerte Schaufelvolumen.
-- **Handschaufel (Shovel)**: Die Schaufel-Logik wurde auf die `Update`-Schleife umgestellt. Bereits im Inventar vorhandene Schaufeln sowie Live-Änderungen an den Reglern werden nun sofort aktiv. Dank $\sqrt{M}$-Flächenskalierung füllt sich die Schaufel in einem einzigen Einstich.
-- **Muldenkipper & Radlader**: Saubere Typ-Trennung zwischen Muldenkipper (`DumpTruck`) und Radlader (`Ladowarka`). Beide Fahrzeuge überschreiben sich nun nicht mehr gegenseitig, und das Muldenkipper-Volumen skaliert wie gewünscht.
-- **Kraftstoffanhänger (Fuel Trailer)**: Von `Start()` auf die `Update()`-Schleife umgestellt, damit auch bereits gekaufte Anhänger auf bestehenden Spielständen und Regleränderungen sofort aktiv werden.
-- **UI-Slider (Verschwindende Texturen behoben)**: Prozedurale Texturen werden nun vor der Garbage Collection bei Szenenwechseln geschützt (`HideFlags.HideAndDontSave`) und bei Bedarf automatisch regeneriert.
+- **Excavator Precision Digging**: Removed enlarged collision box collider sizing. The excavator digs with millimeter precision at the blade edge while still holding the enlarged bucket payload volume.
+- **Hand Shovel Loop**: Switched shovel patching to `Update()` loop with $\sqrt{M}$ blade scaling so existing shovels in inventory and live slider changes update instantly.
+- **Dump Truck vs. Wheel Loader Separation**: Cleanly separated `DumpTruck` from `Ladowarka` by checking instance type names and synchronizing reciprocal volume `_invmaxShovelVolume`.
+- **Fuel Trailer Live Refresh**: Switched fuel trailer tracking to `Update()` loop so already purchased trailers reflect multiplier changes immediately.
+- **UI Slider Procedural Texture Protection**: Protected generated textures with `HideFlags.HideAndDontSave` and automatic style recreation to prevent disappearing orange slider tracks.
 
 ---
 
 ## [1.2.0] – 2026-09-01
 
-### Phase 2: Vollstaendige Spiel-Integration (Harmony-Patches)
+### Phase 2: Complete Game Integration (Harmony Patches)
 
-- **Alle 22 Komponenten vollstaendig implementiert**:
-  - **Tools**: Handschaufel (`GoldDigger.Shovel`) mit $\sqrt{M}$-Skalierung der Schaufelraender, Eimer (`GoldDigger.Bucket`).
-  - **Waschanlagen**: Hog Pan (`GoldDigger.HogPanDirtBox`), Mobile & Mini Waschanlage (`GoldDigger.MobileWashplant`, `MiniWashplant`), Grosswaschanlagen-Rüttler (`GoldDigger.WashplantShakerBase`), Waschrinnen (`GoldDigger.WashPlantSluiceBoxDirt`), Miner's Moss (`GoldDigger.MinersMoss`).
-  - **Fahrzeuge**: Bagger alle (`Koparka`), Radlader (`Ladowarka`) mit Kehrwert-Erhaltung und Drehmoment-Anpassung, Baggerlader (`KoparkoLadowarka`) fuer Front- und Heckarm, Muldenkipper (`GoldDigger.DumpTruck`).
-  - **Feinverarbeitung**: Nuggetator (`GoldDigger.MatScrubber`), Magnetitabscheider (`GoldDigger.MagnetiteSeparator`), Wave Table (`GoldDigger.WaveTable`) mit timer-basierter Zyklusbeschleunigung.
-  - **Logistik & Anhaenger**: Einfuelltrichter (`GoldDigger.ConveyorGround`), Schraegfoerderer-Eimer (`GoldDigger.ConveyorElevator`), Magnetitanhaenger (`GoldDigger.MagnetiteTrailer`), Kraftstoffanhaenger (`GoldDigger.FuelStationController`) mit proportionaler Betankungsrate.
-- **Ressourcen-Neutralitaet & Infrastruktur-Schutz**:
-  - **Wasserschutz der Hog Pan**: In `ProcessPlane` wird der Wasserabfluss an den Vanilla-Basiswert gekoppelt. Kein vorzeitiges Trockenlaufen mehr bei 2x–10x Dreckkapazitaet.
-  - **Stromnetz & Wasserpumpen**: Nennleistungsaufnahmen bleiben unveraendert. Kein Ausloesen der Generatorsicherung oder Druckabfall an den Wasserpumpen.
-  - **Hydraulik-Kraft**: Bei schwereren Schaufelladungen wird das Drehmoment der Hebezylinder (`AnimatedJoint.MaxTorque`) automatisch angehoben.
-- **OriginalValueStore & Drift-Schutz**:
-  - Alle originalen Vanilla-Werte werden vor dem ersten Multiplizieren instanzgenau erfasst.
-  - Beim Deaktivieren des Mods oder beim Zuruecksetzen von Slidern werden die exakten Originalwerte im laufenden Spiel restauriert.
-- **Performance & Stabilitaet (`FieldCache` & `OrangeBeastFilter`)**:
-  - Gecachte Reflection-Lookups verhindern Framerate-Einbrueche in Update-Schleifen.
-  - Die Grosswaschanlage Tier 5 *Orange Beast* wird gezielt vor unpassenden Sub-Shaker-Patches geschuetzt.
-- **Community-Credits & Open-Source-Lizenz**:
-  - Danksagungen an alle 10 Community-Modder (stregkoden, DeepCore/Jonathan, FedeRama, GMS Community) in der README hinterlegt.
-  - Vollstaendig freie Lizenz (Public Domain / MIT-Stil) fuer jedermann erteilt.
+- **All 22 Initial Components Fully Implemented**:
+  - **Tools**: Hand Shovel (`GoldDigger.Shovel`) with $\sqrt{M}$ blade edge scaling, Bucket (`GoldDigger.Bucket`).
+  - **Wash Plants**: Hog Pan (`GoldDigger.HogPanDirtBox`), Mobile & Mini Wash Plant (`GoldDigger.MobileWashplant`, `MiniWashplant`), Trommel/Shaker (`GoldDigger.WashplantShakerBase`), Sluice Boxes (`GoldDigger.WashPlantSluiceBoxDirt`), Miner's Moss (`GoldDigger.MinersMoss`).
+  - **Vehicles**: All Excavators (`Koparka`), Wheel Loader (`Ladowarka`) with reciprocal volume preservation and hydraulic torque scaling, Backhoe Loader (`KoparkoLadowarka`), Dump Truck (`GoldDigger.DumpTruck`).
+  - **Fine Processing**: Gold Nuggetator (`GoldDigger.MatScrubber`), Magnetite Separator (`GoldDigger.MagnetiteSeparator`), Wave Table (`GoldDigger.WaveTable`) with timer-based cycle acceleration.
+  - **Logistics & Trailers**: Feeder Hopper (`GoldDigger.ConveyorGround`), Elevator Conveyor Bucket (`GoldDigger.ConveyorElevator`), Magnetite Trailer (`GoldDigger.MagnetiteTrailer`), Fuel Trailer (`GoldDigger.FuelStationController`) with proportional refueling flow rate.
+- **Resource Neutrality & Infrastructure Protection**:
+  - **Hog Pan Water Protection**: Water drainage rate clamped to vanilla base value in `ProcessPlane`. Mats do not dry out prematurely even with 10x dirt capacity.
+  - **Pump & Generator Stability**: Electric wattage and water intake demands remain unmodified to prevent power outages or pressure drops.
+  - **Hydraulic Torque**: Automatically increases cylinder lifting torque (`AnimatedJoint.MaxTorque`) for heavier wheel loader bucket payloads.
+- **OriginalValueStore & Drift Prevention**:
+  - Captures original vanilla values prior to the first multiplication.
+  - Accurately restores vanilla values when disabling the mod or resetting sliders.
+- **Community Credits & Open Source License**:
+  - Prominent credits to community mod authors (stregkoden, DeepCore/Jonathan, FedeRama, GMS Community) added to documentation.
+  - Fully open MIT-style license granted for public use.
 
 ---
 
 ## [1.1.0] – 2026-08-30
 
-### Neue Funktionen & Überarbeitungen
+### Enhancements & Architecture Rework
 
-- **Spezifische Default-Multiplikatoren pro Komponente**: Jeder Wert startet nun mit seinem eigenen, optimal abgestimmten Standard-Multiplikator (z. B. Bagger 3.0x, Muldenkipper 3.0x, Schaufel 2.0x, Waschanlagen 2.0x) anstelle eines pauschalen 1.0-Werts.
-- **Bereinigung und Ergänzung der Komponenten**:
-  - **Gruppe 1 (Handwerkzeuge)**: `Pan_Capacity` entfernt. `MobileWashPlant_Capacity` (2.0x) als neuer Regler für das Fassungsvermögen der mobilen Waschanlage hinzugefügt.
-  - **Gruppe 2 (Fahrzeuge)**: `MiniExcavator_DigSpeed` entfernt (alle Bagger werden nun einheitlich über `Excavator_DigSpeed` geregelt). `MobileConveyor_Speed` entfernt. `DumpTruck_Capacity` (3.0x) neu hinzugefügt.
-  - **Gruppe 3 (Waschanlagen-Module)**: `Conveyor_Speed` in `ConveyorBucket_Capacity` (2.0x) umbenannt. Nicht benötigte Einzelschalter (`VibratingScreen_Speed`, `Derocker_Speed`, `Sluice_Speed`, `Trommel_Speed`, `Jig_Speed`) entfernt. Neue zentrale Regler: `Washplant_Capacity` (2.0x), `Washplant_Speed` (2.0x) und `Sluicebox_Capacity` (2.0x) hinzugefügt.
-  - **Gruppe 4 (Feinverarbeitung)**: `MagnetiteSeparator_Capacity` (2.0x) als neuer Regler für die Eingangskapazität des Magnetitabscheiders hinzugefügt.
-- **Präzisierter Kaskadenschutz**: Der Kaskadenschutz sichert nun exakt die relevanten Behälter ab (`HogPan_Capacity`, `MagnetiteSeparator_Capacity`, `WaveTable_Capacity`, `MagnetiteTrailer_Capacity`) und verhindert Materialverlust bei vergrößertem Eimer.
-- **Entfall der Gruppen-Multiplikatoren & Modi**: Sämtliche Gruppen-Multiplikatoren sowie der einfache/erweiterte Modus wurden entfernt. Alle Komponenten lassen sich nun direkt und übersichtlich als Einzelregler anpassen.
-- **Dynamische Eimer-Obergrenze & Erweiterter Wertebereich für Folgegeräte**:
-  - Folgebehälter (Hog Pan, Magnetitabscheider, Wave Table, Magnetitanhänger) unterstützen nun Multiplikatoren bis zu 20.0x, um bei vergrößertem Eimer ausreichend Puffer für mehrfaches Entleeren zu bieten.
-  - Der Eimer-Multiplikator wird automatisch auf das maximal zulässige Fassungsvermögen der Folgebehälter begrenzt – ein Überschreiten des Maximums der Folgestationen ist ausgeschlossen.
+- **Specific Default Multipliers Per Component**: Each parameter starts with an optimal default multiplier (e.g. Excavators 3.0x, Dump Truck 3.0x, Shovel 2.0x, Wash Plants 2.0x) instead of a flat 1.0x.
+- **Component Cleanup**:
+  - Group 1 (Hand Tools): Removed `Pan_Capacity`. Added `MobileWashPlant_Capacity` (2.0x).
+  - Group 2 (Vehicles): Unified all excavators under `Excavator_DigSpeed`. Added `DumpTruck_Capacity` (3.0x).
+  - Group 3 (Wash Plant Modules): Renamed `Conveyor_Speed` to `ConveyorBucket_Capacity` (2.0x). Replaced redundant switches with `Washplant_Capacity` (2.0x), `Washplant_Speed` (2.0x), and `Sluicebox_Capacity` (2.0x).
+  - Group 4 (Fine Processing): Added `MagnetiteSeparator_Capacity` (2.0x).
+- **Refined Cascade Protection**: Automatically syncs dependent downstream containers (`HogPan_Capacity`, `MagnetiteSeparator_Capacity`, `WaveTable_Capacity`, `MagnetiteTrailer_Capacity`) to the bucket capacity.
+- **Direct Slider Architecture**: Removed group multipliers and simple/advanced modes in favor of clean, direct individual sliders for all parameters.
+- **Extended Range for Downstream Containers**: Downstream containers support multipliers up to 20.0x to handle multiple bucket dumps smoothly.
 
 ---
 
 ## [1.0.1] – 2026-08-30
 
-### Fehlerbehebungen & Verbesserungen
+### Bug Fixes & Improvements
 
-- **Anzeigenamen im Menue funktionieren jetzt korrekt**: Alle Einstellungen zeigen nun ihren uebersetzten Namen statt des internen Dateinamens an. Ursache war eine falsche Benennung der Config-Keys (die Keys waren auf Deutsch statt auf Englisch).
-- **Einfacher / Erweiterter Modus jetzt pro Gruppe**: Jede der fuenf Gruppen hat einen eigenen Schalter. So kann man z. B. Gruppe 1 auf einfach lassen und Gruppe 3 auf erweitert schalten, ohne dass alle anderen Gruppen beeinflusst werden. Der globale Modus-Schalter wurde entfernt.
-- **Slider in 0.5-Schritten**: Alle Multiplikator-Regler rasten jetzt in Schritten von 0.5 ein (0.5, 1.0, 1.5, … 10.0). Stufenlose Werte zwischen den Schritten sind nicht mehr moeglich.
-- **Gruppe 5 (Anhaenger) hat keinen Gruppen-Multiplikator mehr**: Magnetitanhaenger und Kraftstoffanhaenger haben nichts miteinander zu tun und werden jetzt getrennt und unabhaengig voneinander eingestellt.
-- **Kaskadenschutz live in der Benutzeroberfläche**: Wird das Eimervolumen (oder der Gruppenregler von Gruppe 1) erhöht, springen alle abhängigen Geräte (Goldwaschpfanne, Rütteltisch, Magnetitabscheider, Anhänger) in Echtzeit auf mindestens denselben Wert. Ein manuelles Unterschreiten des Eimerwerts wird bei aktivem Kaskadenschutz automatisch verhindert.
-- **Einzelregler im einfachen Modus gesperrt**: Wenn der einfache Modus einer Gruppe aktiv ist, sind die Einzelregler dieser Gruppe ausgegraut und koennen nicht veraendert werden. Gleichzeitig spiegeln sie den Gruppenwert wider.
+- **Menu Display Names**: Fixed configuration key naming so translated names display properly.
+- **0.5 Step Snapping**: All multiplier sliders snap cleanly to 0.5 increments.
+- **Separated Trailer Settings**: Magnetite and fuel trailers now configure independently.
+- **Live Cascade Protection**: Dynamic UI clamping prevents setting the bucket larger than downstream equipment capacity.
 
 ---
 
 ## [1.0.0] – 2026-08-30
 
-### Neu
+### Initial Release
 
-- **Fuenf Regler-Gruppen**: Handwerkzeuge & Mobile Waschanlagen, Baufahrzeuge & Mobiles Foerderband,
-  Waschanlagen-Module (Tier 3–6), Feinverarbeitung sowie Anhaenger.
-- **Einfacher Modus** (Standard): Ein gemeinsamer Multiplikator steuert alle Komponenten einer Gruppe gleichzeitig.
-- **Erweiterter Modus**: Einzelregler pro Komponente und Parameter (Kapazitaet, Geschwindigkeit, Hydraulik)
-  koennen unabhaengig voneinander angepasst werden.
-- **Gruppen-Reset-Button**: Setzt alle Werte einer Gruppe auf den Standardwert (1.0) zurueck.
-- **Gesamt-Reset-Button**: Setzt alle Werte aller Gruppen zurueck.
-- **Kaskadenschutz** (`AutoScaleDependentInputs`, Standard: an): Verhindert Materialverlust,
-  wenn ein grosser Eimer in ein kleineres Folgegeraet geleert wird. Pfanne, Wave Table,
-  Magnetitabscheider und Anhaenger werden automatisch mindestens so gross wie der Eimer skaliert.
-- **Volles Mehrsprachigkeits-System**: Deutsch und Englisch sind eingebaut. Weitere Sprachen
-  koennen als Vorlage im Ingame-Menue erstellt und uebersetzt werden.
-- **Ingame-Anzeige**: Der Mod erscheint mit eigenem Eintrag in der Sidebar des Milex Mod-Menues.
-  Kann im laufenden Spiel ohne Neustart aktiviert und deaktiviert werden.
-- **Phase 1 Architektur**: Vollstaendige Konfiguration, Domainlogik und Lokalisierung sind implementiert.
-  Harmony-Patches fuer die direkten Spielklassen folgen in Phase 2 (nach Dekompilierung der Spiel-DLLs).
+- Foundation architecture for Production Tuner with 5 multiplier groups.
+- Embedded English and German localization files with automatic template generation.
+- Full in-game menu integration via CoreMod.

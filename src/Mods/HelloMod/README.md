@@ -1,55 +1,54 @@
 # Milex GMS1 HelloMod
 
-- **Version:** `1.1.0` ([Changelog ansehen](CHANGELOG.md))
-- **Mod-Name:** HelloMod
-- **Autor:** Milex
-- **Dateiname:** `Milex_GMS1_HelloMod.dll`
-- **Abhängigkeit:** `Milex_GMS1_CoreMod.dll`
+- **Version:** `1.1.0` ([View Changelog](CHANGELOG.md))
+- **Mod Name:** HelloMod
+- **Author:** Milex
+- **Assembly File:** `Milex_GMS1_HelloMod.dll`
+- **Dependency:** `Milex_GMS1_CoreMod.dll`
 
-Ein Beispiel-Mod für *Gold Mining Simulator*, der demonstriert, wie Erweiterungs-Mods mit dem `Milex GMS1 CoreMod` zusammenarbeiten.
-
----
-
-## Installation & Voraussetzungen
-
-1. **Voraussetzung**: Installiertes BepInEx 5 und `Milex_GMS1_CoreMod.dll`.
-2. **Installation**: Kopiere `Milex_GMS1_HelloMod.dll` in den Ordner `BepInEx/plugins/`.
+An example demonstration mod for *Gold Mining Simulator*, illustrating how sub-mods interact with `Milex GMS1 CoreMod`.
 
 ---
 
-## Funktionen
+## Installation & Prerequisites
 
-- **Test-Taste (`F2`)**: Gibt bei Druck eine konfigurierbare Begrüßungsnachricht im Log aus.
-- **Vollständig anpassbar**:
-  - Hotkey lässt sich im Ingame-Menü frei umbelegen.
-  - Der Grußtext kann direkt im Menü geändert werden.
-  - An/Aus-Schalter zum Aktivieren und Deaktivieren im laufenden Spiel.
-- **Mehrsprachig**: Unterstützt automatisch Deutsch und Englisch.
+1. **Prerequisite**: BepInEx 5 and `Milex_GMS1_CoreMod.dll` installed.
+2. **Installation**: Copy `Milex_GMS1_HelloMod.dll` into your `BepInEx/plugins/` folder.
 
 ---
 
-## Konfigurations-Referenz (`Milex_GMS1_HelloMod.cfg`)
+## Features
 
-Die Einstellungen liegen in der Datei `BepInEx/config/Milex_GMS1_HelloMod.cfg`:
+- **Test Hotkey (`F2`)**: Emits a configurable greeting message to the game log.
+- **Fully Configurable**:
+  - Rebindable hotkey in the in-game menu.
+  - Custom greeting message editable live.
+  - Live on/off toggle via menu checkbox.
+- **Multi-Language Support**: English and German out of the box.
 
-### Sektion `[General]` (Allgemeine Optionen & Mod-Status)
+---
 
-| Schlüssel | Typ | Standardwert | Beschreibung |
+## Configuration Reference (`Milex_GMS1_HelloMod.cfg`)
+
+Configuration is stored in `BepInEx/config/Milex_GMS1_HelloMod.cfg`:
+
+### Section `[General]` (General Options & Mod State)
+
+| Key | Type | Default | Description |
 |---|---|---|---|
-| **`Enabled`** | `Boolean` | `true` | Aktivierungszustand des Mods. Bei `false` werden alle Mod-Funktionen gestoppt. |
-| **`ShowPrefix`** | `Boolean` | `true` | Legt fest, ob dem ausgegebenen Log-Text das Kürzel `[Greeting]` vorangestellt wird. |
-| **`GreetingMessage`** | `String` | `"Hello from Gold Mining Simulator Modding!"` | Indivdueller Grußtext. |
+| **`Enabled`** | `Boolean` | `true` | Mod activation toggle. When `false`, all mod updates are halted. |
+| **`ShowPrefix`** | `Boolean` | `true` | Determines whether log output is prefixed with `[Greeting]`. |
+| **`GreetingMessage`** | `String` | `"Hello from Gold Mining Simulator Modding!"` | Custom greeting text. |
 
-### Sektion `[Controls]` (Steuerung)
+### Section `[Controls]` (Controls)
 
-| Schlüssel | Typ | Standardwert | Beschreibung |
+| Key | Type | Default | Description |
 |---|---|---|---|
-| **`TestHotkey`** | `KeyCode` | `F2` | Taste zum Auslösen des Log-Eintrags. |
+| **`TestHotkey`** | `KeyCode` | `F2` | Hotkey used to trigger the greeting log entry. |
 
 ---
 
-## Sprachdateien
+## Localization Files
 
-- **Ordner**: `BepInEx/plugins/Milex GMS1 Mod Localization/`
-- **Dateinamen**: `Milex_GMS1_HelloMod_de.json`, `Milex_GMS1_HelloMod_en.json`
-- **Funktion**: Übersetzt alle Beschreibungen und Hinweistexte des Mods im Ingame-Menü sowie die Log-Ausgaben im Spiel.
+- **Directory**: `BepInEx/plugins/Milex GMS1 Mod Localization/`
+- **Files**: `Milex_GMS1_HelloMod_de.json`, `Milex_GMS1_HelloMod_en.json`

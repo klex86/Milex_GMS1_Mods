@@ -1,70 +1,70 @@
 # Milex GMS1 CoreMod
 
-- **Version:** `1.2.0` ([Changelog ansehen](CHANGELOG.md))
-- **Mod-Name:** Milex GMS1 CoreMod
-- **Autor:** Milex
-- **Dateiname:** `Milex_GMS1_CoreMod.dll`
+- **Version:** `1.2.2` ([View Changelog](CHANGELOG.md))
+- **Mod Name:** Milex GMS1 CoreMod
+- **Author:** Milex
+- **Assembly File:** `Milex_GMS1_CoreMod.dll`
 
-Der **CoreMod** ist das zentrale Verwaltungssystem für alle Milex-Mods in *Gold Mining Simulator*. Er stellt das Ingame-Menü, die Sprachverwaltung und die grundlegenden Steuerungsfunktionen bereit.
-
----
-
-## Installation & Voraussetzungen
-
-1. **Voraussetzung**: BepInEx 5 (x64) im Hauptverzeichnis des Spiels.
-2. **Installation**: Kopiere `Milex_GMS1_CoreMod.dll` in den Ordner `BepInEx/plugins/`.
-3. **Start**: Das Mod-Menü wird im Spiel mit der Taste **`Einfügen`** (`Insert`) geöffnet.
+The **CoreMod** is the central management framework for all Milex mods in *Gold Mining Simulator*. It provides the in-game menu, localization lifecycle management, input locking, and base mod state persistence.
 
 ---
 
-## Funktionen im Spiel
+## Installation & Prerequisites
 
-1. **Ingame-Menü (Taste `Einfügen` / `Insert`)**:
-   - Ermöglicht das Verwalten und Konfigurieren aller installierten Mods direkt im laufenden Spiel.
-
-2. **Live-Verwaltung von Mods**:
-   - Schalte einzelne Erweiterungs-Mods beliebig an oder aus. Änderungen greifen sofort ohne Spielneustart.
-
-3. **Sprachsystem**:
-   - Automatische Erkennung der Spielsprache.
-   - Verwaltung aller Sprachdateien im Ordner `BepInEx/plugins/Milex GMS1 Mod Localization/`.
-   - Entwickler-Option *"Externe Sprachdateien ignorieren"* zum direkten Testen interner Texte.
-
-4. **Sichere Eingabesperre**:
-   - Hält Kamera, Mausrad und Spielfigur an, während das Menü bedient wird.
+1. **Prerequisite**: BepInEx 5 (x64) installed in the main game directory.
+2. **Installation**: Copy `Milex_GMS1_CoreMod.dll` into your `BepInEx/plugins/` folder.
+3. **Launch**: Open the in-game menu using the **`Insert`** key.
 
 ---
 
-## Konfigurations-Referenz (`Milex_GMS1_CoreMod.cfg`)
+## In-Game Features
 
-Die Einstellungen des Core-Mods liegen in der Datei `BepInEx/config/Milex_GMS1_CoreMod.cfg`. Die Parameter untergliedern sich wie folgt:
+1. **In-Game Menu (`Insert` Key)**:
+   - Configure and manage all installed Milex mods directly during live gameplay.
 
-### Sektion `[General]` (Allgemeines Verhalten & Steuerung)
+2. **Live Mod Lifecycle Management**:
+   - Toggle individual extension mods on or off at any time. Changes take effect immediately without requiring a game restart.
 
-| Schlüssel | Typ | Standardwert | Beschreibung |
+3. **Localization Engine**:
+   - Automatic game-language synchronization.
+   - Central management of all JSON language files in `BepInEx/plugins/Milex GMS1 Mod Localization/`.
+   - Developer option *"Ignore External Localization Files"* to test embedded DLL resources directly.
+
+4. **Reliable Input & Camera Locking**:
+   - Freezes player rotation, camera movements, and tool switching while the menu is open.
+
+---
+
+## Configuration Reference (`Milex_GMS1_CoreMod.cfg`)
+
+CoreMod settings are stored in `BepInEx/config/Milex_GMS1_CoreMod.cfg`:
+
+### Section `[General]` (General Behavior & Controls)
+
+| Key | Type | Default | Description |
 |---|---|---|---|
-| **`MenuToggleKey`** | `KeyCode` | `Insert` | Taste zum Öffnen und Schließen des Mod-Menüs. |
-| **`PauseGameOnMenu`** | `Boolean` | `false` | Pausiert die Spielwelt (TimeScale = 0), solange das Mod-Menü geöffnet ist. |
-| **`IgnoreExternalTranslations`** | `Boolean` | `false` | Entwickler-Option: Ignoriert externe JSON-Sprachdateien und lädt Texte direkt aus den DLL-Ressourcen. |
+| **`MenuToggleKey`** | `KeyCode` | `Insert` | Hotkey used to open and close the mod menu. |
+| **`PauseGameOnMenu`** | `Boolean` | `false` | Freezes the game world (TimeScale = 0) while the mod menu is open. |
+| **`IgnoreExternalTranslations`** | `Boolean` | `false` | Developer option: Ignores external JSON files and loads strings directly from embedded DLL resources. |
 
-### Sektion `[Localization]` (Spracheinstellungen)
+### Section `[Localization]` (Language Settings)
 
-| Schlüssel | Typ | Standardwert | Beschreibung |
+| Key | Type | Default | Description |
 |---|---|---|---|
-| **`UseGameLanguage`** | `Boolean` | `true` | Erkennt automatisch die im Spiel/System gewählte Sprache. |
-| **`SelectedLanguage`** | `String` | `en` | Manuell gewählter Sprachcode (z. B. `de`, `en`, `fr`), falls `UseGameLanguage` deaktiviert ist. |
+| **`UseGameLanguage`** | `Boolean` | `true` | Automatically synchronizes with the language selected in the game settings. |
+| **`SelectedLanguage`** | `String` | `en` | Manually selected language code (e.g. `de`, `en`, `fr`) when `UseGameLanguage` is disabled. |
 
-### Sektion `[UI]` (Menü-Darstellung)
+### Section `[UI]` (Appearance & Scaling)
 
-| Schlüssel | Typ | Standardwert | Beschreibung |
+| Key | Type | Default | Description |
 |---|---|---|---|
-| **`UIScale`** | `Float` | `1.0` | Skalierungsfaktor des Mod-Menüs (0.70 bis 1.60) für hochauflösende Bildschirme. |
+| **`UIScale`** | `Float` | `1.0` | Scaling multiplier for the mod menu (0.70 to 1.60) for high-DPI displays. |
 
 ---
 
-## Sprachdateien & Vorlagen-Verwaltung
+## Localization Files & Template Generation
 
-- **Ordner**: `BepInEx/plugins/Milex GMS1 Mod Localization/`
-- **Dateinamen**: `Milex_GMS1_CoreMod_de.json` (Deutsch), `Milex_GMS1_CoreMod_en.json` (Englisch) usw.
+- **Directory**: `BepInEx/plugins/Milex GMS1 Mod Localization/`
+- **File Format**: `Milex_GMS1_CoreMod_de.json` (German), `Milex_GMS1_CoreMod_en.json` (English), etc.
 
-Wenn im Ingame-Menü eine Sprache ausgewählt wird, für die noch keine Datei existiert, kann per Klick auf *"Vorlagen erstellen"* automatisch eine neue JSON-Vorlage im Lokalisierungsordner erzeugt werden.
+When selecting an uninstalled language in the menu, clicking *"Create Templates"* automatically extracts new JSON translation templates directly into the localization directory.

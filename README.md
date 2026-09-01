@@ -1,80 +1,79 @@
-# Milex GMS1 Mods - Mod-Framework & Mod-Sammlung
+# Milex GMS1 Mods - Mod Framework & Collection
 
-Ein modulares Mod-System für **Gold Mining Simulator** (*Gold Rush: The Game*), basierend auf BepInEx 5 und Harmony. Es beinhaltet ein zentrales Ingame-Konfigurationsmenü, eine automatische Konfigurationsverwaltung und ein vollständiges Mehrsprachigkeits-System.
+A modular modding system for **Gold Mining Simulator** (*Gold Rush: The Game*), built on BepInEx 5 and Harmony. It features a centralized in-game configuration menu, automatic configuration lifecycle management, and a complete multi-language localization framework.
 
 ---
 
-## Dokumentation & Navigation
+## Documentation & Navigation
 
-Die folgenden Links führen direkt zu den Anleitungen und Änderungshistorien (Changelogs) der einzelnen Komponenten:
+Direct links to documentation, guides, and changelogs for all repository components:
 
-| Thema / Mod | Beschreibung | Dokumentation | Changelog |
+| Topic / Mod | Description | Documentation | Changelog |
 |---|---|---|---|
-| **Gesamtes Projekt** | Gesamt-Übersicht und Haupt-Anleitung | [Haupt-Dokumentation](README.md) | [Gesamt-Changelog](CHANGELOG.md) |
-| **Milex GMS1 CoreMod** | Zentrales Verwaltungssystem, Ingame-Menü & Sprachverwaltung | [CoreMod Anleitung](src/CoreMod/README.md) | [CoreMod Changelog](src/CoreMod/CHANGELOG.md) |
-| **Milex GMS1 HelloMod** | Beispiel-Mod zur Demonstration der Funktionen | [HelloMod Anleitung](src/Mods/HelloMod/README.md) | [HelloMod Changelog](src/Mods/HelloMod/CHANGELOG.md) |
-| **Milex GMS1 Production Tuner** | Feinstufige Regler fuer Geschwindigkeiten, Kapazitaeten und Laderaten aller 22 Komponenten | [Production Tuner Anleitung](src/Mods/ProductionTuner/README.md) | [Production Tuner Changelog](src/Mods/ProductionTuner/CHANGELOG.md) |
-| **Community Wissenskompendium** | Umfassende Reverse-Engineering-Dokumentation aus 10 Community-Mods & Originalspiel | [Wissenskompendium](Community%20Knowledge/COMMUNITY_KNOWLEDGE_COMPENDIUM.md) | - |
-| **Tastenbelegung** | Übersicht der Hotkeys und deren Umbelegung im Spiel | [Tasten-Übersicht](KEYBINDINGS.md) | - |
+| **Entire Monorepo** | Overview, architecture, and general setup | [Main Documentation](README.md) | [Root Changelog](CHANGELOG.md) |
+| **Milex GMS1 CoreMod** | Central manager, in-game menu & localization engine | [CoreMod Guide](src/CoreMod/README.md) | [CoreMod Changelog](src/CoreMod/CHANGELOG.md) |
+| **Milex GMS1 HelloMod** | Example mod demonstrating framework features | [HelloMod Guide](src/Mods/HelloMod/README.md) | [HelloMod Changelog](src/Mods/HelloMod/CHANGELOG.md) |
+| **Milex GMS1 Production Tuner** | High-performance tuning for speeds, capacities, and hydraulics across 29 components | [Production Tuner Guide](src/Mods/ProductionTuner/README.md) | [Production Tuner Changelog](src/Mods/ProductionTuner/CHANGELOG.md) |
+| **Community Knowledge Compendium** | Comprehensive reverse-engineering findings from 10 community mods & vanilla codebase | [Knowledge Compendium](Community%20Knowledge/COMMUNITY_KNOWLEDGE_COMPENDIUM.md) | - |
+| **Keybindings** | Overview of hotkeys and in-game rebinding | [Keybindings Guide](KEYBINDINGS.md) | - |
 
 ---
 
-## Installation & Erste Schritte
+## Installation & Getting Started
 
-1. **Voraussetzung**: Stelle sicher, dass **BepInEx 5** (x64) im Hauptverzeichnis deines Spiels installiert ist.
-2. **Mods kopieren**: Kopiere die fertigen Mod-Dateien (mindestens `Milex_GMS1_CoreMod.dll`, weitere Mods nach Bedarf) in den Ordner `BepInEx/plugins/`.
-3. **Spiel starten**: Starte das Spiel wie gewohnt.
-4. **Mod-Menü öffnen**: Drücke im Spiel die Taste **`Einfügen`** (`Insert`), um das Mod-Menü zu öffnen.
-
----
-
-## Bedienung im Spiel
-
-- **Mod-Menü öffnen/schließen**: Taste `Einfügen` (`Insert`) drücken.
-- **Mods an- und ausschalten**: Im Tab *Geladene Mods* kann jeder Mod über einen eigenen Schalter im laufenden Spiel aktiviert oder deaktiviert werden.
-- **Einstellungen anpassen**: Tastenbelegungen, Texte und Optionen können direkt im Menü geändert werden.
-- **Sprache ändern**: Im Tab *Allgemein* kann die Sprache manuell gewählt werden, falls die automatische Erkennung der Spielsprache deaktiviert wird.
+1. **Prerequisite**: Ensure **BepInEx 5** (x64) is installed in your main game directory.
+2. **Install Mods**: Copy the compiled mod files (at least `Milex_GMS1_CoreMod.dll`, plus any sub-mods) into your `BepInEx/plugins/` folder.
+3. **Start Game**: Launch the game normally.
+4. **Open Mod Menu**: Press **`Insert`** in-game to open the Milex Mod Menu.
 
 ---
 
-## Konfiguration & Sprachdateien
+## In-Game Controls & Features
 
-Alle Mods dieses Systems verwalten ihre Einstellungen und Texte nach einem einheitlichen Standard. Es müssen keine Dateien manuell angelegt werden – das System richtet alles beim ersten Start automatisch ein.
-
-### Konfigurationsdateien (`.cfg`)
-
-- **Speicherort**: `BepInEx/config/`
-- **Automatische Erstellung**: Beim ersten Spielstart erstellt das System für jeden Mod eine eigene Einstellungsdatei.
-- **Dateibenennung**: Jede Datei ist exakt nach der Mod-Datei benannt (z. B. `Milex_GMS1_CoreMod.cfg` oder `Milex_GMS1_HelloMod.cfg`).
-- **Anpassung**: Einstellungen können direkt im Ingame-Menü oder bei geschlossenem Spiel mit einem Texteditor in den `.cfg`-Dateien bearbeitet werden.
-
-### Sprachdateien & Lokalisierung (`.json`)
-
-- **Speicherort**: `BepInEx/plugins/Milex GMS1 Mod Localization/`
-- **Automatische Vorlagen**: Beim Mod-Start werden die englischen (`_en.json`) und deutschen (`_de.json`) Sprachdateien automatisch in diesen Ordner entpackt.
+- **Toggle Mod Menu**: Press the **`Insert`** key.
+- **Enable/Disable Mods Live**: In the *Loaded Mods* sidebar, toggle any mod on or off during live gameplay without restarting.
+- **Adjust Configuration**: Keybindings, sliders, and options can be configured directly inside the menu.
+- **Switch Languages**: In the *General* tab, select any installed language or keep automatic game-language synchronization enabled.
 
 ---
 
-## Anleitung: Vorlagen für neue Sprachen erstellen
+## Configuration & Localization Files
 
-Wenn du das Spiel in einer bisher nicht enthaltenen Sprache spielst (z. B. Französisch, Polnisch oder Spanisch), kannst du dir dafür direkt im Spiel Vorlagen erstellen lassen:
+All mods in this framework handle configuration and text through standardized paths. No manual file creation is required — files are initialized automatically on first startup.
 
-1. Drücke im Spiel die Taste **`Einfügen`** (`Insert`), um das Mod-Menü zu öffnen.
-2. Navigiere zum Bereich **Allgemein** und wähle die Option **`Spiel-Sprache verwenden`** ab.
-3. Wähle im Feld **`Sprache wählen`** deine gewünschte Zielsprache aus.
-4. Das System erkennt fehlende Sprachdateien und zeigt ein Hinweisfenster an.
-5. Klicke auf **`Vorlagen erstellen`**.
-6. Im Ordner `BepInEx/plugins/Milex GMS1 Mod Localization/` werden nun editierbare JSON-Vorlagen (z. B. `Milex_GMS1_HelloMod_fr.json`) angelegt.
-7. Diese Dateien können mit einem beliebigen Texteditor geöffnet und übersetzt werden.
-8. Übersetzte Sprachdateien können gerne auf NexusMods bereitgestellt werden, um sie offiziell in zukünftige Versionen zu übernehmen.
+### Configuration Files (`.cfg`)
+
+- **Location**: `BepInEx/config/`
+- **Automatic Initialization**: On startup, each mod generates its own configuration file matching its assembly name (e.g. `Milex_GMS1_CoreMod.cfg` or `Milex_GMS1_ProductionTuner.cfg`).
+- **Editing**: Settings can be modified live in the in-game menu or edited offline with any text editor.
+
+### Localization Files (`.json`)
+
+- **Location**: `BepInEx/plugins/Milex GMS1 Mod Localization/`
+- **Embedded Defaults**: English (`_en.json`) and German (`_de.json`) translation templates are extracted automatically on first launch.
 
 ---
 
-## Entwicklung & Kompilierung
+## Guide: Generating Templates for New Languages
 
-Projekt-Erstellung über die zentrale Solution `GMSModding.sln`:
+If you play the game in a language that does not yet have a translation file (e.g. French, Polish, Spanish), you can generate translation templates directly from the game:
+
+1. Press **`Insert`** to open the mod menu.
+2. Navigate to **General** and disable **`Use Game Language`**.
+3. In the **`Select Language`** dropdown, pick your desired target language.
+4. The system detects missing translation files and displays a prompt dialog.
+5. Click **`Create Templates`**.
+6. Editable JSON template files (e.g. `Milex_GMS1_ProductionTuner_fr.json`) are immediately created in `BepInEx/plugins/Milex GMS1 Mod Localization/`.
+7. Translate these files using any text editor. Community contributions are welcome on NexusMods!
+
+---
+
+## Development & Compilation
+
+To build the entire solution:
 
 ```powershell
 dotnet build GMSModding.sln
 ```
-Der Build-Prozess kopiert fertige Mod-Dateien automatisch in das `BepInEx/plugins/`-Verzeichnis des Spiels.
+
+Build targets automatically deploy compiled assemblies to the `BepInEx/plugins/` directory.
