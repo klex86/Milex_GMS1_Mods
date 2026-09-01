@@ -94,6 +94,7 @@ namespace Milex.GMS1.Mods.ProductionTuner
             WaveTablePatch.Reset();
             ConveyorGroundPatch.Reset();
             ConveyorElevatorPatch.Reset();
+            MobileConveyorPatch.Reset();
             MagnetiteTrailerPatch.Reset();
             FuelTrailerPatch.Reset();
             OrangeBeastFilter.Clear();

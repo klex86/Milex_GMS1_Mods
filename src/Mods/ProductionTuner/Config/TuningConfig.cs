@@ -59,9 +59,16 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         // ===========================================================
 
         public ConfigEntry<float> Excavator_DigSpeed { get; private set; }
+        public ConfigEntry<float> Excavator_ArmSpeed { get; private set; }
+        public ConfigEntry<float> Excavator_TurretSpeed { get; private set; }
+        public ConfigEntry<float> Excavator_BucketSpeed { get; private set; }
         public ConfigEntry<float> WheelLoader_LoadSpeed { get; private set; }
         public ConfigEntry<float> BackhoeLoader_LoadSpeed { get; private set; }
         public ConfigEntry<float> DumpTruck_Capacity { get; private set; }
+        public ConfigEntry<float> Frankenstein_Capacity { get; private set; }
+        public ConfigEntry<float> Frankenstein_Speed { get; private set; }
+        public ConfigEntry<float> Cordylus_Capacity { get; private set; }
+        public ConfigEntry<float> Cordylus_Speed { get; private set; }
 
         // ===========================================================
         // GROUP 3 – Wash Plant Modules
@@ -127,12 +134,26 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
             // Group 2
             Excavator_DigSpeed = BindStep("Group2_Vehicles", "Excavator_DigSpeed", 3.0f,
                 "How fast the excavator digs.");
+            Excavator_ArmSpeed = BindStep("Group2_Vehicles", "Excavator_ArmSpeed", 2.0f,
+                "Maneuvering speed of the excavator boom and stick.");
+            Excavator_TurretSpeed = BindStep("Group2_Vehicles", "Excavator_TurretSpeed", 2.0f,
+                "Rotation speed of the excavator cabin and turret.");
+            Excavator_BucketSpeed = BindStep("Group2_Vehicles", "Excavator_BucketSpeed", 1.0f,
+                "Tilting and curling speed of the excavator bucket.");
             WheelLoader_LoadSpeed = BindStep("Group2_Vehicles", "WheelLoader_LoadSpeed", 3.0f,
                 "How fast the wheel loader picks up material.");
             BackhoeLoader_LoadSpeed = BindStep("Group2_Vehicles", "BackhoeLoader_LoadSpeed", 3.0f,
                 "How fast the backhoe loader picks up material.");
             DumpTruck_Capacity = BindStep("Group2_Vehicles", "DumpTruck_Capacity", 3.0f,
                 "Maximum load capacity of the dump truck.");
+            Frankenstein_Capacity = BindStep("Group2_Vehicles", "Frankenstein_Capacity", 2.0f,
+                "Material buffer capacity of the Frankenstein conveyor belt.");
+            Frankenstein_Speed = BindStep("Group2_Vehicles", "Frankenstein_Speed", 2.0f,
+                "Transport speed of the Frankenstein conveyor belt.");
+            Cordylus_Capacity = BindStep("Group2_Vehicles", "Cordylus_Capacity", 2.0f,
+                "Material buffer capacity of the Cordylus conveyor belt.");
+            Cordylus_Speed = BindStep("Group2_Vehicles", "Cordylus_Speed", 2.0f,
+                "Transport speed of the Cordylus conveyor belt.");
 
             // Group 3
             Hopper_Capacity = BindStep("Group3_WashPlantModules", "Hopper_Capacity", 2.0f,
@@ -282,9 +303,16 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                         break;
                     case 2:
                         Excavator_DigSpeed.Value = (float)Excavator_DigSpeed.DefaultValue;
+                        Excavator_ArmSpeed.Value = (float)Excavator_ArmSpeed.DefaultValue;
+                        Excavator_TurretSpeed.Value = (float)Excavator_TurretSpeed.DefaultValue;
+                        Excavator_BucketSpeed.Value = (float)Excavator_BucketSpeed.DefaultValue;
                         WheelLoader_LoadSpeed.Value = (float)WheelLoader_LoadSpeed.DefaultValue;
                         BackhoeLoader_LoadSpeed.Value = (float)BackhoeLoader_LoadSpeed.DefaultValue;
                         DumpTruck_Capacity.Value = (float)DumpTruck_Capacity.DefaultValue;
+                        Frankenstein_Capacity.Value = (float)Frankenstein_Capacity.DefaultValue;
+                        Frankenstein_Speed.Value = (float)Frankenstein_Speed.DefaultValue;
+                        Cordylus_Capacity.Value = (float)Cordylus_Capacity.DefaultValue;
+                        Cordylus_Speed.Value = (float)Cordylus_Speed.DefaultValue;
                         break;
                     case 3:
                         Hopper_Capacity.Value = (float)Hopper_Capacity.DefaultValue;

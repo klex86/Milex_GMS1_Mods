@@ -38,11 +38,25 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         /// <summary>Applies to all excavators (mini and large excavator).</summary>
         public float GetExcavatorDigSpeed() => _cfg.Excavator_DigSpeed.Value;
 
+        public float GetExcavatorArmSpeed() => _cfg.Excavator_ArmSpeed.Value;
+
+        public float GetExcavatorTurretSpeed() => _cfg.Excavator_TurretSpeed.Value;
+
+        public float GetExcavatorBucketSpeed() => _cfg.Excavator_BucketSpeed.Value;
+
         public float GetWheelLoaderLoadSpeed() => _cfg.WheelLoader_LoadSpeed.Value;
 
         public float GetBackhoeLoaderLoadSpeed() => _cfg.BackhoeLoader_LoadSpeed.Value;
 
         public float GetDumpTruckCapacity() => _cfg.DumpTruck_Capacity.Value;
+
+        public float GetFrankensteinCapacity() => _cfg.Frankenstein_Capacity.Value;
+
+        public float GetFrankensteinSpeed() => _cfg.Frankenstein_Speed.Value;
+
+        public float GetCordylusCapacity() => _cfg.Cordylus_Capacity.Value;
+
+        public float GetCordylusSpeed() => _cfg.Cordylus_Speed.Value;
 
         // ===========================================================
         // GROUP 3 – Wash Plant Modules
@@ -95,9 +109,16 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         public float MobileWashPlantSpeedMultiplier => GetMobileWashPlantSpeed();
         public float MobileWashPlantCapacityMultiplier => GetMobileWashPlantCapacity();
         public float ExcavatorDigSpeedMultiplier => GetExcavatorDigSpeed();
+        public float ExcavatorArmSpeedMultiplier => GetExcavatorArmSpeed();
+        public float ExcavatorTurretSpeedMultiplier => GetExcavatorTurretSpeed();
+        public float ExcavatorBucketSpeedMultiplier => GetExcavatorBucketSpeed();
         public float WheelLoaderLoadSpeedMultiplier => GetWheelLoaderLoadSpeed();
         public float BackhoeLoaderLoadSpeedMultiplier => GetBackhoeLoaderLoadSpeed();
         public float DumpTruckCapacityMultiplier => GetDumpTruckCapacity();
+        public float FrankensteinCapacityMultiplier => GetFrankensteinCapacity();
+        public float FrankensteinSpeedMultiplier => GetFrankensteinSpeed();
+        public float CordylusCapacityMultiplier => GetCordylusCapacity();
+        public float CordylusSpeedMultiplier => GetCordylusSpeed();
         public float HopperCapacityMultiplier => GetHopperCapacity();
         public float ConveyorBucketCapacityMultiplier => GetConveyorBucketCapacity();
         public float WashplantCapacityMultiplier => GetWashplantCapacity();

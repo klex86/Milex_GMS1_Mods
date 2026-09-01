@@ -5,6 +5,24 @@ Das Format folgt den Grundsaetzen von [Keep a Changelog](https://keepachangelog.
 
 ---
 
+## [1.3.0] – 2026-09-02
+
+### Neue Funktionen: Mobile Förderbänder & Bagger-Hydraulik
+
+- **Mobile Förderbänder Frankenstein & Cordylus**:
+  - Im Menü direkt hinter dem Muldenkipper als eigene Maschinen integriert.
+  - Jeweils getrennte Regler für **Pufferkapazität** (`MaxVolume`, Default: 2.0x) und **Transportgeschwindigkeit** (`Speed`, Default: 2.0x).
+  - Automatische Unterscheidung der beiden Förderbänder über die Fahrzeug-Hierarchie (`FrankensteinExcavator` vs. `MaximusMachineController`).
+- **Fein abgestufte Bagger-Hydraulik-Geschwindigkeit**:
+  - 3 neue Schieberegler zur gezielten Steuerung der Bagger-Manövrierfähigkeit (`Koparka`):
+    - **Ausleger-Geschwindigkeit** (Ausleger- und Löffelstielzylinder, Default: 2.0x)
+    - **Turmdreh-Geschwindigkeit** (Oberwagen- und Kabinendrehung, Default: 2.0x)
+    - **Schaufel-Kippgeschwindigkeit** (Kipp- und Schöpfzylinder der Baggerschaufel, Default: 1.0x)
+  - Automatische Anpassung von `Rigidbody.maxAngularVelocity`, damit die Drehgeschwindigkeit physikalisch nicht künstlich abgeriegelt wird.
+- **High-Performance Fast-Path**: Alle neuen Regler nutzen die Zero-Allocation-Architektur mit sofortigem `O(1)`-Ausstieg bei unveränderten Werten.
+
+---
+
 ## [1.2.2] – 2026-09-01
 
 ### Performance-Overhaul (Beseitigung des 40 % FPS-Drops)

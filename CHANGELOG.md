@@ -4,6 +4,18 @@ Alle relevanten Änderungen und Neuerungen der Mod-Sammlung werden in dieser Dat
 
 ---
 
+## [1.6.0] - 2026-09-02
+
+### Neue Funktionen & Regler-Erweiterungen (Production Tuner)
+- **Mobile Förderbänder Frankenstein & Cordylus**:
+  - Im Ingame-Menü direkt nach dem Muldenkipper mit separaten Reglern für Pufferkapazität (Default: 2.0x) und Transportgeschwindigkeit (Default: 2.0x) ausgestattet.
+  - Vollautomatische Identifikation des Fahrzeugs über die Komponenten-Hierarchie.
+- **Getrennte Bagger-Hydraulik-Regelung**:
+  - 3 neue Einzelregler für Bagger (`Koparka`): Ausleger-Geschwindigkeit (2.0x), Turmdrehung (2.0x) und Schaufel-Kippgeschwindigkeit (1.0x).
+  - Volle Bewegungsfreiheit durch dynamische Anpassung von `Rigidbody.maxAngularVelocity`.
+
+---
+
 ## [1.5.2] - 2026-09-01
 
 ### Performance-Optimierung (Beseitigung des FPS-Drops)

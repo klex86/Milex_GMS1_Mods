@@ -61,7 +61,7 @@ Alle Regler arbeiten in festen **0.5-Schritten**. Standard-Komponenten reichen v
 | Sektion | Enthaltene Komponenten & Default-Multiplikatoren |
 |---|---|
 | `[Group1_HandTools]` | Schaufel (2.0x), Eimer (2.0x), Hog Pan (2.0x), Mobile Waschanlage Speed (3.0x), Mobile Waschanlage Kapazitaet (2.0x) |
-| `[Group2_Vehicles]` | Bagger alle (3.0x), Radlader (3.0x), Baggerlader (3.0x), Muldenkipper Dump Truck (3.0x) |
+| `[Group2_Vehicles]` | Bagger Schaufelvolumen (3.0x), Bagger Ausleger-Hydraulik (2.0x), Bagger Turmdrehung (2.0x), Bagger Schaufel-Kippen (1.0x), Radlader (3.0x), Baggerlader (3.0x), Muldenkipper Dump Truck (3.0x), Frankenstein Band Kapazitaet (2.0x), Frankenstein Band Speed (2.0x), Cordylus Band Kapazitaet (2.0x), Cordylus Band Speed (2.0x) |
 | `[Group3_WashPlantModules]` | Einfuelltrichter (2.0x), Foerderband-Eimer (2.0x), Waschanlagen Kapazitaet (2.0x), Waschanlagen Speed (2.0x), Waschrinnen (2.0x), Miner's Moss (2.0x) |
 | `[Group4_FineProcessing]` | Nuggetator Speed (2.0x), Magnetitabscheider Speed (2.0x), Magnetitabscheider Kapazitaet (2.0x), Wave Table Speed (3.0x), Wave Table Kapazitaet (3.0x) |
 | `[Group5_Trailers]` | Magnetitanhaenger (2.0x), Kraftstoffanhaenger (3.0x) |
