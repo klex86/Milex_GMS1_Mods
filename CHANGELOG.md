@@ -10,6 +10,7 @@ Alle relevanten Änderungen und Neuerungen der Mod-Sammlung werden in dieser Dat
 - **Mobile Förderbänder Frankenstein & Cordylus**:
   - Im Ingame-Menü direkt nach dem Muldenkipper mit separaten Reglern für Pufferkapazität (Default: 2.0x) und Transportgeschwindigkeit (Default: 2.0x) ausgestattet.
   - Vollautomatische Identifikation des Fahrzeugs über die Komponenten-Hierarchie.
+  - **Durchsatzkorrektur**: Die Klumpenausschüttung (`OneLoadVolume`) und das Intervall (`SpawnInterval`) wurden gekoppelt, und das zweite Förderbandsegment wird nun ebenfalls voll beschleunigt. Der Trichterpuffer leert sich dadurch synchron zur eingestellten Bandgeschwindigkeit.
 - **Getrennte Bagger-Hydraulik-Regelung**:
   - 3 neue Einzelregler für Bagger (`Koparka`): Ausleger-Geschwindigkeit (2.0x), Turmdrehung (2.0x) und Schaufel-Kippgeschwindigkeit (1.0x).
   - Volle Bewegungsfreiheit durch dynamische Anpassung von `Rigidbody.maxAngularVelocity`.

@@ -1,13 +1,14 @@
 using System.Collections.Generic;
 using HarmonyLib;
+using UnityEngine;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 {
     /// <summary>
-    /// Scales buffer capacity (MaxVolume) and transport speed (Speed) for the large mobile conveyors
+    /// Scales buffer capacity (MaxVolume) and transport speed for the large mobile conveyors
     /// (Frankenstein excavator belt and Cordylus robot carrier belt).
-    /// Distinguishes between Frankenstein and Cordylus via parent machine hierarchy.
-    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
+    /// Dynamically scales chunk discharge size (OneLoadVolume), spawn interval, and compensates
+    /// for the missing speed multiplier on the secondary conveyor belt section (MyPathAfterDrop).
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.FrankensteinBelt), "Update")]
     public static class MobileConveyorPatch
@@ -16,6 +17,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
         {
             public float BaseVolume;
             public float BaseSpeed;
+            public float BaseOneLoad;
+            public float BaseTextureOffsetSpeed;
+            public Vector2 BaseSpawnInterval;
             public bool IsCordylus;
         }
 
@@ -38,20 +42,31 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 
             int id = __instance.GetInstanceID();
 
-            // Zero-allocation fast-path
             if (BaseValues.TryGetValue(id, out var data))
             {
-                if (data.IsCordylus)
+                float curSpdMult = data.IsCordylus ? cordSpdMult : frankSpdMult;
+                float curCapMult = data.IsCordylus ? cordCapMult : frankCapMult;
+                float lastSpdMult = data.IsCordylus ? _lastCordSpdMult : _lastFrankSpdMult;
+                float lastCapMult = data.IsCordylus ? _lastCordCapMult : _lastFrankCapMult;
+
+                if (curSpdMult != lastSpdMult || curCapMult != lastCapMult)
                 {
-                    if (cordCapMult == _lastCordCapMult && cordSpdMult == _lastCordSpdMult) return;
-                    __instance.MaxVolume = data.BaseVolume * cordCapMult;
-                    __instance.Speed = data.BaseSpeed * cordSpdMult;
+                    ApplyStaticParameters(__instance, data, curCapMult, curSpdMult);
                 }
-                else
+
+                // Runtime compensation: accelerate secondary drop belt where vanilla omits Parent.Speed
+                if (curSpdMult > 1f && __instance.IsEnabled && __instance.CurrentObjects != null)
                 {
-                    if (frankCapMult == _lastFrankCapMult && frankSpdMult == _lastFrankSpdMult) return;
-                    __instance.MaxVolume = data.BaseVolume * frankCapMult;
-                    __instance.Speed = data.BaseSpeed * frankSpdMult;
+                    float extraProgress = Time.deltaTime * __instance.SpeedMultiplier * (curSpdMult - 1f);
+                    var objects = __instance.CurrentObjects;
+                    for (int i = 0; i < objects.Count; i++)
+                    {
+                        var obj = objects[i];
+                        if (obj != null && obj.MyPathAfterDrop != null && obj.MyPathAfterDrop.Count > 0)
+                        {
+                            obj.CurrentProgress += extraProgress;
+                        }
+                    }
                 }
                 return;
             }
@@ -63,20 +78,40 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
             {
                 BaseVolume = __instance.MaxVolume,
                 BaseSpeed = __instance.Speed,
+                BaseOneLoad = __instance.OneLoadVolume > 0f ? __instance.OneLoadVolume : 0.05f,
+                BaseTextureOffsetSpeed = __instance.TextureOffsetSpeed > 0f ? __instance.TextureOffsetSpeed : 0.05f,
+                BaseSpawnInterval = __instance.SpawnInterval != Vector2.zero ? __instance.SpawnInterval : new Vector2(0.2f, 0.4f),
                 IsCordylus = isCord
             };
             BaseValues[id] = data;
 
-            float capMult = isCord ? cordCapMult : frankCapMult;
-            float spdMult = isCord ? cordSpdMult : frankSpdMult;
+            float activeCapMult = isCord ? cordCapMult : frankCapMult;
+            float activeSpdMult = isCord ? cordSpdMult : frankSpdMult;
 
-            __instance.MaxVolume = data.BaseVolume * capMult;
-            __instance.Speed = data.BaseSpeed * spdMult;
+            ApplyStaticParameters(__instance, data, activeCapMult, activeSpdMult);
 
             _lastFrankCapMult = frankCapMult;
             _lastFrankSpdMult = frankSpdMult;
             _lastCordCapMult = cordCapMult;
             _lastCordSpdMult = cordSpdMult;
+        }
+
+        private static void ApplyStaticParameters(
+            GoldDigger.FrankensteinBelt belt,
+            ConveyorBase data,
+            float capMult,
+            float spdMult)
+        {
+            belt.MaxVolume = data.BaseVolume * capMult;
+            belt.Speed = data.BaseSpeed * spdMult;
+
+            // Scale discharge lump size and interval so the buffer empties proportionally
+            belt.OneLoadVolume = data.BaseOneLoad * spdMult;
+            if (spdMult > 0.01f)
+            {
+                belt.SpawnInterval = data.BaseSpawnInterval / spdMult;
+            }
+            belt.TextureOffsetSpeed = data.BaseTextureOffsetSpeed * spdMult;
         }
 
         public static void Reset()

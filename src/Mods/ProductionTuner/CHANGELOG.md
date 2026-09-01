@@ -13,6 +13,7 @@ Das Format folgt den Grundsaetzen von [Keep a Changelog](https://keepachangelog.
   - Im Menü direkt hinter dem Muldenkipper als eigene Maschinen integriert.
   - Jeweils getrennte Regler für **Pufferkapazität** (`MaxVolume`, Default: 2.0x) und **Transportgeschwindigkeit** (`Speed`, Default: 2.0x).
   - Automatische Unterscheidung der beiden Förderbänder über die Fahrzeug-Hierarchie (`FrankensteinExcavator` vs. `MaximusMachineController`).
+  - **Durchsatzkorrektur**: Skaliert nun auch die Klumpen-Ausschüttungsmenge (`OneLoadVolume`), verkürzt das Ausschüttungs-Intervall (`SpawnInterval`) und gleicht den im Spielcode vergessenen Geschwindigkeitsmultiplikator des zweiten Förderband-Segments (`MyPathAfterDrop`) aktiv aus. Der Trichterpuffer leert sich nun spürbar rasant!
 - **Fein abgestufte Bagger-Hydraulik-Geschwindigkeit**:
   - 3 neue Schieberegler zur gezielten Steuerung der Bagger-Manövrierfähigkeit (`Koparka`):
     - **Ausleger-Geschwindigkeit** (Ausleger- und Löffelstielzylinder, Default: 2.0x)
