@@ -5,10 +5,10 @@ using UnityEngine;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 {
     /// <summary>
-    /// Scales buffer capacity (MaxVolume) and transport speed for the large mobile conveyors
+    /// Scales buffer capacity (MaxVolume) and transport throughput speed for the large mobile conveyors
     /// (Frankenstein excavator belt and Cordylus robot carrier belt).
-    /// Dynamically scales chunk discharge size (OneLoadVolume), spawn interval, and compensates
-    /// for the missing speed multiplier on the secondary conveyor belt section (MyPathAfterDrop).
+    /// Dynamically scales chunk discharge size (OneLoadVolume), spawn timer, and compensates
+    /// for the secondary conveyor belt section (MyPathAfterDrop), seamlessly multiplying the vanilla 3-stage speeds.
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.FrankensteinBelt), "Update")]
     public static class MobileConveyorPatch
@@ -24,6 +24,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
         }
 
         private static readonly Dictionary<int, ConveyorBase> BaseValues = new Dictionary<int, ConveyorBase>();
+        private static readonly AccessTools.FieldRef<GoldDigger.FrankensteinBelt, float> LastSpawnRef =
+            AccessTools.FieldRefAccess<GoldDigger.FrankensteinBelt, float>("lastSpawn");
+
         private static float _lastFrankCapMult = -1f;
         private static float _lastFrankSpdMult = -1f;
         private static float _lastCordCapMult = -1f;
@@ -54,17 +57,28 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                     ApplyStaticParameters(__instance, data, curCapMult, curSpdMult);
                 }
 
-                // Runtime compensation: accelerate secondary drop belt where vanilla omits Parent.Speed
-                if (curSpdMult > 1f && __instance.IsEnabled && __instance.CurrentObjects != null)
+                // Runtime compensation: accelerate discharge spawn timer and secondary drop belt proportionally
+                if (curSpdMult > 1f && __instance.IsEnabled)
                 {
-                    float extraProgress = Time.deltaTime * __instance.SpeedMultiplier * (curSpdMult - 1f);
-                    var objects = __instance.CurrentObjects;
-                    for (int i = 0; i < objects.Count; i++)
+                    // Accelerate dirt chunk spawning from hopper onto belt
+                    if (LastSpawnRef != null)
                     {
-                        var obj = objects[i];
-                        if (obj != null && obj.MyPathAfterDrop != null && obj.MyPathAfterDrop.Count > 0)
+                        ref float lastSpawn = ref LastSpawnRef(__instance);
+                        lastSpawn -= Time.deltaTime * __instance.SpeedMultiplier * (curSpdMult - 1f);
+                    }
+
+                    // Accelerate secondary drop belt section
+                    if (__instance.CurrentObjects != null)
+                    {
+                        float extraProgress = Time.deltaTime * __instance.SpeedMultiplier * (curSpdMult - 1f);
+                        var objects = __instance.CurrentObjects;
+                        for (int i = 0; i < objects.Count; i++)
                         {
-                            obj.CurrentProgress += extraProgress;
+                            var obj = objects[i];
+                            if (obj != null && obj.MyPathAfterDrop != null && obj.MyPathAfterDrop.Count > 0)
+                            {
+                                obj.CurrentProgress += extraProgress;
+                            }
                         }
                     }
                 }
