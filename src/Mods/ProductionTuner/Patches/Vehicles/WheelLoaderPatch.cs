@@ -7,12 +7,13 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
 {
     /// <summary>
     /// Scales wheel loader (Ladowarka) bucket volume, reciprocal volume, hydraulic lifting torque, and steering agility.
-    /// Employs cached joint lookups and an instant fast-path exit to eliminate frame rate drops.
+    /// Employs cached joint lookups, fast-path exit, and clean vanilla state restoration.
     /// </summary>
     [HarmonyPatch(typeof(Ladowarka), "Update")]
     public static class WheelLoaderPatch
     {
-        private static readonly Dictionary<int, float> BaseVolumes = new Dictionary<int, float>();
+        private static readonly Dictionary<int, (Ladowarka instance, float baseVolume)> Tracked =
+            new Dictionary<int, (Ladowarka, float)>();
         private static readonly Dictionary<int, (AnimatedJoint joint, float baseTorque)[]> CachedJoints =
             new Dictionary<int, (AnimatedJoint joint, float baseTorque)[]>();
 
@@ -33,16 +34,17 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
             int id = __instance.GetInstanceID();
 
             // Zero-allocation fast-path
-            if (BaseVolumes.TryGetValue(id, out float baseVol))
+            if (Tracked.TryGetValue(id, out var data))
             {
                 if (multiplier == _lastMultiplier) return;
 
-                ApplyLoaderState(__instance, digging, baseVol, multiplier);
+                ApplyLoaderState(__instance, digging, data.baseVolume, multiplier);
                 return;
             }
 
-            baseVol = digging._maxShovelVolume;
-            BaseVolumes[id] = baseVol;
+            // First-time registration
+            float baseVol = digging._maxShovelVolume;
+            Tracked[id] = (__instance, baseVol);
             CacheJoints(__instance, id);
             ApplyLoaderState(__instance, digging, baseVol, multiplier);
             _lastMultiplier = multiplier;
@@ -50,6 +52,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
 
         private static void ApplyLoaderState(Ladowarka loader, DiggingController digging, float baseVol, float multiplier)
         {
+            if (loader == null || digging == null) return;
+
             float targetVol = baseVol * multiplier;
             digging._maxShovelVolume = targetVol;
             if (targetVol > 0.0001f)
@@ -73,20 +77,34 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
 
         private static void CacheJoints(Ladowarka loader, int id)
         {
-            var found = loader.GetComponentsInChildren<AnimatedJoint>();
-            if (found == null || found.Length == 0) return;
-
-            var list = new (AnimatedJoint, float)[found.Length];
-            for (int i = 0; i < found.Length; i++)
+            var jointList = loader.GetComponentsInChildren<AnimatedJoint>(true);
+            if (jointList != null && jointList.Length > 0)
             {
-                list[i] = (found[i], found[i].MaxTorque);
+                var cached = new (AnimatedJoint, float)[jointList.Length];
+                for (int i = 0; i < jointList.Length; i++)
+                {
+                    cached[i] = (jointList[i], jointList[i].MaxTorque);
+                }
+                CachedJoints[id] = cached;
             }
-            CachedJoints[id] = list;
+        }
+
+        public static void RestoreVanilla()
+        {
+            foreach (var kvp in Tracked.Values)
+            {
+                if (kvp.instance != null && kvp.instance.Digging != null)
+                {
+                    ApplyLoaderState(kvp.instance, kvp.instance.Digging, kvp.baseVolume, 1f);
+                }
+            }
+            _lastMultiplier = 1f;
         }
 
         public static void Reset()
         {
-            BaseVolumes.Clear();
+            RestoreVanilla();
+            Tracked.Clear();
             CachedJoints.Clear();
             _lastMultiplier = -1f;
         }

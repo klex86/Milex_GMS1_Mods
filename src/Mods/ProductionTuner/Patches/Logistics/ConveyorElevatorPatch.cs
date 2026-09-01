@@ -4,12 +4,14 @@ using HarmonyLib;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 {
     /// <summary>
-    /// Scales bucket elevator conveyor bucket capacity with zero frame rate impact.
+    /// Scales bucket elevator conveyor bucket capacity with zero frame rate impact
+    /// and clean vanilla state restoration.
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.ConveyorElevator), "Update")]
     public static class ConveyorElevatorPatch
     {
-        private static readonly Dictionary<int, float> BaseCaps = new Dictionary<int, float>();
+        private static readonly Dictionary<int, (GoldDigger.ConveyorElevator instance, float baseCap)> Tracked =
+            new Dictionary<int, (GoldDigger.ConveyorElevator, float)>();
         private static float _lastMultiplier = -1f;
 
         [HarmonyPostfix]
@@ -24,22 +26,35 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
             int id = __instance.GetInstanceID();
 
             // Zero-allocation fast-path
-            if (BaseCaps.TryGetValue(id, out float baseCap))
+            if (Tracked.TryGetValue(id, out var data))
             {
                 if (multiplier == _lastMultiplier) return;
-                __instance.BucketCapacity = baseCap * multiplier;
+                __instance.BucketCapacity = data.baseCap * multiplier;
                 return;
             }
 
-            baseCap = __instance.BucketCapacity;
-            BaseCaps[id] = baseCap;
+            float baseCap = __instance.BucketCapacity;
+            Tracked[id] = (__instance, baseCap);
             __instance.BucketCapacity = baseCap * multiplier;
             _lastMultiplier = multiplier;
         }
 
+        public static void RestoreVanilla()
+        {
+            foreach (var kvp in Tracked.Values)
+            {
+                if (kvp.instance != null)
+                {
+                    kvp.instance.BucketCapacity = kvp.baseCap;
+                }
+            }
+            _lastMultiplier = 1f;
+        }
+
         public static void Reset()
         {
-            BaseCaps.Clear();
+            RestoreVanilla();
+            Tracked.Clear();
             _lastMultiplier = -1f;
         }
     }

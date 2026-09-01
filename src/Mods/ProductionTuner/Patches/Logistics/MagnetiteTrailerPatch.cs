@@ -4,12 +4,14 @@ using HarmonyLib;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 {
     /// <summary>
-    /// Scales Magnetite Trailer maximum volume capacity with zero frame rate impact.
+    /// Scales Magnetite Trailer maximum volume capacity with zero frame rate impact
+    /// and clean vanilla state restoration.
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.MagnetiteTrailer), "Update")]
     public static class MagnetiteTrailerPatch
     {
-        private static readonly Dictionary<int, float> BaseVolumes = new Dictionary<int, float>();
+        private static readonly Dictionary<int, (GoldDigger.MagnetiteTrailer instance, float baseVol)> Tracked =
+            new Dictionary<int, (GoldDigger.MagnetiteTrailer, float)>();
         private static float _lastMultiplier = -1f;
 
         [HarmonyPostfix]
@@ -24,22 +26,35 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
             int id = __instance.GetInstanceID();
 
             // Zero-allocation fast-path
-            if (BaseVolumes.TryGetValue(id, out float baseVol))
+            if (Tracked.TryGetValue(id, out var data))
             {
                 if (multiplier == _lastMultiplier) return;
-                __instance.MaxMagnetiteTrailerVolume = baseVol * multiplier;
+                __instance.MaxMagnetiteTrailerVolume = data.baseVol * multiplier;
                 return;
             }
 
-            baseVol = __instance.MaxMagnetiteTrailerVolume;
-            BaseVolumes[id] = baseVol;
+            float baseVol = __instance.MaxMagnetiteTrailerVolume;
+            Tracked[id] = (__instance, baseVol);
             __instance.MaxMagnetiteTrailerVolume = baseVol * multiplier;
             _lastMultiplier = multiplier;
         }
 
+        public static void RestoreVanilla()
+        {
+            foreach (var kvp in Tracked.Values)
+            {
+                if (kvp.instance != null)
+                {
+                    kvp.instance.MaxMagnetiteTrailerVolume = kvp.baseVol;
+                }
+            }
+            _lastMultiplier = 1f;
+        }
+
         public static void Reset()
         {
-            BaseVolumes.Clear();
+            RestoreVanilla();
+            Tracked.Clear();
             _lastMultiplier = -1f;
         }
     }

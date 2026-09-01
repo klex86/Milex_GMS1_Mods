@@ -6,13 +6,14 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Tools
 {
     /// <summary>
     /// Scales hand shovel volume and blade surface area so that digging fills the enlarged volume proportionally.
-    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
+    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.Shovel), "Update")]
     public static class ShovelPatch
     {
         private struct ShovelBase
         {
+            public GoldDigger.Shovel Instance;
             public float BaseVolume;
             public float BaseBladeX;
             public float BaseBladeZ;
@@ -50,6 +51,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Tools
 
             baseVal = new ShovelBase
             {
+                Instance = __instance,
                 BaseVolume = __instance.MaxVolume,
                 BaseBladeX = curBladeX,
                 BaseBladeZ = curBladeZ
@@ -61,15 +63,36 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Tools
 
         private static void ApplyShovel(GoldDigger.Shovel shovel, ShovelBase baseVal, float multiplier)
         {
+            if (shovel == null) return;
+
             shovel.MaxVolume = baseVal.BaseVolume * multiplier;
 
-            float sqrtMult = Mathf.Sqrt(Mathf.Max(0.01f, multiplier));
-            if (BladeXRef != null) BladeXRef(shovel) = baseVal.BaseBladeX * sqrtMult;
-            if (BladeZRef != null) BladeZRef(shovel) = baseVal.BaseBladeZ * sqrtMult;
+            float bladeScale = Mathf.Sqrt(Mathf.Max(1f, multiplier));
+            if (BladeXRef != null)
+            {
+                BladeXRef(shovel) = baseVal.BaseBladeX * bladeScale;
+            }
+            if (BladeZRef != null)
+            {
+                BladeZRef(shovel) = baseVal.BaseBladeZ * bladeScale;
+            }
+        }
+
+        public static void RestoreVanilla()
+        {
+            foreach (var data in BaseValues.Values)
+            {
+                if (data.Instance != null)
+                {
+                    ApplyShovel(data.Instance, data, 1f);
+                }
+            }
+            _lastMultiplier = 1f;
         }
 
         public static void Reset()
         {
+            RestoreVanilla();
             BaseValues.Clear();
             _lastMultiplier = -1f;
         }

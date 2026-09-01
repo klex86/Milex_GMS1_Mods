@@ -21,6 +21,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
     - **Bucket Tilt Speed** (bucket curl and dump cylinders, default: 1.0x)
   - Automatically adjusts `Rigidbody.maxAngularVelocity` so physics does not artificially clamp higher rotational speeds.
 - **High-Performance Fast-Path**: All new sliders feature the zero-allocation architecture with instant `O(1)` fast exit whenever multipliers remain unchanged.
+- **Fixed Vanilla Baseline Retention & Drift on Mod Toggle**: Resolved an issue where toggling the mod off and on caused capacities (such as the Dump Truck bed volume) to double repeatedly and halve the fill percentage. All 19 patches now retain immutable baseline values in memory and cleanly restore exact vanilla values whenever the mod is disabled.
 - **Refined Localization & Concise Descriptions**: All component titles aligned with official in-game terms (*Dump Truck*, *Wheel Loader*, *Backhoe Loader*, *Wave Table*, *Gold Nuggetator*, *Miner's Moss*, etc.). Descriptions streamlined to direct, player-focused summaries without formulas.
 
 ---

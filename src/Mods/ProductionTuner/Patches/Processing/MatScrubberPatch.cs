@@ -6,13 +6,14 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
 {
     /// <summary>
     /// Scales Nuggetator (MatScrubber) cleaning throughput speed and bucket mat capacities.
-    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
+    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.MatScrubber), "Update")]
     public static class MatScrubberPatch
     {
         private struct ScrubberBase
         {
+            public GoldDigger.MatScrubber Instance;
             public float CleanSpeed;
             public int Small;
             public int Big;
@@ -51,6 +52,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
 
             baseVal = new ScrubberBase
             {
+                Instance = __instance,
                 CleanSpeed = __instance.CleanigDirtSpeed,
                 Small = __instance.SmallInBucket,
                 Big = __instance.BigInBucket,
@@ -65,8 +67,25 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
             _lastBucketMult = bucketMult;
         }
 
+        public static void RestoreVanilla()
+        {
+            foreach (var data in BaseValues.Values)
+            {
+                if (data.Instance != null)
+                {
+                    data.Instance.CleanigDirtSpeed = data.CleanSpeed;
+                    data.Instance.SmallInBucket = data.Small;
+                    data.Instance.BigInBucket = data.Big;
+                    data.Instance.XLInBucket = data.XL;
+                }
+            }
+            _lastSpeedMult = 1f;
+            _lastBucketMult = 1f;
+        }
+
         public static void Reset()
         {
+            RestoreVanilla();
             BaseValues.Clear();
             _lastSpeedMult = -1f;
             _lastBucketMult = -1f;

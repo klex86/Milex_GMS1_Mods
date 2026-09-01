@@ -5,11 +5,17 @@ using UnityEngine;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 {
     /// <summary>
-    /// Scales mobile fuel trailer capacity and refuel pump speed proportionally with zero frame rate impact.
+    /// Scales mobile fuel trailer capacity and refuel pump speed proportionally with zero frame rate impact
+    /// and clean vanilla state restoration.
     /// </summary>
     public static class FuelTrailerPatch
     {
-        private static readonly Dictionary<int, float> BaseCapacities = new Dictionary<int, float>();
+        private static readonly Dictionary<int, (GoldDigger.FuelStationController instance, float baseCap)> TrackedStations =
+            new Dictionary<int, (GoldDigger.FuelStationController, float)>();
+
+        private static readonly Dictionary<int, (GoldDigger.FuelPistolHoldable instance, float baseSpeed)> TrackedPistols =
+            new Dictionary<int, (GoldDigger.FuelPistolHoldable, float)>();
+
         private static float _lastMultiplier = -1f;
 
         [HarmonyPatch(typeof(GoldDigger.FuelStationController), "Update")]
@@ -28,10 +34,10 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                     : 1f;
 
                 // Zero-allocation fast-path
-                if (BaseCapacities.TryGetValue(id, out float baseCap))
+                if (TrackedStations.TryGetValue(id, out var data))
                 {
                     if (multiplier == _lastMultiplier) return;
-                    __instance.MaxCapacity = baseCap * multiplier;
+                    __instance.MaxCapacity = data.baseCap * multiplier;
                     return;
                 }
 
@@ -39,7 +45,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                 bool isTrailer = __instance.GetComponentInParent<GoldDigger.Trailer>() != null;
                 if (__instance.gameObject.name.Contains("End_Bottom") || (Mathf.Approximately(curCap, 1000f) && isTrailer))
                 {
-                    BaseCapacities[id] = curCap;
+                    TrackedStations[id] = (__instance, curCap);
                     __instance.MaxCapacity = curCap * multiplier;
                     _lastMultiplier = multiplier;
                 }
@@ -49,31 +55,50 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
         [HarmonyPatch(typeof(GoldDigger.FuelPistolHoldable), "Attach")]
         public static class FuelPistolSubPatch
         {
-            private static readonly Dictionary<int, float> BaseSpeeds = new Dictionary<int, float>();
-
             [HarmonyPostfix]
             public static void Postfix(GoldDigger.FuelPistolHoldable __instance)
             {
                 if (__instance == null) return;
 
                 int id = __instance.GetInstanceID();
-                if (!BaseSpeeds.TryGetValue(id, out float baseSpeed))
+                if (!TrackedPistols.TryGetValue(id, out var data))
                 {
-                    baseSpeed = __instance.TankingSpeed;
-                    BaseSpeeds[id] = baseSpeed;
+                    data = (__instance, __instance.TankingSpeed);
+                    TrackedPistols[id] = data;
                 }
 
                 float multiplier = ProductionTunerPlugin.Service != null
                     ? ProductionTunerPlugin.Service.FuelTrailerCapacityMultiplier
                     : 1f;
 
-                __instance.TankingSpeed = baseSpeed * Mathf.Max(1f, multiplier);
+                __instance.TankingSpeed = data.baseSpeed * Mathf.Max(1f, multiplier);
             }
+        }
+
+        public static void RestoreVanilla()
+        {
+            foreach (var kvp in TrackedStations.Values)
+            {
+                if (kvp.instance != null)
+                {
+                    kvp.instance.MaxCapacity = kvp.baseCap;
+                }
+            }
+            foreach (var kvp in TrackedPistols.Values)
+            {
+                if (kvp.instance != null)
+                {
+                    kvp.instance.TankingSpeed = kvp.baseSpeed;
+                }
+            }
+            _lastMultiplier = 1f;
         }
 
         public static void Reset()
         {
-            BaseCapacities.Clear();
+            RestoreVanilla();
+            TrackedStations.Clear();
+            TrackedPistols.Clear();
             _lastMultiplier = -1f;
         }
     }

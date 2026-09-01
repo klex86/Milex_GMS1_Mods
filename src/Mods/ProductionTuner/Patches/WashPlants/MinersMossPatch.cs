@@ -6,12 +6,13 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
     /// <summary>
     /// Scales dirt and mineral sediment capacity for Miner's Moss mats.
-    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
+    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.MinersMoss), "Update")]
     public static class MinersMossPatch
     {
-        private static readonly Dictionary<int, float> BaseVolumes = new Dictionary<int, float>();
+        private static readonly Dictionary<int, (GoldDigger.MinersMoss instance, float baseVol)> Tracked =
+            new Dictionary<int, (GoldDigger.MinersMoss, float)>();
         private static float _lastMultiplier = -1f;
 
         [HarmonyPostfix]
@@ -25,25 +26,38 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 
             int id = __instance.GetInstanceID();
 
-            // Zero-allocation fast-path: if already tracked and multiplier has not changed, exit immediately
-            if (BaseVolumes.TryGetValue(id, out float baseVol))
+            // Zero-allocation fast-path
+            if (Tracked.TryGetValue(id, out var data))
             {
                 if (multiplier == _lastMultiplier) return;
-                __instance.MaxGroundVolume = baseVol * multiplier;
+                __instance.MaxGroundVolume = data.baseVol * multiplier;
                 return;
             }
 
             if (OrangeBeastFilter.IsOrangeBeastPart(__instance)) return;
 
-            baseVol = __instance.MaxGroundVolume;
-            BaseVolumes[id] = baseVol;
+            float baseVol = __instance.MaxGroundVolume;
+            Tracked[id] = (__instance, baseVol);
             __instance.MaxGroundVolume = baseVol * multiplier;
             _lastMultiplier = multiplier;
         }
 
+        public static void RestoreVanilla()
+        {
+            foreach (var kvp in Tracked.Values)
+            {
+                if (kvp.instance != null)
+                {
+                    kvp.instance.MaxGroundVolume = kvp.baseVol;
+                }
+            }
+            _lastMultiplier = 1f;
+        }
+
         public static void Reset()
         {
-            BaseVolumes.Clear();
+            RestoreVanilla();
+            Tracked.Clear();
             _lastMultiplier = -1f;
         }
     }

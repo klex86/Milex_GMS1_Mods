@@ -6,12 +6,13 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
     /// <summary>
     /// Scales dirt capacity for washplant sluice boxes.
-    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
+    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.WashPlantSluiceBoxDirt), "Update")]
     public static class SluiceBoxPatch
     {
-        private static readonly Dictionary<int, float> BaseFills = new Dictionary<int, float>();
+        private static readonly Dictionary<int, (GoldDigger.WashPlantSluiceBoxDirt instance, float baseFill)> Tracked =
+            new Dictionary<int, (GoldDigger.WashPlantSluiceBoxDirt, float)>();
         private static float _lastMultiplier = -1f;
 
         [HarmonyPostfix]
@@ -26,24 +27,37 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             int id = __instance.GetInstanceID();
 
             // Zero-allocation fast-path
-            if (BaseFills.TryGetValue(id, out float baseFill))
+            if (Tracked.TryGetValue(id, out var data))
             {
                 if (multiplier == _lastMultiplier) return;
-                __instance.MaxFill = baseFill * multiplier;
+                __instance.MaxFill = data.baseFill * multiplier;
                 return;
             }
 
             if (OrangeBeastFilter.IsOrangeBeastPart(__instance)) return;
 
-            baseFill = __instance.MaxFill;
-            BaseFills[id] = baseFill;
+            float baseFill = __instance.MaxFill;
+            Tracked[id] = (__instance, baseFill);
             __instance.MaxFill = baseFill * multiplier;
             _lastMultiplier = multiplier;
         }
 
+        public static void RestoreVanilla()
+        {
+            foreach (var kvp in Tracked.Values)
+            {
+                if (kvp.instance != null)
+                {
+                    kvp.instance.MaxFill = kvp.baseFill;
+                }
+            }
+            _lastMultiplier = 1f;
+        }
+
         public static void Reset()
         {
-            BaseFills.Clear();
+            RestoreVanilla();
+            Tracked.Clear();
             _lastMultiplier = -1f;
         }
     }

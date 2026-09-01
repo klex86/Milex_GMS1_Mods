@@ -8,13 +8,14 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
     /// <summary>
     /// Scales excavator digging capacity as well as hydraulic maneuvering speeds
     /// (boom/stick extension, turret/cabin rotation, and bucket curl).
-    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
+    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
     /// </summary>
     [HarmonyPatch(typeof(Koparka), "Update")]
     public static class ExcavatorPatch
     {
         private struct ExcavatorBase
         {
+            public Koparka Instance;
             public float BaseVolume;
             public (Backhoe arm, float baseSpeed)[] CachedArms;
         }
@@ -38,7 +39,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
 
             int id = __instance.GetInstanceID();
 
-            // Zero-allocation fast-path: if already tracked and all 4 multipliers unchanged, exit instantly
+            // Zero-allocation fast-path
             if (BaseData.TryGetValue(id, out var data))
             {
                 if (digMult == _lastDigMult && armMult == _lastArmMult &&
@@ -51,12 +52,13 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
                 return;
             }
 
-            // First-time registration
+            // First-time registration: capture true vanilla values
             float baseVol = __instance.Digging != null ? __instance.Digging._maxShovelVolume : 1f;
             var cachedArms = CacheArms(__instance);
 
             data = new ExcavatorBase
             {
+                Instance = __instance,
                 BaseVolume = baseVol,
                 CachedArms = cachedArms
             };
@@ -94,6 +96,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
             float turretMult,
             float bucketMult)
         {
+            if (excavator == null) return;
+
             if (excavator.Digging != null)
             {
                 excavator.Digging._maxShovelVolume = data.BaseVolume * digMult;
@@ -131,24 +135,37 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
         {
             string name = arm.Arm != null ? arm.Arm.name.ToLowerInvariant() : "";
 
-            // Turret / cabin swing joint
             if (index == 2 || name.Contains("body") || name.Contains("rotate") || name.Contains("turret") || name.Contains("cabin"))
             {
                 return turretMult;
             }
 
-            // Bucket tilt / curl joint
             if (index == 3 || name.Contains("bucket") || name.Contains("shovel") || name.Contains("lyzk"))
             {
                 return bucketMult;
             }
 
-            // Boom and dipper/stick joints (Arm 0, Arm 1)
             return armMult;
+        }
+
+        public static void RestoreVanilla()
+        {
+            foreach (var data in BaseData.Values)
+            {
+                if (data.Instance != null)
+                {
+                    ApplyExcavatorState(data.Instance, data, 1f, 1f, 1f, 1f);
+                }
+            }
+            _lastDigMult = 1f;
+            _lastArmMult = 1f;
+            _lastTurretMult = 1f;
+            _lastBucketMult = 1f;
         }
 
         public static void Reset()
         {
+            RestoreVanilla();
             BaseData.Clear();
             _lastDigMult = -1f;
             _lastArmMult = -1f;

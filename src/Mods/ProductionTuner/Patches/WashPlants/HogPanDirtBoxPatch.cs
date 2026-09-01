@@ -6,12 +6,13 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
     /// <summary>
     /// Scales Hog Pan dirt capacity while protecting water consumption rate from accelerating.
-    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
+    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.HogPanDirtBox), "Update")]
     public static class HogPanDirtBoxPatch
     {
-        private static readonly Dictionary<int, float> BaseCaps = new Dictionary<int, float>();
+        private static readonly Dictionary<int, (GoldDigger.HogPanDirtBox instance, float baseCap)> Tracked =
+            new Dictionary<int, (GoldDigger.HogPanDirtBox, float)>();
         private static float _lastMultiplier = -1f;
 
         [HarmonyPostfix]
@@ -26,27 +27,40 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             int id = __instance.GetInstanceID();
 
             // Zero-allocation fast-path
-            if (BaseCaps.TryGetValue(id, out float baseCap))
+            if (Tracked.TryGetValue(id, out var data))
             {
                 if (multiplier == _lastMultiplier) return;
-                __instance.PlaneVolumeMax = baseCap * multiplier;
+                __instance.PlaneVolumeMax = data.baseCap * multiplier;
                 return;
             }
 
-            baseCap = __instance.PlaneVolumeMax;
-            BaseCaps[id] = baseCap;
+            float baseCap = __instance.PlaneVolumeMax;
+            Tracked[id] = (__instance, baseCap);
             __instance.PlaneVolumeMax = baseCap * multiplier;
             _lastMultiplier = multiplier;
         }
 
         public static float GetBaseCap(int id, float fallback)
         {
-            return BaseCaps.TryGetValue(id, out float baseCap) ? baseCap : fallback;
+            return Tracked.TryGetValue(id, out var data) ? data.baseCap : fallback;
+        }
+
+        public static void RestoreVanilla()
+        {
+            foreach (var kvp in Tracked.Values)
+            {
+                if (kvp.instance != null)
+                {
+                    kvp.instance.PlaneVolumeMax = kvp.baseCap;
+                }
+            }
+            _lastMultiplier = 1f;
         }
 
         public static void Reset()
         {
-            BaseCaps.Clear();
+            RestoreVanilla();
+            Tracked.Clear();
             _lastMultiplier = -1f;
         }
 

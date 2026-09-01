@@ -19,6 +19,9 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 - **In-Game Localization Alignment**:
   - All components aligned with official in-game terms (*Dump Truck*, *Wheel Loader*, *Backhoe Loader*, *Wave Table*, *Gold Nuggetator*, *Miner's Moss*, etc.).
   - Streamlined descriptions into concise, clear player-facing summaries.
+- **Fixed Vanilla Restoration & Cumulative Drift on Mod Toggles**:
+  - Resolved an issue where toggling the mod off and on caused capacities (such as the Dump Truck bed volume) to repeatedly multiply and halve the fill gauge.
+  - All 19 patches now retain immutable baseline values in memory and cleanly restore exact vanilla values when the mod is disabled.
 
 ---
 

@@ -5,12 +5,13 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
     /// <summary>
     /// Scales capacity (MaxFill) and processing speed (FillSpeed) for MobileWashplant and MiniWashplant.
-    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
+    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
     /// </summary>
     public static class MobileWashPlantPatch
     {
         private struct PlantBase
         {
+            public object Instance;
             public float BaseFill;
             public float BaseSpeed;
         }
@@ -26,7 +27,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             public static void Postfix(GoldDigger.MobileWashplant __instance)
             {
                 if (__instance == null) return;
-                ApplyValues(__instance.GetInstanceID(), ref __instance.MaxFill, ref __instance.FillSpeed);
+                ApplyValues(__instance, __instance.GetInstanceID(), ref __instance.MaxFill, ref __instance.FillSpeed);
             }
         }
 
@@ -37,11 +38,11 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             public static void Postfix(GoldDigger.MiniWashplant __instance)
             {
                 if (__instance == null) return;
-                ApplyValues(__instance.GetInstanceID(), ref __instance.MaxFill, ref __instance.FillSpeed);
+                ApplyValues(__instance, __instance.GetInstanceID(), ref __instance.MaxFill, ref __instance.FillSpeed);
             }
         }
 
-        private static void ApplyValues(int id, ref float maxFill, ref float fillSpeed)
+        private static void ApplyValues(object instance, int id, ref float maxFill, ref float fillSpeed)
         {
             float capMultiplier = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.MobileWashPlantCapacityMultiplier
@@ -62,6 +63,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 
             baseVal = new PlantBase
             {
+                Instance = instance,
                 BaseFill = maxFill,
                 BaseSpeed = fillSpeed
             };
@@ -72,8 +74,28 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             _lastSpdMultiplier = spdMultiplier;
         }
 
+        public static void RestoreVanilla()
+        {
+            foreach (var data in BaseValues.Values)
+            {
+                if (data.Instance is GoldDigger.MobileWashplant m && m != null)
+                {
+                    m.MaxFill = data.BaseFill;
+                    m.FillSpeed = data.BaseSpeed;
+                }
+                else if (data.Instance is GoldDigger.MiniWashplant mini && mini != null)
+                {
+                    mini.MaxFill = data.BaseFill;
+                    mini.FillSpeed = data.BaseSpeed;
+                }
+            }
+            _lastCapMultiplier = 1f;
+            _lastSpdMultiplier = 1f;
+        }
+
         public static void Reset()
         {
+            RestoreVanilla();
             BaseValues.Clear();
             _lastCapMultiplier = -1f;
             _lastSpdMultiplier = -1f;

@@ -5,13 +5,14 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
 {
     /// <summary>
     /// Scales Magnetite Separator capacity (MaxFill) and output processing speed (FillOutSpeed).
-    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
+    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.MagnetiteSeparator), "Update")]
     public static class MagnetiteSeparatorPatch
     {
         private struct SeparatorBase
         {
+            public GoldDigger.MagnetiteSeparator Instance;
             public float BaseFill;
             public float BaseSpeed;
         }
@@ -46,6 +47,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
 
             baseVal = new SeparatorBase
             {
+                Instance = __instance,
                 BaseFill = __instance.MaxFill,
                 BaseSpeed = __instance.FillOutSpeed
             };
@@ -56,8 +58,23 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
             _lastSpdMultiplier = spdMultiplier;
         }
 
+        public static void RestoreVanilla()
+        {
+            foreach (var data in BaseValues.Values)
+            {
+                if (data.Instance != null)
+                {
+                    data.Instance.MaxFill = data.BaseFill;
+                    data.Instance.FillOutSpeed = data.BaseSpeed;
+                }
+            }
+            _lastCapMultiplier = 1f;
+            _lastSpdMultiplier = 1f;
+        }
+
         public static void Reset()
         {
+            RestoreVanilla();
             BaseValues.Clear();
             _lastCapMultiplier = -1f;
             _lastSpdMultiplier = -1f;

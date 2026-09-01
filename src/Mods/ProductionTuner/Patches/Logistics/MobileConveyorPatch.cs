@@ -8,13 +8,14 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
     /// Scales buffer capacity (MaxVolume) and transport throughput speed for the large mobile conveyors
     /// (Frankenstein excavator belt and Cordylus robot carrier belt).
     /// Dynamically scales chunk discharge size (OneLoadVolume), spawn timer, and compensates
-    /// for the secondary conveyor belt section (MyPathAfterDrop), seamlessly multiplying the vanilla 3-stage speeds.
+    /// for the secondary conveyor belt section (MyPathAfterDrop), with clean vanilla state restoration.
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.FrankensteinBelt), "Update")]
     public static class MobileConveyorPatch
     {
         private struct ConveyorBase
         {
+            public GoldDigger.FrankensteinBelt Instance;
             public float BaseVolume;
             public float BaseSpeed;
             public float BaseOneLoad;
@@ -60,14 +61,12 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                 // Runtime compensation: accelerate discharge spawn timer and secondary drop belt proportionally
                 if (curSpdMult > 1f && __instance.IsEnabled)
                 {
-                    // Accelerate dirt chunk spawning from hopper onto belt
                     if (LastSpawnRef != null)
                     {
                         ref float lastSpawn = ref LastSpawnRef(__instance);
                         lastSpawn -= Time.deltaTime * __instance.SpeedMultiplier * (curSpdMult - 1f);
                     }
 
-                    // Accelerate secondary drop belt section
                     if (__instance.CurrentObjects != null)
                     {
                         float extraProgress = Time.deltaTime * __instance.SpeedMultiplier * (curSpdMult - 1f);
@@ -90,6 +89,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 
             data = new ConveyorBase
             {
+                Instance = __instance,
                 BaseVolume = __instance.MaxVolume,
                 BaseSpeed = __instance.Speed,
                 BaseOneLoad = __instance.OneLoadVolume > 0f ? __instance.OneLoadVolume : 0.05f,
@@ -116,10 +116,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
             float capMult,
             float spdMult)
         {
+            if (belt == null) return;
             belt.MaxVolume = data.BaseVolume * capMult;
             belt.Speed = data.BaseSpeed * spdMult;
-
-            // Scale discharge lump size and interval so the buffer empties proportionally
             belt.OneLoadVolume = data.BaseOneLoad * spdMult;
             if (spdMult > 0.01f)
             {
@@ -128,8 +127,24 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
             belt.TextureOffsetSpeed = data.BaseTextureOffsetSpeed * spdMult;
         }
 
+        public static void RestoreVanilla()
+        {
+            foreach (var data in BaseValues.Values)
+            {
+                if (data.Instance != null)
+                {
+                    ApplyStaticParameters(data.Instance, data, 1f, 1f);
+                }
+            }
+            _lastFrankCapMult = 1f;
+            _lastFrankSpdMult = 1f;
+            _lastCordCapMult = 1f;
+            _lastCordSpdMult = 1f;
+        }
+
         public static void Reset()
         {
+            RestoreVanilla();
             BaseValues.Clear();
             _lastFrankCapMult = -1f;
             _lastFrankSpdMult = -1f;

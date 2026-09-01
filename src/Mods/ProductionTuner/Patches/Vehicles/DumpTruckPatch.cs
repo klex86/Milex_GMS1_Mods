@@ -5,12 +5,13 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
 {
     /// <summary>
     /// Scales dump truck bed dirt capacity with zero frame rate impact.
-    /// Excludes base wheel loaders and synchronizes reciprocal volume for proper fill physics.
+    /// Preserves pristine vanilla baseline values to enable clean runtime disable/enable toggling without drift.
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.DumpTruck), "Update")]
     public static class DumpTruckPatch
     {
-        private static readonly Dictionary<int, float> BaseVolumes = new Dictionary<int, float>();
+        private static readonly Dictionary<int, (GoldDigger.DumpTruck instance, float baseVolume)> Tracked =
+            new Dictionary<int, (GoldDigger.DumpTruck, float)>();
         private static float _lastMultiplier = -1f;
 
         [HarmonyPostfix]
@@ -28,22 +29,36 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
             int id = __instance.GetInstanceID();
 
             // Zero-allocation fast-path
-            if (BaseVolumes.TryGetValue(id, out float baseVol))
+            if (Tracked.TryGetValue(id, out var data))
             {
                 if (multiplier == _lastMultiplier) return;
-                digging._maxShovelVolume = baseVol * multiplier;
+                digging._maxShovelVolume = data.baseVolume * multiplier;
                 return;
             }
 
-            baseVol = digging._maxShovelVolume;
-            BaseVolumes[id] = baseVol;
+            // First-time registration: record true vanilla base volume
+            float baseVol = digging._maxShovelVolume;
+            Tracked[id] = (__instance, baseVol);
             digging._maxShovelVolume = baseVol * multiplier;
             _lastMultiplier = multiplier;
         }
 
+        public static void RestoreVanilla()
+        {
+            foreach (var kvp in Tracked.Values)
+            {
+                if (kvp.instance != null && kvp.instance.Digging != null)
+                {
+                    kvp.instance.Digging._maxShovelVolume = kvp.baseVolume;
+                }
+            }
+            _lastMultiplier = 1f;
+        }
+
         public static void Reset()
         {
-            BaseVolumes.Clear();
+            RestoreVanilla();
+            Tracked.Clear();
             _lastMultiplier = -1f;
         }
     }

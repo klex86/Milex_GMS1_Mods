@@ -11,42 +11,30 @@ using Milex.GMS1.Mods.ProductionTuner.Services;
 
 namespace Milex.GMS1.Mods.ProductionTuner
 {
-    /// <summary>
-    /// Production Tuner – Provides sliders for processing speeds, capacities,
-    /// and hydraulic rates for all components, vehicles, and tools in Gold Rush: The Game.
-    /// </summary>
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
-    [BepInDependency(CorePlugin.PluginGuid, BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency("de.milex.gms1.coremod", BepInDependency.DependencyFlags.HardDependency)]
     public class ProductionTunerPlugin : ModBase
     {
-        public const string PluginGuid    = "com.milex.gms1.productiontuner";
-        public const string PluginName    = "Milex GMS1 Production Tuner";
-        public const string PluginVersion = "1.0.0";
+        public const string PluginGuid = "de.milex.gms1.productiontuner";
+        public const string PluginName = "Production Tuner";
+        public const string PluginVersion = "1.3.0";
 
-        public override string ModGuid    => PluginGuid;
-        public override string ModName    => PluginName;
+        public override string ModGuid => PluginGuid;
+        public override string ModName => PluginName;
         public override string ModVersion => PluginVersion;
 
-        /// <summary>
-        /// Global instance – used by Harmony patch classes
-        /// to query multipliers from TuningService.
-        /// </summary>
         public static ProductionTunerPlugin Instance { get; private set; }
-
-        /// <summary>Access to all configuration settings of the mod.</summary>
-        public TuningConfig TuningConfig { get; private set; }
-
-        /// <summary>Access to domain service (multiplier calculation).</summary>
+        public static TuningConfig TuningConfig { get; private set; }
         public static TuningService Service { get; private set; }
 
         protected override void Awake()
         {
             Instance = this;
 
-            // Layer 1: Load / initialize configuration
+            // 1. Initialize configuration definitions and bindings
             TuningConfig = new TuningConfig(Config);
 
-            // Layer 2: Initialize domain service
+            // 2. Initialize domain logic service
             Service = new TuningService(TuningConfig);
 
             // Base initialization (Harmony, ModRegistry, localization)
@@ -57,27 +45,50 @@ namespace Milex.GMS1.Mods.ProductionTuner
 
         /// <summary>
         /// Called when the mod is re-enabled via the Mod Menu during runtime.
+        /// Patches will re-evaluate and apply multipliers to the cached pristine vanilla baselines.
         /// </summary>
         protected override void OnModEnabled()
         {
-            ResetAllPatchCaches();
             LogInfo(Translate("log.enabled", "Production Tuner enabled."));
         }
 
         /// <summary>
         /// Called when the mod is disabled via the Mod Menu during runtime.
         /// All Harmony patches are removed automatically and all tracked instances
-        /// are restored back to their exact original vanilla values.
+        /// are restored back to their exact original vanilla values without losing their baseline memory.
         /// </summary>
         protected override void OnModDisabled()
         {
-            OriginalValueStore.RestoreAll();
-            ResetAllPatchCaches();
+            RestoreAllVanillaValues();
             LogInfo(Translate("log.disabled", "Production Tuner disabled. Original game values restored."));
         }
 
-        private static void ResetAllPatchCaches()
+        public static void RestoreAllVanillaValues()
         {
+            MinersMossPatch.RestoreVanilla();
+            SluiceBoxPatch.RestoreVanilla();
+            WashPlantShakerPatch.RestoreVanilla();
+            HogPanDirtBoxPatch.RestoreVanilla();
+            MobileWashPlantPatch.RestoreVanilla();
+            BucketPatch.RestoreVanilla();
+            ShovelPatch.RestoreVanilla();
+            WheelLoaderPatch.RestoreVanilla();
+            DumpTruckPatch.RestoreVanilla();
+            ExcavatorPatch.RestoreVanilla();
+            BackhoeLoaderPatch.RestoreVanilla();
+            MatScrubberPatch.RestoreVanilla();
+            MagnetiteSeparatorPatch.RestoreVanilla();
+            WaveTablePatch.RestoreVanilla();
+            ConveyorGroundPatch.RestoreVanilla();
+            ConveyorElevatorPatch.RestoreVanilla();
+            MobileConveyorPatch.RestoreVanilla();
+            MagnetiteTrailerPatch.RestoreVanilla();
+            FuelTrailerPatch.RestoreVanilla();
+        }
+
+        public static void ResetAllPatchCaches()
+        {
+            RestoreAllVanillaValues();
             MinersMossPatch.Reset();
             SluiceBoxPatch.Reset();
             WashPlantShakerPatch.Reset();

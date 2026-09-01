@@ -6,13 +6,14 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
     /// <summary>
     /// Scales capacity (MaxFill) and processing speed (FillSpeed) for all large washplant shakers (Tier 1–Tier 4).
-    /// Employs a zero-allocation fast exit path to guarantee 0 FPS overhead in runtime loops.
+    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
     /// </summary>
     [HarmonyPatch(typeof(GoldDigger.WashplantShakerBase), "Update")]
     public static class WashPlantShakerPatch
     {
         private struct ShakerBase
         {
+            public GoldDigger.WashplantShakerBase Instance;
             public float BaseFill;
             public float BaseSpeed;
         }
@@ -49,6 +50,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 
             baseVal = new ShakerBase
             {
+                Instance = __instance,
                 BaseFill = __instance.MaxFill,
                 BaseSpeed = __instance.FillSpeed
             };
@@ -59,8 +61,23 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             _lastSpdMultiplier = spdMultiplier;
         }
 
+        public static void RestoreVanilla()
+        {
+            foreach (var data in BaseValues.Values)
+            {
+                if (data.Instance != null)
+                {
+                    data.Instance.MaxFill = data.BaseFill;
+                    data.Instance.FillSpeed = data.BaseSpeed;
+                }
+            }
+            _lastCapMultiplier = 1f;
+            _lastSpdMultiplier = 1f;
+        }
+
         public static void Reset()
         {
+            RestoreVanilla();
             BaseValues.Clear();
             _lastCapMultiplier = -1f;
             _lastSpdMultiplier = -1f;
