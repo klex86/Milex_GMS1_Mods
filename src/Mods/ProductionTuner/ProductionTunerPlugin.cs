@@ -40,7 +40,15 @@ namespace Milex.GMS1.Mods.ProductionTuner
             // Base initialization (Harmony, ModRegistry, localization)
             base.Awake();
 
+            // Clear baseline tracking caches on scene transitions (e.g. loading save games)
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+
             LogInfo(Translate("log.ready", "Production Tuner loaded. Open the Mod Menu to adjust multipliers."));
+        }
+
+        private static void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            ResetAllPatchCaches();
         }
 
         /// <summary>
@@ -109,6 +117,12 @@ namespace Milex.GMS1.Mods.ProductionTuner
             MagnetiteTrailerPatch.Reset();
             FuelTrailerPatch.Reset();
             OrangeBeastFilter.Clear();
+        }
+
+        protected override void OnDestroy()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+            base.OnDestroy();
         }
     }
 }
