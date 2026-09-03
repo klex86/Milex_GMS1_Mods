@@ -261,29 +261,16 @@ namespace Milex.GMS1.Core.UI.Modern
             tabsRt.offsetMin = new Vector2(6, -48);
             tabsRt.offsetMax = new Vector2(-6, -6);
 
-            var (tabsScroll, tabsContent, _) = UIFactory.CreateScrollView(tabsBar.transform, "TabsScrollView");
+            var (tabsScroll, tabsContent, _) = UIFactory.CreateScrollView(tabsBar.transform, "TabsScrollView", horizontal: true);
             var tabsScrollRt = tabsScroll.GetComponent<RectTransform>();
             tabsScrollRt.anchorMin = Vector2.zero;
             tabsScrollRt.anchorMax = Vector2.one;
             tabsScrollRt.offsetMin = Vector2.zero;
             tabsScrollRt.offsetMax = Vector2.zero;
-
-            var hlg = tabsContent.gameObject.AddComponent<HorizontalLayoutGroup>();
-            Destroy(tabsContent.GetComponent<VerticalLayoutGroup>());
-            hlg.childControlWidth = false;
-            hlg.childControlHeight = true;
-            hlg.childForceExpandWidth = false;
-            hlg.childForceExpandHeight = true;
-            hlg.spacing = 6f;
-            hlg.padding = new RectOffset(4, 4, 4, 4);
-
-            var tabsCsf = tabsContent.GetComponent<ContentSizeFitter>();
-            tabsCsf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
-            tabsCsf.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
             _tabsContentRt = tabsContent;
 
             // Scrollable Settings List
-            var (settingsScroll, settingsContent, scrollRect) = UIFactory.CreateScrollView(contentPanel.transform, "SettingsScrollView");
+            var (settingsScroll, settingsContent, scrollRect) = UIFactory.CreateScrollView(contentPanel.transform, "SettingsScrollView", horizontal: false);
             var setScrollRt = settingsScroll.GetComponent<RectTransform>();
             setScrollRt.anchorMin = Vector2.zero;
             setScrollRt.anchorMax = Vector2.one;
@@ -314,11 +301,11 @@ namespace Milex.GMS1.Core.UI.Modern
 
             Canvas.ForceUpdateCanvases();
             
-            // Force a full layout rebuild on the window after everything is instantiated
-            if (_windowPanelRt != null)
-            {
-                LayoutRebuilder.ForceRebuildLayoutImmediate(_windowPanelRt);
-            }
+            // Force a full layout rebuild on all content containers after everything is instantiated
+            if (_sidebarContentRt != null) LayoutRebuilder.ForceRebuildLayoutImmediate(_sidebarContentRt);
+            if (_tabsContentRt != null) LayoutRebuilder.ForceRebuildLayoutImmediate(_tabsContentRt);
+            if (_settingsContentRt != null) LayoutRebuilder.ForceRebuildLayoutImmediate(_settingsContentRt);
+            if (_windowPanelRt != null) LayoutRebuilder.ForceRebuildLayoutImmediate(_windowPanelRt);
         }
 
         public void Hide()
@@ -353,7 +340,11 @@ namespace Milex.GMS1.Core.UI.Modern
         {
             foreach (var btn in _createdSidebarButtons)
             {
-                if (btn != null) Destroy(btn);
+                if (btn != null)
+                {
+                    btn.SetActive(false);
+                    Destroy(btn);
+                }
             }
             _createdSidebarButtons.Clear();
 
@@ -455,7 +446,11 @@ namespace Milex.GMS1.Core.UI.Modern
         {
             foreach (var tab in _createdTabButtons)
             {
-                if (tab != null) Destroy(tab);
+                if (tab != null)
+                {
+                    tab.SetActive(false);
+                    Destroy(tab);
+                }
             }
             _createdTabButtons.Clear();
 
@@ -489,7 +484,7 @@ namespace Milex.GMS1.Core.UI.Modern
                 _createdTabButtons.Add(tabBtn.gameObject);
             }
 
-            LayoutRebuilder.ForceRebuildLayoutImmediate(_tabsContentRt);
+            if (_tabsContentRt != null) LayoutRebuilder.ForceRebuildLayoutImmediate(_tabsContentRt);
         }
 
         private List<string> GetActiveModCategories()
@@ -514,6 +509,9 @@ namespace Milex.GMS1.Core.UI.Modern
             {
                 foreach (var entry in config)
                 {
+                    if (entry.Key == null || string.IsNullOrEmpty(entry.Key.Section))
+                        continue;
+
                     if (entry.Key.Section.Equals("General", StringComparison.OrdinalIgnoreCase) && entry.Key.Key.Equals("Enabled", StringComparison.OrdinalIgnoreCase))
                         continue;
 
@@ -528,7 +526,11 @@ namespace Milex.GMS1.Core.UI.Modern
         {
             foreach (var card in _createdSettingCards)
             {
-                if (card != null) Destroy(card);
+                if (card != null)
+                {
+                    card.SetActive(false);
+                    Destroy(card);
+                }
             }
             _createdSettingCards.Clear();
 
@@ -590,8 +592,11 @@ namespace Milex.GMS1.Core.UI.Modern
             string lastSection = "";
 
             var entries = mod.Config
+                .Where(kv => kv.Key != null && !string.IsNullOrEmpty(kv.Key.Section))
                 .Where(kv => !kv.Key.Section.Equals("General", StringComparison.OrdinalIgnoreCase) || !kv.Key.Key.Equals("Enabled", StringComparison.OrdinalIgnoreCase))
                 .Where(kv => _activeCategory == "All" || kv.Key.Section.Equals(_activeCategory, StringComparison.OrdinalIgnoreCase))
+                .OrderBy(kv => kv.Key.Section)
+                .ThenBy(kv => kv.Key.Key)
                 .ToList();
 
             if (!string.IsNullOrEmpty(_searchFilter))

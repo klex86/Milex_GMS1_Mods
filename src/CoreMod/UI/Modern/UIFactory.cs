@@ -333,7 +333,7 @@ namespace Milex.GMS1.Core.UI.Modern
             return toggle;
         }
 
-        public static (GameObject scrollRoot, RectTransform contentRt, ScrollRect scrollRect) CreateScrollView(Transform parent, string name)
+        public static (GameObject scrollRoot, RectTransform contentRt, ScrollRect scrollRect) CreateScrollView(Transform parent, string name, bool horizontal = false)
         {
             var scrollRoot = new GameObject(name, typeof(RectTransform), typeof(ScrollRect), typeof(Image));
             scrollRoot.transform.SetParent(parent, false);
@@ -342,8 +342,8 @@ namespace Milex.GMS1.Core.UI.Modern
             rootImg.color = Color.clear; // Transparent background
 
             var scrollRect = scrollRoot.GetComponent<ScrollRect>();
-            scrollRect.horizontal = false;
-            scrollRect.vertical = true;
+            scrollRect.horizontal = horizontal;
+            scrollRect.vertical = !horizontal;
             scrollRect.movementType = ScrollRect.MovementType.Clamped;
             scrollRect.scrollSensitivity = 35f;
 
@@ -356,27 +356,52 @@ namespace Milex.GMS1.Core.UI.Modern
             vpRt.offsetMin = Vector2.zero;
             vpRt.offsetMax = Vector2.zero;
 
-            // Content
-            var content = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+            // Content: clean instantiation with either Horizontal or Vertical LayoutGroup (avoids DisallowMultipleComponent conflict)
+            Type layoutType = horizontal ? typeof(HorizontalLayoutGroup) : typeof(VerticalLayoutGroup);
+            var content = new GameObject("Content", typeof(RectTransform), layoutType, typeof(ContentSizeFitter));
             content.transform.SetParent(viewport.transform, false);
             var contentRt = content.GetComponent<RectTransform>();
-            contentRt.anchorMin = new Vector2(0, 1);
-            contentRt.anchorMax = new Vector2(1, 1);
-            contentRt.pivot = new Vector2(0.5f, 1);
-            contentRt.offsetMin = Vector2.zero;
-            contentRt.offsetMax = Vector2.zero;
 
-            var vlg = content.GetComponent<VerticalLayoutGroup>();
-            vlg.childControlWidth = true;
-            vlg.childControlHeight = false;
-            vlg.childForceExpandWidth = true;
-            vlg.childForceExpandHeight = false;
-            vlg.spacing = 8f;
-            vlg.padding = new RectOffset(6, 6, 6, 6);
+            if (horizontal)
+            {
+                contentRt.anchorMin = new Vector2(0, 0);
+                contentRt.anchorMax = new Vector2(0, 1);
+                contentRt.pivot = new Vector2(0, 0.5f);
+                contentRt.offsetMin = Vector2.zero;
+                contentRt.offsetMax = Vector2.zero;
 
-            var csf = content.GetComponent<ContentSizeFitter>();
-            csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            csf.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+                var hlg = content.GetComponent<HorizontalLayoutGroup>();
+                hlg.childControlWidth = false;
+                hlg.childControlHeight = true;
+                hlg.childForceExpandWidth = false;
+                hlg.childForceExpandHeight = true;
+                hlg.spacing = 6f;
+                hlg.padding = new RectOffset(4, 4, 4, 4);
+
+                var csf = content.GetComponent<ContentSizeFitter>();
+                csf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+                csf.verticalFit = ContentSizeFitter.FitMode.Unconstrained;
+            }
+            else
+            {
+                contentRt.anchorMin = new Vector2(0, 1);
+                contentRt.anchorMax = new Vector2(1, 1);
+                contentRt.pivot = new Vector2(0.5f, 1);
+                contentRt.offsetMin = Vector2.zero;
+                contentRt.offsetMax = Vector2.zero;
+
+                var vlg = content.GetComponent<VerticalLayoutGroup>();
+                vlg.childControlWidth = true;
+                vlg.childControlHeight = false;
+                vlg.childForceExpandWidth = true;
+                vlg.childForceExpandHeight = false;
+                vlg.spacing = 8f;
+                vlg.padding = new RectOffset(6, 6, 6, 6);
+
+                var csf = content.GetComponent<ContentSizeFitter>();
+                csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+                csf.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+            }
 
             scrollRect.viewport = vpRt;
             scrollRect.content = contentRt;
