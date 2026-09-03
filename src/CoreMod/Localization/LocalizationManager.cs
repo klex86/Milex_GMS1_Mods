@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using BepInEx;
+using UnityEngine;
 
 
 namespace Milex.GMS1.Core.Localization
@@ -88,6 +89,31 @@ namespace Milex.GMS1.Core.Localization
                     }
                 }
                 return _localizationDirPath;
+            }
+        }
+
+        /// <summary>
+        /// Opens the localization templates folder in the system file explorer.
+        /// </summary>
+        public static void OpenLocalizationFolder()
+        {
+            try
+            {
+                string path = LocalizationDirectory;
+                if (!Directory.Exists(path))
+                {
+                    Directory.CreateDirectory(path);
+                }
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = path,
+                    UseShellExecute = true,
+                    Verb = "open"
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[LocalizationManager] Failed to open localization folder in explorer: {ex.Message}");
             }
         }
 

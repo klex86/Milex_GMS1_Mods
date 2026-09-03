@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace Milex.GMS1.Core.UI.Modern
@@ -26,7 +27,7 @@ namespace Milex.GMS1.Core.UI.Modern
                 {
                     try
                     {
-                        _defaultFont = Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Calibri", "Liberation Sans", "Tahoma" }, 28);
+                        _defaultFont = Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Calibri", "Liberation Sans", "Tahoma" }, 16);
                     }
                     catch { }
 
@@ -64,6 +65,20 @@ namespace Milex.GMS1.Core.UI.Modern
             }
         }
 
+        private static Sprite _cardBoxSprite;
+
+        public static Sprite CardBoxSprite
+        {
+            get
+            {
+                if (_cardBoxSprite == null)
+                {
+                    _cardBoxSprite = CreateBorderedRoundedRectSprite(64, 64, 8, 1, new Color(0.24f, 0.28f, 0.38f, 0.75f), new Color(0.13f, 0.15f, 0.20f, 0.98f));
+                }
+                return _cardBoxSprite;
+            }
+        }
+
         public static Sprite RoundedBoxSprite
         {
             get
@@ -98,6 +113,52 @@ namespace Milex.GMS1.Core.UI.Modern
                 }
                 return _circleSprite;
             }
+        }
+
+        public static Sprite CreateBorderedRoundedRectSprite(int width, int height, int radius, int borderWidth, Color borderColor, Color fillColor)
+        {
+            var tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+            Color[] colors = new Color[width * height];
+
+            for (int y = 0; y < height; y++)
+            {
+                for (int x = 0; x < width; x++)
+                {
+                    float dx = 0;
+                    float dy = 0;
+
+                    if (x < radius) dx = radius - x;
+                    else if (x >= width - radius) dx = x - (width - radius - 1);
+
+                    if (y < radius) dy = radius - y;
+                    else if (y >= height - radius) dy = y - (height - radius - 1);
+
+                    float distSq = dx * dx + dy * dy;
+                    float outerRad = radius;
+                    float outerRadSq = outerRad * outerRad;
+                    float innerRad = Mathf.Max(0, radius - borderWidth);
+                    float innerRadSq = innerRad * innerRad;
+
+                    if (x >= borderWidth && x < width - borderWidth && y >= borderWidth && y < height - borderWidth && distSq <= innerRadSq)
+                    {
+                        colors[y * width + x] = fillColor;
+                    }
+                    else if (distSq <= outerRadSq)
+                    {
+                        float dist = Mathf.Sqrt(distSq);
+                        float alpha = Mathf.Clamp01(outerRad - dist + 0.5f);
+                        colors[y * width + x] = new Color(borderColor.r, borderColor.g, borderColor.b, borderColor.a * alpha);
+                    }
+                    else
+                    {
+                        colors[y * width + x] = Color.clear;
+                    }
+                }
+            }
+
+            tex.SetPixels(colors);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, width, height), new Vector2(0.5f, 0.5f), 100f, 0, SpriteMeshType.FullRect, new Vector4(radius + 2, radius + 2, radius + 2, radius + 2));
         }
 
         public static Sprite CreateRoundedRectSprite(int width, int height, int radius, int border)
@@ -197,7 +258,7 @@ namespace Milex.GMS1.Core.UI.Modern
             return txt;
         }
 
-        public static Button CreateButton(Transform parent, string name, string label, Color normalColor, Color hoverColor, Color clickColor, Color textColor, UnityAction onClick, int fontSize = 14)
+        public static Button CreateButton(Transform parent, string name, string label, Color normalColor, Color hoverColor, Color clickColor, Color textColor, UnityAction onClick, int fontSize = 13)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Button));
             go.transform.SetParent(parent, false);
@@ -208,18 +269,27 @@ namespace Milex.GMS1.Core.UI.Modern
             img.color = normalColor;
 
             var btn = go.GetComponent<Button>();
+            btn.targetGraphic = img;
             var colors = btn.colors;
             colors.normalColor = normalColor;
             colors.highlightedColor = hoverColor;
             colors.pressedColor = clickColor;
-            colors.disabledColor = new Color(normalColor.r, normalColor.g, normalColor.b, 0.3f);
+            colors.selectedColor = normalColor; // Prevent button from turning white on selection
+            colors.disabledColor = new Color(normalColor.r, normalColor.g, normalColor.b, 0.35f);
             colors.colorMultiplier = 1f;
-            colors.fadeDuration = 0.1f;
+            colors.fadeDuration = 0.08f;
             btn.colors = colors;
 
             if (onClick != null)
             {
-                btn.onClick.AddListener(onClick);
+                btn.onClick.AddListener(() =>
+                {
+                    onClick.Invoke();
+                    if (EventSystem.current != null)
+                    {
+                        EventSystem.current.SetSelectedGameObject(null);
+                    }
+                });
             }
 
             if (!string.IsNullOrEmpty(label))
@@ -230,6 +300,7 @@ namespace Milex.GMS1.Core.UI.Modern
                 rt.anchorMax = Vector2.one;
                 rt.offsetMin = new Vector2(4, 2);
                 rt.offsetMax = new Vector2(-4, -2);
+                txt.raycastTarget = false;
             }
 
             return btn;
@@ -246,13 +317,13 @@ namespace Milex.GMS1.Core.UI.Modern
             slider.value = value;
 
             var sliderRt = sliderObj.GetComponent<RectTransform>();
-            sliderRt.sizeDelta = new Vector2(240, 24);
+            sliderRt.sizeDelta = new Vector2(200, 18);
 
             // Background Track
-            var bgObj = CreatePanel(sliderObj.transform, "Background", new Color(0.18f, 0.20f, 0.25f, 1f), RoundedBoxSprite);
+            var bgObj = CreatePanel(sliderObj.transform, "Background", new Color(0.12f, 0.14f, 0.19f, 1f), PillSprite);
             var bgRt = bgObj.GetComponent<RectTransform>();
-            bgRt.anchorMin = new Vector2(0, 0.35f);
-            bgRt.anchorMax = new Vector2(1, 0.65f);
+            bgRt.anchorMin = new Vector2(0, 0.32f);
+            bgRt.anchorMax = new Vector2(1, 0.68f);
             bgRt.offsetMin = Vector2.zero;
             bgRt.offsetMax = Vector2.zero;
 
@@ -260,12 +331,12 @@ namespace Milex.GMS1.Core.UI.Modern
             var fillArea = new GameObject("Fill Area", typeof(RectTransform));
             fillArea.transform.SetParent(sliderObj.transform, false);
             var fillAreaRt = fillArea.GetComponent<RectTransform>();
-            fillAreaRt.anchorMin = new Vector2(0, 0.35f);
-            fillAreaRt.anchorMax = new Vector2(1, 0.65f);
-            fillAreaRt.offsetMin = new Vector2(4, 0);
-            fillAreaRt.offsetMax = new Vector2(-4, 0);
+            fillAreaRt.anchorMin = new Vector2(0, 0.32f);
+            fillAreaRt.anchorMax = new Vector2(1, 0.68f);
+            fillAreaRt.offsetMin = new Vector2(2, 0);
+            fillAreaRt.offsetMax = new Vector2(-2, 0);
 
-            var fillObj = CreatePanel(fillArea.transform, "Fill", new Color(0.88f, 0.65f, 0.18f, 1f), RoundedBoxSprite);
+            var fillObj = CreatePanel(fillArea.transform, "Fill", new Color(0.88f, 0.65f, 0.18f, 1f), PillSprite);
             var fillRt = fillObj.GetComponent<RectTransform>();
             fillRt.sizeDelta = Vector2.zero;
             slider.fillRect = fillRt;
@@ -276,14 +347,23 @@ namespace Milex.GMS1.Core.UI.Modern
             var handleAreaRt = handleArea.GetComponent<RectTransform>();
             handleAreaRt.anchorMin = Vector2.zero;
             handleAreaRt.anchorMax = Vector2.one;
-            handleAreaRt.offsetMin = new Vector2(10, 0);
-            handleAreaRt.offsetMax = new Vector2(-10, 0);
+            handleAreaRt.offsetMin = new Vector2(8, 0);
+            handleAreaRt.offsetMax = new Vector2(-8, 0);
 
             var handleObj = CreatePanel(handleArea.transform, "Handle", new Color(0.95f, 0.95f, 0.95f, 1f), CircleSprite, Image.Type.Simple);
             var handleRt = handleObj.GetComponent<RectTransform>();
-            handleRt.sizeDelta = new Vector2(18, 18);
+            handleRt.sizeDelta = new Vector2(16, 16);
             slider.handleRect = handleRt;
-            slider.targetGraphic = handleObj.GetComponent<Image>();
+
+            var handleImg = handleObj.GetComponent<Image>();
+            slider.targetGraphic = handleImg;
+
+            var colors = slider.colors;
+            colors.normalColor = new Color(0.95f, 0.95f, 0.98f, 1f);
+            colors.highlightedColor = new Color(1f, 0.85f, 0.35f, 1f); // Radiant gold glow on hover!
+            colors.pressedColor = new Color(0.88f, 0.65f, 0.18f, 1f);
+            colors.fadeDuration = 0.1f;
+            slider.colors = colors;
 
             if (onValueChanged != null)
             {
@@ -300,10 +380,12 @@ namespace Milex.GMS1.Core.UI.Modern
 
             var toggle = toggleObj.GetComponent<Toggle>();
             var toggleRt = toggleObj.GetComponent<RectTransform>();
-            toggleRt.sizeDelta = new Vector2(50, 26);
+            toggleRt.sizeDelta = new Vector2(44, 22);
 
             // Background Pill
-            var bgObj = CreatePanel(toggleObj.transform, "Background", isOn ? new Color(0.20f, 0.68f, 0.38f, 1f) : new Color(0.25f, 0.28f, 0.35f, 1f), PillSprite);
+            Color onColor = new Color(0.20f, 0.68f, 0.38f, 1f);
+            Color offColor = new Color(0.20f, 0.23f, 0.30f, 1f);
+            var bgObj = CreatePanel(toggleObj.transform, "Background", isOn ? onColor : offColor, PillSprite);
             var bgRt = bgObj.GetComponent<RectTransform>();
             bgRt.anchorMin = Vector2.zero;
             bgRt.anchorMax = Vector2.one;
@@ -314,23 +396,78 @@ namespace Milex.GMS1.Core.UI.Modern
             // Handle Dot
             var handleObj = CreatePanel(toggleObj.transform, "Checkmark", Color.white, CircleSprite, Image.Type.Simple);
             var handleRt = handleObj.GetComponent<RectTransform>();
-            handleRt.sizeDelta = new Vector2(20, 20);
+            handleRt.sizeDelta = new Vector2(16, 16);
             handleRt.anchorMin = new Vector2(0, 0.5f);
             handleRt.anchorMax = new Vector2(0, 0.5f);
-            handleRt.anchoredPosition = isOn ? new Vector2(37, 0) : new Vector2(13, 0);
+            handleRt.anchoredPosition = isOn ? new Vector2(33, 0) : new Vector2(11, 0);
 
-            toggle.targetGraphic = bgImg;
-            toggle.graphic = handleObj.GetComponent<Image>();
+            var handleImg = handleObj.GetComponent<Image>();
+            toggle.targetGraphic = handleImg;
+            toggle.graphic = handleImg;
             toggle.isOn = isOn;
+
+            var colors = toggle.colors;
+            colors.normalColor = Color.white;
+            colors.highlightedColor = new Color(1f, 0.95f, 0.70f, 1f); // Warm glow on hover!
+            colors.pressedColor = new Color(0.85f, 0.85f, 0.85f, 1f);
+            colors.fadeDuration = 0.1f;
+            toggle.colors = colors;
 
             toggle.onValueChanged.AddListener(val =>
             {
-                bgImg.color = val ? new Color(0.20f, 0.68f, 0.38f, 1f) : new Color(0.25f, 0.28f, 0.35f, 1f);
-                handleRt.anchoredPosition = val ? new Vector2(37, 0) : new Vector2(13, 0);
+                bgImg.color = val ? onColor : offColor;
+                handleRt.anchoredPosition = val ? new Vector2(33, 0) : new Vector2(11, 0);
                 onValueChanged?.Invoke(val);
             });
 
             return toggle;
+        }
+
+        public static Scrollbar CreateScrollbar(Transform parent, string name, Scrollbar.Direction direction)
+        {
+            var scrollbarObj = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(Scrollbar));
+            scrollbarObj.transform.SetParent(parent, false);
+
+            var bgImg = scrollbarObj.GetComponent<Image>();
+            bgImg.sprite = PillSprite;
+            bgImg.type = Image.Type.Sliced;
+            bgImg.color = new Color(0.08f, 0.09f, 0.13f, 0.85f);
+
+            var scrollbar = scrollbarObj.GetComponent<Scrollbar>();
+            scrollbar.direction = direction;
+
+            // Sliding Area
+            var slidingArea = new GameObject("Sliding Area", typeof(RectTransform));
+            slidingArea.transform.SetParent(scrollbarObj.transform, false);
+            var saRt = slidingArea.GetComponent<RectTransform>();
+            saRt.anchorMin = Vector2.zero;
+            saRt.anchorMax = Vector2.one;
+            saRt.offsetMin = new Vector2(1, 1);
+            saRt.offsetMax = new Vector2(-1, -1);
+
+            // Handle
+            var handle = new GameObject("Handle", typeof(RectTransform), typeof(Image));
+            handle.transform.SetParent(slidingArea.transform, false);
+            var handleRt = handle.GetComponent<RectTransform>();
+            handleRt.sizeDelta = Vector2.zero;
+            var handleImg = handle.GetComponent<Image>();
+            handleImg.sprite = PillSprite;
+            handleImg.type = Image.Type.Sliced;
+            Color normalThumb = new Color(0.32f, 0.37f, 0.48f, 0.9f);
+            Color hoverThumb = new Color(0.88f, 0.65f, 0.18f, 1f); // Radiant gold on hover!
+            Color pressedThumb = new Color(0.70f, 0.50f, 0.12f, 1f);
+            handleImg.color = normalThumb;
+
+            var colors = scrollbar.colors;
+            colors.normalColor = normalThumb;
+            colors.highlightedColor = hoverThumb;
+            colors.pressedColor = pressedThumb;
+            colors.fadeDuration = 0.1f;
+            scrollbar.colors = colors;
+            scrollbar.targetGraphic = handleImg;
+            scrollbar.handleRect = handleRt;
+
+            return scrollbar;
         }
 
         public static (GameObject scrollRoot, RectTransform contentRt, ScrollRect scrollRect) CreateScrollView(Transform parent, string name, bool horizontal = false)
@@ -339,24 +476,24 @@ namespace Milex.GMS1.Core.UI.Modern
             scrollRoot.transform.SetParent(parent, false);
 
             var rootImg = scrollRoot.GetComponent<Image>();
-            rootImg.color = Color.clear; // Transparent background
+            rootImg.color = Color.clear;
 
             var scrollRect = scrollRoot.GetComponent<ScrollRect>();
             scrollRect.horizontal = horizontal;
             scrollRect.vertical = !horizontal;
             scrollRect.movementType = ScrollRect.MovementType.Clamped;
-            scrollRect.scrollSensitivity = 35f;
+            scrollRect.scrollSensitivity = 40f;
 
-            // Viewport with RectMask2D (stencil-free clipping for runtime Canvas)
+            // Viewport
             var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D));
             viewport.transform.SetParent(scrollRoot.transform, false);
             var vpRt = viewport.GetComponent<RectTransform>();
             vpRt.anchorMin = Vector2.zero;
             vpRt.anchorMax = Vector2.one;
             vpRt.offsetMin = Vector2.zero;
-            vpRt.offsetMax = Vector2.zero;
+            vpRt.offsetMax = horizontal ? Vector2.zero : new Vector2(-12, 0); // Leave 12px for scrollbar!
 
-            // Content: clean instantiation with either Horizontal or Vertical LayoutGroup (avoids DisallowMultipleComponent conflict)
+            // Content
             Type layoutType = horizontal ? typeof(HorizontalLayoutGroup) : typeof(VerticalLayoutGroup);
             var content = new GameObject("Content", typeof(RectTransform), layoutType, typeof(ContentSizeFitter));
             content.transform.SetParent(viewport.transform, false);
@@ -375,8 +512,8 @@ namespace Milex.GMS1.Core.UI.Modern
                 hlg.childControlHeight = true;
                 hlg.childForceExpandWidth = false;
                 hlg.childForceExpandHeight = true;
-                hlg.spacing = 6f;
-                hlg.padding = new RectOffset(4, 4, 4, 4);
+                hlg.spacing = 5f;
+                hlg.padding = new RectOffset(2, 2, 2, 2);
 
                 var csf = content.GetComponent<ContentSizeFitter>();
                 csf.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
@@ -395,12 +532,24 @@ namespace Milex.GMS1.Core.UI.Modern
                 vlg.childControlHeight = false;
                 vlg.childForceExpandWidth = true;
                 vlg.childForceExpandHeight = false;
-                vlg.spacing = 8f;
-                vlg.padding = new RectOffset(6, 6, 6, 6);
+                vlg.spacing = 5f; // Sleek 5px card spacing!
+                vlg.padding = new RectOffset(4, 4, 4, 4);
 
                 var csf = content.GetComponent<ContentSizeFitter>();
                 csf.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
                 csf.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+
+                // Vertical Scrollbar (always visible, 8px width)
+                var scrollbar = CreateScrollbar(scrollRoot.transform, "VerticalScrollbar", Scrollbar.Direction.BottomToTop);
+                var sbRt = scrollbar.GetComponent<RectTransform>();
+                sbRt.anchorMin = new Vector2(1, 0);
+                sbRt.anchorMax = new Vector2(1, 1);
+                sbRt.pivot = new Vector2(1, 0.5f);
+                sbRt.sizeDelta = new Vector2(8, 0);
+                sbRt.anchoredPosition = new Vector2(-2, 0);
+
+                scrollRect.verticalScrollbar = scrollbar;
+                scrollRect.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.Permanent;
             }
 
             scrollRect.viewport = vpRt;

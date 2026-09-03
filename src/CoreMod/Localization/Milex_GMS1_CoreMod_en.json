@@ -38,6 +38,7 @@
   "dialog.missing_trans.info": "Files will be created in 'BepInEx/plugins/Milex GMS1 Mod Localization/'. You can translate them and share them on NexusMods!",
   "dialog.missing_trans.btn_yes": "Create Templates",
   "dialog.missing_trans.btn_no": "No, keep defaults",
+  "dialog.missing_trans.btn_open": "Open Folder",
 
   "btn.enabled": "[v] Enabled",
   "btn.disabled": "[  ] Disabled",
@@ -62,5 +63,8 @@
   "UI_IgnoreTranslations_Desc": "Forces embedded DLL localization resources.",
   "UI_Section_Localization": "Localization",
   "UI_UseGameLanguage": "Auto-Detect Game Language",
-  "UI_UseGameLanguage_Desc": "Matches the language selected in the main game."
+  "UI_UseGameLanguage_Desc": "Matches the language selected in the main game.",
+  "UI_ResetGroup": "Reset Group",
+  "UI_SelectLanguage": "Select Language (Manual)",
+  "UI_SelectLanguage_Desc": "Choose your preferred language for menus and tooltips."
 }

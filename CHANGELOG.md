@@ -11,10 +11,28 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 - **Next-Gen Modern Dashboard (uGUI Canvas)**:
   - Built a state-of-the-art runtime Canvas interface created purely in C# with zero external asset dependencies.
-  - Interactive window with draggable header, smooth rounded cards, and gold accent theme.
-  - Top category tabs for instant navigation across all setting sections (`All`, `Logistics`, `Processing`, `Vehicles`, `Wash Plants`, `Tools`).
-  - Real-time search filter bar to instantly locate any setting or multiplier.
-  - Modern toggle switches and wide responsive sliders with direct reset-to-default buttons.
+  - Interactive window with draggable header, subtle bordered cards (`CardBoxSprite`), and sleek gold accent theme.
+  - **Fixed Header Hierarchy with Mod Subtitle**: Top-left header displays fixed `Milex GMS1 CoreMod (v1.3.0)` with a dynamic gold subtitle indicating the currently active mod (`> Production Tuner`).
+  - **Dynamic Content-Proportional Filter Tabs**: Tabs now allocate space proportionally based on text length (`flexibleWidth = label.Length`), preventing text clipping on long names while removing unnecessary dead space on short labels.
+  - **High-Contrast Tactical Badges**: Inactive tabs render in distinct slate with bright silver labels, while the selected tab pops in radiant gold with dark charcoal text.
+  - **Instant Button Hover & Tinting Fix**: Fixed uGUI `targetGraphic.color` ColorBlock multiplication issue, enabling vivid, responsive slate-blue hover states across all buttons and cards.
+  - **Non-Flashing In-Place Sidebar Selection**: Switching mods updates existing UI component states directly without destroying and rebuilding GameObjects.
+  - **Zero-Jump Scroll Preservation**: Resets and slider adjustments maintain the player's exact scroll position without snapping to the top.
+  - **High-Contrast Section Banners**: Enhanced category headers with distinct dark slate container styling, left gold accent bars, and prominent reset buttons.
+  - Real-time search filter bar to instantly locate any setting or multiplier across all categories.
+  - Modern toggle switches and wide responsive sliders with direct reset-to-default buttons and hover glow effects.
+  - **Compact High-Density Layout**: Optimized card heights allowing almost twice as many settings on screen at once.
+  - **Category Group Reset**: Added direct reset buttons on section headers to quickly reset entire groups of settings to default values.
+  - **Interactive Language Selector**: Dedicated manual language switching cards for German, English, and other supported languages.
+  - **Visible Stylized Scrollbars**: Permanent, sleek scrollbars with slate tracks and gold hover highlights.
+  - **Full Localization Alignment**: Accurately mapped all sub-mod section titles and configuration keys to language files.
+- **Zero-Flicker In-Place Filtering (`FilterCards`)**: Replaced destructive GameObject teardown on tab switches with instant in-place visibility toggling (`card.SetActive(...)`), completely eliminating visual flashes and keeping navigation at a silky-smooth 60 FPS.
+- **Strict Tab Bar Containment & Concise Badges**: Added `RectMask2D` on the category tabs bar, shortened labels to clear badges (`Alle`, `Allgemein`, `Werkzeuge`, `Fahrzeuge`, `Waschanlagen`, `Veredelung`, `Logistik`), and implemented proportional layout compression to prevent any tabs from overflowing past the right window edge.
+- **Sidebar Selection State Fix (White Card Bug Resolved)**: Configured `colors.selectedColor = normalColor` and deselected focus on click via `EventSystem.current.SetSelectedGameObject(null)`, preventing selected mod cards from flashing or getting stuck in solid white.
+- **Full Native Language Dropdown Selector**: Replaced horizontal buttons with an expandable, scrollable dropdown listing all 21 supported languages in their respective native endonyms (`Deutsch`, `English`, `Français`, `Español`, `Polski`, `Русский`, etc.) with active `[v]` badges.
+- **Mutual Exclusivity & Permanent Visibility**: Both "Use Game Language" and "Select Language" remain permanently visible in CoreMod settings; the manual selector dynamically disables and dims when automatic detection is enabled.
+- **Interactive Missing Translation Template Generator Modal**: Selecting any language missing translations now triggers a dedicated modal dialog prompting the player to generate JSON templates on-demand directly into the localization directory.
+- **Fixed Header Hierarchy**: Guaranteed that the top-left main title permanently displays `Milex GMS1 CoreMod (v1.3.0)` while sub-mod titles and versions cleanly route to the secondary gold subtitle.
 - **Dual-Engine Menu Architecture (`IMenuRenderer`)**:
   - Fully decoupled rendering layer from core plugin logic.
   - Seamless in-game switching between **Modern (uGUI Canvas)** and **Classic (IMGUI)** via configuration setting and header buttons.
