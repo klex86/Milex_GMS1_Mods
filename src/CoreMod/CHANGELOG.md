@@ -5,6 +5,22 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.3.0] - 2026-09-03
+
+### Added & Architectural Improvements
+
+- **Next-Gen Modern Dashboard (uGUI Canvas)**:
+  - Added a state-of-the-art runtime Canvas interface with zero external assets/bundles.
+  - Interactive window with draggable header, smooth rounded cards, and gold accent styling.
+  - Category tabs for quick navigation across settings sections (`All`, `Logistics`, `Processing`, `Vehicles`, `Wash Plants`, `Tools`).
+  - Live real-time search filter bar to instantly filter settings across all categories.
+  - Modern toggle switches and wide responsive sliders with direct reset-to-default buttons.
+- **Dual-Engine Menu Architecture (`IMenuRenderer`)**:
+  - Cleanly decoupled rendering layer from core plugin logic.
+  - Seamless in-game switching between **Modern (uGUI Canvas)** and **Classic (IMGUI)** via configuration and header buttons.
+
+---
+
 ## [1.2.2] - 2026-09-02
 
 ### Bug Fixes & Stability

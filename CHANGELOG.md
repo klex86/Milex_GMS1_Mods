@@ -5,6 +5,22 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.7.0] - 2026-09-03
+
+### Added: Next-Gen Modern Dashboard & Dual-Engine Menu Architecture
+
+- **Next-Gen Modern Dashboard (uGUI Canvas)**:
+  - Built a state-of-the-art runtime Canvas interface created purely in C# with zero external asset dependencies.
+  - Interactive window with draggable header, smooth rounded cards, and gold accent theme.
+  - Top category tabs for instant navigation across all setting sections (`All`, `Logistics`, `Processing`, `Vehicles`, `Wash Plants`, `Tools`).
+  - Real-time search filter bar to instantly locate any setting or multiplier.
+  - Modern toggle switches and wide responsive sliders with direct reset-to-default buttons.
+- **Dual-Engine Menu Architecture (`IMenuRenderer`)**:
+  - Fully decoupled rendering layer from core plugin logic.
+  - Seamless in-game switching between **Modern (uGUI Canvas)** and **Classic (IMGUI)** via configuration setting and header buttons.
+
+---
+
 ## [1.6.0] - 2026-09-02
 
 ### Added: Production Tuner Vehicle & Logistics Expansion

@@ -3,6 +3,7 @@ using BepInEx;
 using BepInEx.Configuration;
 using Milex.GMS1.Core.Localization;
 using Milex.GMS1.Core.UI;
+using Milex.GMS1.Core.UI.Modern;
 using UnityEngine;
 
 namespace Milex.GMS1.Core
@@ -16,7 +17,7 @@ namespace Milex.GMS1.Core
     {
         public const string PluginGuid = "com.milex.gms1.core";
         public const string PluginName = "Milex GMS1 CoreMod";
-        public const string PluginVersion = "1.2.0";
+        public const string PluginVersion = "1.3.0";
 
         public override string ModGuid => PluginGuid;
         public override string ModName => PluginName;
@@ -33,11 +34,13 @@ namespace Milex.GMS1.Core
         public static ConfigEntry<bool> UseGameLanguage { get; private set; }
         public static ConfigEntry<string> SelectedLanguage { get; private set; }
         public static ConfigEntry<float> UIScale { get; private set; }
+        public static ConfigEntry<MenuEngineType> MenuEngine { get; private set; }
 
         public static bool IsMenuOpen { get; private set; } = false;
 
         private GameObject _uiHost;
-        private ModMenuUI _modMenuUI;
+        private ModMenuUI _classicMenu;
+        private ModernCanvasMenu _modernMenu;
 
         protected override void Awake()
         {
@@ -50,6 +53,7 @@ namespace Milex.GMS1.Core
             UseGameLanguage = Config.Bind("Localization", "UseGameLanguage", true, "Determines whether the game language is detected and used automatically.");
             SelectedLanguage = Config.Bind("Localization", "SelectedLanguage", "en", "Manually selected language code (only active when UseGameLanguage is false).");
             UIScale = Config.Bind("UI", "UIScale", 1.0f, "Scale factor of the mod menu interface (0.75 to 1.5 for High-DPI / 4K displays).");
+            MenuEngine = Config.Bind("UI", "MenuEngine", MenuEngineType.Modern, "Interface engine style: Modern (uGUI Canvas Dashboard) or Classic (IMGUI).");
 
             IgnoreExternalTranslations.SettingChanged += (s, e) => LocalizationManager.ReloadAll();
 
@@ -73,12 +77,16 @@ namespace Milex.GMS1.Core
 
             base.Awake();
 
-            // Attach ModMenuUI component
+            // Attach Menu Components to persistent UI Host
             _uiHost = new GameObject("Milex_GMS1_Core_UIHost");
             DontDestroyOnLoad(_uiHost);
-            _modMenuUI = _uiHost.AddComponent<ModMenuUI>();
+            _classicMenu = _uiHost.AddComponent<ModMenuUI>();
+            _modernMenu = _uiHost.AddComponent<ModernCanvasMenu>();
 
-            LogInfo($"Ready. Press {MenuToggleKey.Value} to open Mod Menu.");
+            _classicMenu.Initialize();
+            _modernMenu.Initialize();
+
+            LogInfo($"Ready. Press {MenuToggleKey.Value} to open Mod Menu (Engine: {MenuEngine.Value}).");
         }
 
         private static CursorLockMode _previousLockMode = CursorLockMode.None;
@@ -108,6 +116,27 @@ namespace Milex.GMS1.Core
             {
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
+            }
+        }
+
+        public static void SwitchMenuEngine(MenuEngineType newEngine)
+        {
+            if (MenuEngine == null) return;
+            MenuEngine.Value = newEngine;
+            MenuEngine.ConfigFile?.Save();
+
+            if (IsMenuOpen)
+            {
+                if (newEngine == MenuEngineType.Modern)
+                {
+                    Instance?._classicMenu?.Hide();
+                    Instance?._modernMenu?.Show();
+                }
+                else
+                {
+                    Instance?._modernMenu?.Hide();
+                    Instance?._classicMenu?.Show();
+                }
             }
         }
 
@@ -145,6 +174,18 @@ namespace Milex.GMS1.Core
                     Time.timeScale = 0.0f;
                     _isGamePausedByMenu = true;
                 }
+
+                // Show active UI renderer
+                if (MenuEngine != null && MenuEngine.Value == MenuEngineType.Modern)
+                {
+                    Instance?._modernMenu?.Show();
+                    Instance?._classicMenu?.Hide();
+                }
+                else
+                {
+                    Instance?._classicMenu?.Show();
+                    Instance?._modernMenu?.Hide();
+                }
             }
             else
             {
@@ -153,6 +194,10 @@ namespace Milex.GMS1.Core
                     Time.timeScale = _previousTimeScale > 0.001f ? _previousTimeScale : 1.0f;
                     _isGamePausedByMenu = false;
                 }
+
+                // Hide UI renderers
+                Instance?._classicMenu?.Hide();
+                Instance?._modernMenu?.Hide();
 
                 // Restore game cursor state
                 Cursor.lockState = _previousLockMode;
@@ -169,5 +214,11 @@ namespace Milex.GMS1.Core
 
             base.OnDestroy();
         }
+    }
+
+    public enum MenuEngineType
+    {
+        Modern,
+        Classic
     }
 }

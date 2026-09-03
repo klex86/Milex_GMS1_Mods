@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>Milex.GMS1.Core</RootNamespace>
     <AssemblyName>Milex_GMS1_CoreMod</AssemblyName>
-    <Version>1.2.0</Version>
+    <Version>1.3.0</Version>
     <Authors>Milex</Authors>
     <Product>Milex GMS1 CoreMod</Product>
     <Description>Core Modding Framework, Localization and Configuration Menu for Gold Mining Simulator</Description>

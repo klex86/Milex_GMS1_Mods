@@ -1,8 +1,10 @@
 {
   "menu.title": "MILEX GMS1 MODS",
   "menu.subtitle": "Gold Mining Simulator Milex Mod-Manager",
-  "menu.close": "✕ Schließen",
-  "menu.tab.core_settings": "⚙ Allgemein",
+  "menu.close": "Schließen",
+  "menu.switch_modern": "Modern UI",
+  "menu.switch_classic": "Klassisch UI",
+  "menu.tab.core_settings": "Allgemein",
   "menu.tab.mods": "Geladene Mods",
   "menu.no_mods": "Keine Feature-Mods geladen",
   "menu.select_mod": "Wähle einen Mod aus der linken Liste aus.",
@@ -23,6 +25,8 @@
   "core.section.appearance": "Darstellung & UI-Skalierung",
   "core.ui_scale.name": "UI-Skalierung (Schrift- & Fenstergröße)",
   "core.ui_scale.desc": "Vergrößert oder verkleinert das Fenster",
+  "core.menu_engine.name": "Menü-Darstellungs-Engine",
+  "core.menu_engine.desc": "Wähle zwischen Modernem Dashboard (uGUI Canvas) und Klassisch (IMGUI)",
 
   "core.section.controls": "Tastenbelegung",
   "config.general.menutogglekey.name": "Menü-Taste",
@@ -44,5 +48,19 @@
 
   "mod.toggle.label": "Mod-Status",
   "mod.toggle.desc": "Schaltet den Mod inkl. aller Harmony-Patches sofort an oder aus. Der Zustand wird gespeichert.",
-  "mod.disabled.hint": "Dieser Mod ist deaktiviert. Einstellungen sind gesperrt."
+  "mod.disabled.hint": "Dieser Mod ist deaktiviert. Einstellungen sind gesperrt.",
+
+  "UI_SearchPlaceholder": "Einstellungen durchsuchen...",
+  "UI_Status_Disabled": "Deaktiviert",
+  "UI_Tab_All": "Alle",
+  "UI_Section_General": "Allgemeine Einstellungen",
+  "UI_PauseGameOnMenu": "Spiel im Menü pausieren",
+  "UI_PauseGameOnMenu_Desc": "Friert die Spielwelt ein, solange das Menü geöffnet ist.",
+  "UI_ScaleLabel": "UI-Skalierung",
+  "UI_Scale_Desc": "Skaliert die Menügröße für 1080p, 1440p oder 4K.",
+  "UI_IgnoreTranslations": "Externe Übersetzungen ignorieren",
+  "UI_IgnoreTranslations_Desc": "Erzwingt das Laden direkt aus den DLL-Ressourcen.",
+  "UI_Section_Localization": "Sprache & Lokalisierung",
+  "UI_UseGameLanguage": "Spielsprache automatisch erkennen",
+  "UI_UseGameLanguage_Desc": "Nutzt dieselbe Sprache wie das Hauptspiel."
 }

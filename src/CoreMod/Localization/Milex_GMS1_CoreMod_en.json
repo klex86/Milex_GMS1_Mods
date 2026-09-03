@@ -1,8 +1,10 @@
 {
   "menu.title": "MILEX GMS1 MODS",
   "menu.subtitle": "Gold Mining Simulator Milex Mod-Manager",
-  "menu.close": "✕ Close",
-  "menu.tab.core_settings": "⚙ General",
+  "menu.close": "Close",
+  "menu.switch_modern": "Modern UI",
+  "menu.switch_classic": "Classic UI",
+  "menu.tab.core_settings": "General",
   "menu.tab.mods": "Loaded Mods",
   "menu.no_mods": "No feature mods loaded",
   "menu.select_mod": "Select a mod from the left sidebar.",
@@ -23,6 +25,8 @@
   "core.section.appearance": "Appearance & UI Scaling",
   "core.ui_scale.name": "UI Scale (Font & Window Size)",
   "core.ui_scale.desc": "Adjust interface size",
+  "core.menu_engine.name": "Menu Interface Engine",
+  "core.menu_engine.desc": "Choose between Modern Dashboard (uGUI Canvas) and Classic (IMGUI)",
 
   "core.section.controls": "Hotkeys & Controls",
   "config.general.menutogglekey.name": "Menu Toggle Key",
@@ -44,5 +48,19 @@
 
   "mod.toggle.label": "Mod Status",
   "mod.toggle.desc": "Toggles the mod including all Harmony patches instantly. State is persisted.",
-  "mod.disabled.hint": "This mod is disabled. Settings are locked."
+  "mod.disabled.hint": "This mod is disabled. Settings are locked.",
+
+  "UI_SearchPlaceholder": "Search settings...",
+  "UI_Status_Disabled": "Disabled",
+  "UI_Tab_All": "All",
+  "UI_Section_General": "General Settings",
+  "UI_PauseGameOnMenu": "Pause Game in Menu",
+  "UI_PauseGameOnMenu_Desc": "Freezes game time while menu is open.",
+  "UI_ScaleLabel": "UI Scale",
+  "UI_Scale_Desc": "Scale interface size for 1080p, 1440p or 4K.",
+  "UI_IgnoreTranslations": "Ignore External Translations",
+  "UI_IgnoreTranslations_Desc": "Forces embedded DLL localization resources.",
+  "UI_Section_Localization": "Localization",
+  "UI_UseGameLanguage": "Auto-Detect Game Language",
+  "UI_UseGameLanguage_Desc": "Matches the language selected in the main game."
 }

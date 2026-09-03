@@ -17,8 +17,16 @@ namespace Milex.GMS1.Core.UI
     /// - Missing translation detection & template creation dialog
     /// - Excludes CoreMod from feature mods list to prevent duplication
     /// </summary>
-    public class ModMenuUI : MonoBehaviour
+    public class ModMenuUI : MonoBehaviour, IMenuRenderer
     {
+        public string EngineName => "Classic (IMGUI)";
+        public bool IsVisible => CorePlugin.IsMenuOpen && CorePlugin.MenuEngine != null && CorePlugin.MenuEngine.Value == MenuEngineType.Classic;
+
+        public void Initialize() { }
+        public void Show() { }
+        public void Hide() { }
+        public void Cleanup() { }
+
         private Rect _baseWindowRect = new Rect(100, 100, 840, 560);
         private float _lastScale = 1.0f; // Tracks previous scale to anchor window top-left on scale change
         private float _currentScale = 1.0f; // Current frame scale, used inside DrawWindowContent
@@ -112,7 +120,7 @@ namespace Milex.GMS1.Core.UI
 
         private void OnGUI()
         {
-            if (!CorePlugin.IsMenuOpen) return;
+            if (!CorePlugin.IsMenuOpen || (CorePlugin.MenuEngine != null && CorePlugin.MenuEngine.Value != MenuEngineType.Classic)) return;
 
             InitStyles();
 
@@ -358,6 +366,11 @@ namespace Milex.GMS1.Core.UI
             GUILayout.EndVertical();
             GUILayout.FlexibleSpace();
 
+            if (GUILayout.Button(L("menu.switch_modern", "Modern UI"), _buttonStyle, GUILayout.Width(110), GUILayout.Height(28)))
+            {
+                CorePlugin.SwitchMenuEngine(MenuEngineType.Modern);
+            }
+            GUILayout.Space(6);
             if (GUILayout.Button(L("menu.close", "Schließen"), _buttonStyle, GUILayout.Width(95), GUILayout.Height(28)))
             {
                 CorePlugin.ToggleMenu();
