@@ -78,7 +78,7 @@ namespace Milex.GMS1.Core
             base.Awake();
 
             // Attach Menu Components to persistent UI Host
-            _uiHost = new GameObject("Milex_GMS1_Core_UIHost");
+            _uiHost = new GameObject("Milex_GMS1_Core_UIHost", typeof(RectTransform));
             DontDestroyOnLoad(_uiHost);
             _classicMenu = _uiHost.AddComponent<ModMenuUI>();
             _modernMenu = _uiHost.AddComponent<ModernCanvasMenu>();

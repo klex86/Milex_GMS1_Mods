@@ -24,7 +24,17 @@ namespace Milex.GMS1.Core.UI.Modern
             {
                 if (_defaultFont == null)
                 {
-                    _defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                    try
+                    {
+                        _defaultFont = Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Calibri", "Liberation Sans", "Tahoma" }, 14);
+                    }
+                    catch { }
+
+                    if (_defaultFont == null)
+                    {
+                        _defaultFont = Resources.GetBuiltinResource<Font>("Arial.ttf");
+                    }
+
                     if (_defaultFont == null)
                     {
                         var fonts = Resources.FindObjectsOfTypeAll<Font>();

@@ -44,7 +44,6 @@ namespace Milex.GMS1.Core.UI.Modern
 
         // Dragging state
         private bool _isDragging = false;
-        private Vector2 _dragOffset;
 
         private static readonly string CoreAssemblyName = typeof(CorePlugin).Assembly.GetName().Name;
         private string L(string key, string fallback) => LocalizationManager.Translate(CoreAssemblyName, key, fallback);
@@ -106,6 +105,11 @@ namespace Milex.GMS1.Core.UI.Modern
             BuildBody(window.transform);
         }
 
+        private RectTransform _headerRt;
+        private Vector2 _dragStartMousePos;
+        private Vector2 _dragStartWindowPos;
+        private Slider _activeDraggingSlider;
+
         private void Update()
         {
             if (!IsVisible) return;
@@ -116,43 +120,90 @@ namespace Milex.GMS1.Core.UI.Modern
                 return;
             }
 
-            // Direct pointer click processor: ensures clicks work seamlessly even if Rewired replaces StandaloneInputModule
+            Vector2 mousePos = Input.mousePosition;
+
             if (Input.GetMouseButtonDown(0))
             {
-                ProcessDirectClick(Input.mousePosition);
+                // Check if clicking controls first
+                if (_raycaster != null)
+                {
+                    var results = RaycastUI(mousePos);
+                    var clickedBtn = results.Select(r => r.gameObject.GetComponentInParent<Button>()).FirstOrDefault(b => b != null && b.interactable);
+                    var clickedToggle = results.Select(r => r.gameObject.GetComponentInParent<Toggle>()).FirstOrDefault(t => t != null && t.interactable);
+                    var clickedSlider = results.Select(r => r.gameObject.GetComponentInParent<Slider>()).FirstOrDefault(s => s != null && s.interactable);
+
+                    if (clickedBtn != null)
+                    {
+                        clickedBtn.onClick?.Invoke();
+                        return;
+                    }
+                    else if (clickedToggle != null)
+                    {
+                        clickedToggle.isOn = !clickedToggle.isOn;
+                        return;
+                    }
+                    else if (clickedSlider != null)
+                    {
+                        _activeDraggingSlider = clickedSlider;
+                        UpdateSliderValue(clickedSlider, mousePos);
+                        return;
+                    }
+                }
+
+                // If not clicking a control, check if dragging window header
+                if (_headerRt != null && RectTransformUtility.RectangleContainsScreenPoint(_headerRt, mousePos, null))
+                {
+                    _isDragging = true;
+                    _dragStartMousePos = mousePos;
+                    _dragStartWindowPos = _windowPanelRt.anchoredPosition;
+                }
+            }
+
+            if (Input.GetMouseButton(0))
+            {
+                if (_isDragging)
+                {
+                    Vector2 delta = mousePos - _dragStartMousePos;
+                    float scale = _scaler != null && _scaler.scaleFactor > 0.01f ? _scaler.scaleFactor : 1f;
+                    _windowPanelRt.anchoredPosition = _dragStartWindowPos + (delta / scale);
+                }
+                else if (_activeDraggingSlider != null)
+                {
+                    UpdateSliderValue(_activeDraggingSlider, mousePos);
+                }
+            }
+
+            if (Input.GetMouseButtonUp(0))
+            {
+                _isDragging = false;
+                _activeDraggingSlider = null;
             }
         }
 
-        private void ProcessDirectClick(Vector2 screenPos)
+        private List<RaycastResult> RaycastUI(Vector2 screenPos)
         {
-            if (_raycaster == null) return;
+            var results = new List<RaycastResult>();
+            if (_raycaster == null) return results;
 
             var es = EventSystem.current;
-            if (es == null) return;
-
             var pData = new PointerEventData(es) { position = screenPos };
-            var results = new List<RaycastResult>();
             _raycaster.Raycast(pData, results);
+            return results;
+        }
 
-            if (results.Count > 0)
+        private void UpdateSliderValue(Slider slider, Vector2 screenPos)
+        {
+            if (slider == null) return;
+            var sliderRt = slider.GetComponent<RectTransform>();
+            if (sliderRt == null) return;
+
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(sliderRt, screenPos, null, out Vector2 localPoint))
             {
-                foreach (var result in results)
+                float width = sliderRt.rect.width;
+                if (width > 0.01f)
                 {
-                    if (result.gameObject == null) continue;
-
-                    var btn = result.gameObject.GetComponentInParent<Button>();
-                    if (btn != null && btn.interactable)
-                    {
-                        btn.onClick?.Invoke();
-                        return;
-                    }
-
-                    var toggle = result.gameObject.GetComponentInParent<Toggle>();
-                    if (toggle != null && toggle.interactable)
-                    {
-                        toggle.isOn = !toggle.isOn;
-                        return;
-                    }
+                    float normalized = Mathf.Clamp01((localPoint.x - sliderRt.rect.xMin) / width);
+                    slider.value = Mathf.Lerp(slider.minValue, slider.maxValue, normalized);
                 }
             }
         }
@@ -167,34 +218,7 @@ namespace Milex.GMS1.Core.UI.Modern
             headerRt.pivot = new Vector2(0.5f, 1);
             headerRt.sizeDelta = new Vector2(0, 56);
             headerRt.anchoredPosition = Vector2.zero;
-
-            // Header Drag Handler
-            var dragTrigger = header.AddComponent<EventTrigger>();
-            var beginEntry = new EventTrigger.Entry { eventID = EventTriggerType.BeginDrag };
-            beginEntry.callback.AddListener((data) =>
-            {
-                var pData = (PointerEventData)data;
-                RectTransformUtility.ScreenPointToLocalPointInRectangle(_canvasRoot.GetComponent<RectTransform>(), pData.position, _canvas.worldCamera, out Vector2 localPoint);
-                _dragOffset = _windowPanelRt.anchoredPosition - localPoint;
-                _isDragging = true;
-            });
-            dragTrigger.triggers.Add(beginEntry);
-
-            var dragEntry = new EventTrigger.Entry { eventID = EventTriggerType.Drag };
-            dragEntry.callback.AddListener((data) =>
-            {
-                if (_isDragging)
-                {
-                    var pData = (PointerEventData)data;
-                    RectTransformUtility.ScreenPointToLocalPointInRectangle(_canvasRoot.GetComponent<RectTransform>(), pData.position, _canvas.worldCamera, out Vector2 localPoint);
-                    _windowPanelRt.anchoredPosition = localPoint + _dragOffset;
-                }
-            });
-            dragTrigger.triggers.Add(dragEntry);
-
-            var endEntry = new EventTrigger.Entry { eventID = EventTriggerType.EndDrag };
-            endEntry.callback.AddListener((data) => _isDragging = false);
-            dragTrigger.triggers.Add(endEntry);
+            _headerRt = headerRt;
 
             // Title & Gold Accent
             var titleBar = UIFactory.CreatePanel(header.transform, "AccentBar", new Color(0.88f, 0.65f, 0.18f, 1f));
