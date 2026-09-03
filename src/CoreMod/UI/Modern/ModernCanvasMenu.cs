@@ -130,34 +130,60 @@ namespace Milex.GMS1.Core.UI.Modern
             // Convert IMGUI top-left mouse coords to Unity bottom-left screen space
             Vector2 screenPos = new Vector2(e.mousePosition.x, Screen.height - e.mousePosition.y);
 
+            bool isOverWindow = _windowPanelRt != null && RectTransformUtility.RectangleContainsScreenPoint(_windowPanelRt, screenPos, null);
+
             if (e.type == EventType.MouseDown && e.button == 0)
             {
-                // Check if clicking controls first
+                if (!isOverWindow)
+                {
+                    // Clicked outside window on backdrop: close menu and consume click!
+                    CorePlugin.ToggleMenu();
+                    e.Use();
+                    return;
+                }
+
+                // Check if clicking controls inside the window
                 if (_raycaster != null)
                 {
                     var results = RaycastUI(screenPos);
-                    var clickedBtn = results.Select(r => r.gameObject.GetComponentInParent<Button>()).FirstOrDefault(b => b != null && b.interactable);
-                    var clickedToggle = results.Select(r => r.gameObject.GetComponentInParent<Toggle>()).FirstOrDefault(t => t != null && t.interactable);
-                    var clickedSlider = results.Select(r => r.gameObject.GetComponentInParent<Slider>()).FirstOrDefault(s => s != null && s.interactable);
+                    if (results.Count > 0)
+                    {
+                        // 1. Check Toggle first (ensures toggle on mod card triggers toggle, not card selection)
+                        var clickedToggle = results.Select(r => r.gameObject.GetComponentInParent<Toggle>()).FirstOrDefault(t => t != null && t.interactable);
+                        if (clickedToggle != null)
+                        {
+                            clickedToggle.isOn = !clickedToggle.isOn;
+                            e.Use();
+                            return;
+                        }
 
-                    if (clickedBtn != null)
-                    {
-                        clickedBtn.onClick?.Invoke();
-                        e.Use();
-                        return;
-                    }
-                    else if (clickedToggle != null)
-                    {
-                        clickedToggle.isOn = !clickedToggle.isOn;
-                        e.Use();
-                        return;
-                    }
-                    else if (clickedSlider != null)
-                    {
-                        _activeDraggingSlider = clickedSlider;
-                        UpdateSliderValue(clickedSlider, screenPos);
-                        e.Use();
-                        return;
+                        // 2. Check Slider
+                        var clickedSlider = results.Select(r => r.gameObject.GetComponentInParent<Slider>()).FirstOrDefault(s => s != null && s.interactable);
+                        if (clickedSlider != null)
+                        {
+                            _activeDraggingSlider = clickedSlider;
+                            UpdateSliderValue(clickedSlider, screenPos);
+                            e.Use();
+                            return;
+                        }
+
+                        // 3. Check Button (sidebar cards, tab buttons, reset buttons, header buttons)
+                        var clickedBtn = results.Select(r => r.gameObject.GetComponentInParent<Button>()).FirstOrDefault(b => b != null && b.interactable);
+                        if (clickedBtn != null)
+                        {
+                            clickedBtn.onClick?.Invoke();
+                            e.Use();
+                            return;
+                        }
+
+                        // 4. Check InputField
+                        var clickedInput = results.Select(r => r.gameObject.GetComponentInParent<InputField>()).FirstOrDefault(i => i != null && i.interactable);
+                        if (clickedInput != null)
+                        {
+                            clickedInput.ActivateInputField();
+                            e.Use();
+                            return;
+                        }
                     }
                 }
 
@@ -168,7 +194,11 @@ namespace Milex.GMS1.Core.UI.Modern
                     _dragStartMousePos = screenPos;
                     _dragStartWindowPos = _windowPanelRt.anchoredPosition;
                     e.Use();
+                    return;
                 }
+
+                // Always consume MouseDown inside the window so game world never receives clicks!
+                e.Use();
             }
             else if ((e.type == EventType.MouseDrag || e.type == EventType.MouseMove) && (e.button == 0 || _isDragging || _activeDraggingSlider != null))
             {
@@ -184,16 +214,27 @@ namespace Milex.GMS1.Core.UI.Modern
                     UpdateSliderValue(_activeDraggingSlider, screenPos);
                     e.Use();
                 }
+                else if (isOverWindow)
+                {
+                    e.Use();
+                }
             }
             else if (e.type == EventType.MouseUp && e.button == 0)
             {
                 _isDragging = false;
                 _activeDraggingSlider = null;
+                if (isOverWindow)
+                {
+                    e.Use();
+                }
             }
-            else if (e.type == EventType.ScrollWheel && _settingsScrollRect != null)
+            else if (e.type == EventType.ScrollWheel && isOverWindow)
             {
-                _settingsScrollRect.verticalNormalizedPosition += e.delta.y * 0.05f;
-                _settingsScrollRect.verticalNormalizedPosition = Mathf.Clamp01(_settingsScrollRect.verticalNormalizedPosition);
+                if (_settingsScrollRect != null)
+                {
+                    _settingsScrollRect.verticalNormalizedPosition += e.delta.y * 0.05f;
+                    _settingsScrollRect.verticalNormalizedPosition = Mathf.Clamp01(_settingsScrollRect.verticalNormalizedPosition);
+                }
                 e.Use();
             }
         }
@@ -383,6 +424,8 @@ namespace Milex.GMS1.Core.UI.Modern
 
             RefreshSidebar();
             RefreshActiveModView();
+
+            Canvas.ForceUpdateCanvases();
         }
 
         public void Hide()
@@ -432,6 +475,8 @@ namespace Milex.GMS1.Core.UI.Modern
                 var mod = featureMods[i];
                 CreateSidebarCard(i, mod.Name, mod.Version, mod.IsEnabled, mod.CanBeDisabled, _selectedModIndex == i);
             }
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_sidebarContentRt);
         }
 
         private void CreateSidebarCard(int modIndex, string name, string version, bool isEnabled, bool canBeDisabled, bool isSelected)
@@ -450,10 +495,15 @@ namespace Milex.GMS1.Core.UI.Modern
             var cardRt = card.GetComponent<RectTransform>();
             cardRt.sizeDelta = new Vector2(0, 52);
 
-            // Left Gold Accent if selected
+            var le = card.gameObject.AddComponent<LayoutElement>();
+            le.minHeight = 52;
+            le.preferredHeight = 52;
+            le.flexibleWidth = 1;
+
+            // Left Gold Accent if selected (non-raycast target so clicks pass to card button)
             if (isSelected)
             {
-                var accent = UIFactory.CreatePanel(card.transform, "SelectAccent", new Color(0.88f, 0.65f, 0.18f, 1f));
+                var accent = UIFactory.CreatePanel(card.transform, "SelectAccent", new Color(0.88f, 0.65f, 0.18f, 1f), raycastTarget: false);
                 var accRt = accent.GetComponent<RectTransform>();
                 accRt.anchorMin = new Vector2(0, 0);
                 accRt.anchorMax = new Vector2(0, 1);
@@ -533,12 +583,20 @@ namespace Milex.GMS1.Core.UI.Modern
                     RefreshSettingsContent();
                 }, 12);
 
-                var tabRt = tabBtn.GetComponent<RectTransform>();
                 float width = Mathf.Max(60f, label.Length * 9f + 20f);
+                var tabRt = tabBtn.GetComponent<RectTransform>();
                 tabRt.sizeDelta = new Vector2(width, 32);
+
+                var le = tabBtn.gameObject.AddComponent<LayoutElement>();
+                le.minWidth = width;
+                le.preferredWidth = width;
+                le.minHeight = 32;
+                le.preferredHeight = 32;
 
                 _createdTabButtons.Add(tabBtn.gameObject);
             }
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_tabsContentRt);
         }
 
         private List<string> GetActiveModCategories()
@@ -581,8 +639,6 @@ namespace Milex.GMS1.Core.UI.Modern
             }
             _createdSettingCards.Clear();
 
-            _settingsScrollRect.verticalNormalizedPosition = 1f;
-
             if (_selectedModIndex == -1)
             {
                 BuildCoreSettingsCards();
@@ -595,6 +651,9 @@ namespace Milex.GMS1.Core.UI.Modern
                     BuildModSettingsCards(mods[_selectedModIndex]);
                 }
             }
+
+            LayoutRebuilder.ForceRebuildLayoutImmediate(_settingsContentRt);
+            if (_settingsScrollRect != null) _settingsScrollRect.verticalNormalizedPosition = 1f;
         }
 
         private void BuildCoreSettingsCards()
@@ -717,6 +776,11 @@ namespace Milex.GMS1.Core.UI.Modern
             var hRt = header.GetComponent<RectTransform>();
             hRt.sizeDelta = new Vector2(0, 32);
 
+            var le = header.AddComponent<LayoutElement>();
+            le.minHeight = 32;
+            le.preferredHeight = 32;
+            le.flexibleWidth = 1;
+
             var txt = UIFactory.CreateText(header.transform, "Title", title.ToUpperInvariant(), 12, new Color(0.88f, 0.65f, 0.18f, 1f), TextAnchor.MiddleLeft, FontStyle.Bold);
             var tRt = txt.GetComponent<RectTransform>();
             tRt.anchorMin = Vector2.zero;
@@ -732,6 +796,11 @@ namespace Milex.GMS1.Core.UI.Modern
             var card = UIFactory.CreatePanel(_settingsContentRt, $"SliderCard_{label}", new Color(0.15f, 0.17f, 0.22f, 1f), UIFactory.RoundedBoxSprite);
             var cardRt = card.GetComponent<RectTransform>();
             cardRt.sizeDelta = new Vector2(0, 68);
+
+            var le = card.AddComponent<LayoutElement>();
+            le.minHeight = 68;
+            le.preferredHeight = 68;
+            le.flexibleWidth = 1;
 
             // Label & Description
             var lbl = UIFactory.CreateText(card.transform, "Label", label, 14, Color.white, TextAnchor.MiddleLeft, FontStyle.Bold);
@@ -788,6 +857,11 @@ namespace Milex.GMS1.Core.UI.Modern
             var card = UIFactory.CreatePanel(_settingsContentRt, $"ToggleCard_{label}", new Color(0.15f, 0.17f, 0.22f, 1f), UIFactory.RoundedBoxSprite);
             var cardRt = card.GetComponent<RectTransform>();
             cardRt.sizeDelta = new Vector2(0, 56);
+
+            var le = card.AddComponent<LayoutElement>();
+            le.minHeight = 56;
+            le.preferredHeight = 56;
+            le.flexibleWidth = 1;
 
             // Label & Description
             var lbl = UIFactory.CreateText(card.transform, "Label", label, 14, Color.white, TextAnchor.MiddleLeft, FontStyle.Bold);

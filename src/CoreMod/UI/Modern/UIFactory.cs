@@ -164,7 +164,7 @@ namespace Milex.GMS1.Core.UI.Modern
 
         // ---- Element Creators ----
 
-        public static GameObject CreatePanel(Transform parent, string name, Color color, Sprite sprite = null, Image.Type imageType = Image.Type.Sliced)
+        public static GameObject CreatePanel(Transform parent, string name, Color color, Sprite sprite = null, Image.Type imageType = Image.Type.Sliced, bool raycastTarget = true)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image));
             go.transform.SetParent(parent, false);
@@ -173,7 +173,7 @@ namespace Milex.GMS1.Core.UI.Modern
             img.sprite = sprite ?? FlatSprite;
             img.type = imageType;
             img.color = color;
-            img.raycastTarget = true;
+            img.raycastTarget = raycastTarget;
 
             return go;
         }
