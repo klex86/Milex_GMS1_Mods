@@ -26,7 +26,7 @@ namespace Milex.GMS1.Core.UI.Modern
                 {
                     try
                     {
-                        _defaultFont = Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Calibri", "Liberation Sans", "Tahoma" }, 14);
+                        _defaultFont = Font.CreateDynamicFontFromOSFont(new string[] { "Segoe UI", "Arial", "Calibri", "Liberation Sans", "Tahoma" }, 28);
                     }
                     catch { }
 
@@ -420,6 +420,9 @@ namespace Milex.GMS1.Core.UI.Modern
             img.color = new Color(0.12f, 0.14f, 0.18f, 1f);
 
             var input = go.GetComponent<InputField>();
+            input.targetGraphic = img;
+            input.contentType = InputField.ContentType.Standard;
+            input.lineType = InputField.LineType.SingleLine;
 
             // Text
             var textObj = CreateText(go.transform, "Text", "", 14, Color.white, TextAnchor.MiddleLeft);

@@ -74,6 +74,8 @@ namespace Milex.GMS1.Core.UI.Modern
             _scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             _scaler.referenceResolution = new Vector2(1920, 1080);
             _scaler.matchWidthOrHeight = 0.5f;
+            _scaler.dynamicPixelsPerUnit = 2.5f;
+            _scaler.referencePixelsPerUnit = 100f;
 
             _raycaster = _canvasRoot.GetComponent<GraphicRaycaster>();
             _raycaster.blockingObjects = GraphicRaycaster.BlockingObjects.None;
@@ -289,9 +291,13 @@ namespace Milex.GMS1.Core.UI.Modern
 
             EnsureEventSystem();
 
-            // Sync scale with CorePlugin.UIScale
+            // Sync scale with CorePlugin.UIScale & enforce high-DPI font rendering
             float scale = CorePlugin.UIScale != null ? Mathf.Clamp(CorePlugin.UIScale.Value, 0.8f, 1.8f) : 1.0f;
-            if (_scaler != null) _scaler.scaleFactor = scale;
+            if (_scaler != null)
+            {
+                _scaler.referenceResolution = new Vector2(1920f / scale, 1080f / scale);
+                _scaler.dynamicPixelsPerUnit = 2.5f;
+            }
 
             if (_canvasRoot != null) _canvasRoot.SetActive(true);
             if (_canvas != null) _canvas.enabled = true;
@@ -555,32 +561,64 @@ namespace Milex.GMS1.Core.UI.Modern
         {
             _windowTitleText.text = $"{CorePlugin.PluginName} (v{CorePlugin.PluginVersion})";
 
-            // Language & Core Controls
-            CreateCategoryHeader(L("UI_Section_General", "General Settings"));
-
-            CreateToggleCard(L("UI_PauseGameOnMenu", "Pause Game in Menu"), L("UI_PauseGameOnMenu_Desc", "Freezes game time while menu is open."), CorePlugin.PauseGameOnMenu.Value, (val) =>
+            bool MatchesSearch(string label, string desc)
             {
-                CorePlugin.PauseGameOnMenu.Value = val;
-            });
+                if (string.IsNullOrEmpty(_searchFilter)) return true;
+                return label.IndexOf(_searchFilter, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                       desc.IndexOf(_searchFilter, StringComparison.OrdinalIgnoreCase) >= 0;
+            }
 
-            CreateSliderCard(L("UI_ScaleLabel", "UI Scale"), L("UI_Scale_Desc", "Scale interface size for 1080p, 1440p or 4K."), CorePlugin.UIScale.Value, 0.8f, 1.8f, 1.0f, (val) =>
+            // General Section
+            if (_activeCategory == "All" || _activeCategory.Equals("General", StringComparison.OrdinalIgnoreCase) || _activeCategory.Equals("Allgemein", StringComparison.OrdinalIgnoreCase))
             {
-                CorePlugin.UIScale.Value = (float)Math.Round(val, 2);
-                _scaler.scaleFactor = CorePlugin.UIScale.Value;
-            });
+                bool hasHeader = false;
+                string secTitle = L("UI_Section_General", "General Settings");
 
-            CreateToggleCard(L("UI_IgnoreTranslations", "Ignore External Translations"), L("UI_IgnoreTranslations_Desc", "Forces embedded DLL localization resources."), CorePlugin.IgnoreExternalTranslations.Value, (val) =>
+                string pauseLabel = L("UI_PauseGameOnMenu", "Pause Game in Menu");
+                string pauseDesc = L("UI_PauseGameOnMenu_Desc", "Freezes game time while menu is open.");
+                if (MatchesSearch(pauseLabel, pauseDesc))
+                {
+                    if (!hasHeader) { CreateCategoryHeader(secTitle); hasHeader = true; }
+                    CreateToggleCard(pauseLabel, pauseDesc, CorePlugin.PauseGameOnMenu.Value, (val) => CorePlugin.PauseGameOnMenu.Value = val);
+                }
+
+                string scaleLabel = L("UI_ScaleLabel", "UI Scale");
+                string scaleDesc = L("UI_Scale_Desc", "Scale interface size for 1080p, 1440p or 4K.");
+                if (MatchesSearch(scaleLabel, scaleDesc))
+                {
+                    if (!hasHeader) { CreateCategoryHeader(secTitle); hasHeader = true; }
+                    CreateSliderCard(scaleLabel, scaleDesc, CorePlugin.UIScale.Value, 0.8f, 1.8f, 1.0f, (val) =>
+                    {
+                        CorePlugin.UIScale.Value = (float)Math.Round(val, 2);
+                        if (_scaler != null) _scaler.referenceResolution = new Vector2(1920f / CorePlugin.UIScale.Value, 1080f / CorePlugin.UIScale.Value);
+                    });
+                }
+
+                string ignoreLabel = L("UI_IgnoreTranslations", "Ignore External Translations");
+                string ignoreDesc = L("UI_IgnoreTranslations_Desc", "Forces embedded DLL localization resources.");
+                if (MatchesSearch(ignoreLabel, ignoreDesc))
+                {
+                    if (!hasHeader) { CreateCategoryHeader(secTitle); hasHeader = true; }
+                    CreateToggleCard(ignoreLabel, ignoreDesc, CorePlugin.IgnoreExternalTranslations.Value, (val) => CorePlugin.IgnoreExternalTranslations.Value = val);
+                }
+            }
+
+            // Localization Section
+            if (_activeCategory == "All" || _activeCategory.Equals("Localization", StringComparison.OrdinalIgnoreCase) || _activeCategory.Equals("Sprache", StringComparison.OrdinalIgnoreCase))
             {
-                CorePlugin.IgnoreExternalTranslations.Value = val;
-            });
-
-            CreateCategoryHeader(L("UI_Section_Localization", "Localization"));
-
-            CreateToggleCard(L("UI_UseGameLanguage", "Auto-Detect Game Language"), L("UI_UseGameLanguage_Desc", "Matches the language selected in the main game."), CorePlugin.UseGameLanguage.Value, (val) =>
-            {
-                CorePlugin.UseGameLanguage.Value = val;
-                LocalizationManager.ReloadAll();
-            });
+                string secTitle = L("UI_Section_Localization", "Localization");
+                string langLabel = L("UI_UseGameLanguage", "Auto-Detect Game Language");
+                string langDesc = L("UI_UseGameLanguage_Desc", "Matches the language selected in the main game.");
+                if (MatchesSearch(langLabel, langDesc))
+                {
+                    CreateCategoryHeader(secTitle);
+                    CreateToggleCard(langLabel, langDesc, CorePlugin.UseGameLanguage.Value, (val) =>
+                    {
+                        CorePlugin.UseGameLanguage.Value = val;
+                        LocalizationManager.ReloadAll();
+                    });
+                }
+            }
         }
 
         private void BuildModSettingsCards(ModInfo mod)
