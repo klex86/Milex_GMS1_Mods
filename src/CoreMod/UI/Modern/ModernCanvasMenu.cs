@@ -117,17 +117,25 @@ namespace Milex.GMS1.Core.UI.Modern
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 CorePlugin.ToggleMenu();
-                return;
             }
+        }
 
-            Vector2 mousePos = Input.mousePosition;
+        private void OnGUI()
+        {
+            if (!IsVisible) return;
 
-            if (Input.GetMouseButtonDown(0))
+            Event e = Event.current;
+            if (e == null) return;
+
+            // Convert IMGUI top-left mouse coords to Unity bottom-left screen space
+            Vector2 screenPos = new Vector2(e.mousePosition.x, Screen.height - e.mousePosition.y);
+
+            if (e.type == EventType.MouseDown && e.button == 0)
             {
                 // Check if clicking controls first
                 if (_raycaster != null)
                 {
-                    var results = RaycastUI(mousePos);
+                    var results = RaycastUI(screenPos);
                     var clickedBtn = results.Select(r => r.gameObject.GetComponentInParent<Button>()).FirstOrDefault(b => b != null && b.interactable);
                     var clickedToggle = results.Select(r => r.gameObject.GetComponentInParent<Toggle>()).FirstOrDefault(t => t != null && t.interactable);
                     var clickedSlider = results.Select(r => r.gameObject.GetComponentInParent<Slider>()).FirstOrDefault(s => s != null && s.interactable);
@@ -135,48 +143,58 @@ namespace Milex.GMS1.Core.UI.Modern
                     if (clickedBtn != null)
                     {
                         clickedBtn.onClick?.Invoke();
+                        e.Use();
                         return;
                     }
                     else if (clickedToggle != null)
                     {
                         clickedToggle.isOn = !clickedToggle.isOn;
+                        e.Use();
                         return;
                     }
                     else if (clickedSlider != null)
                     {
                         _activeDraggingSlider = clickedSlider;
-                        UpdateSliderValue(clickedSlider, mousePos);
+                        UpdateSliderValue(clickedSlider, screenPos);
+                        e.Use();
                         return;
                     }
                 }
 
-                // If not clicking a control, check if dragging window header
-                if (_headerRt != null && RectTransformUtility.RectangleContainsScreenPoint(_headerRt, mousePos, null))
+                // Header drag check
+                if (_headerRt != null && RectTransformUtility.RectangleContainsScreenPoint(_headerRt, screenPos, null))
                 {
                     _isDragging = true;
-                    _dragStartMousePos = mousePos;
+                    _dragStartMousePos = screenPos;
                     _dragStartWindowPos = _windowPanelRt.anchoredPosition;
+                    e.Use();
                 }
             }
-
-            if (Input.GetMouseButton(0))
+            else if ((e.type == EventType.MouseDrag || e.type == EventType.MouseMove) && (e.button == 0 || _isDragging || _activeDraggingSlider != null))
             {
                 if (_isDragging)
                 {
-                    Vector2 delta = mousePos - _dragStartMousePos;
+                    Vector2 delta = screenPos - _dragStartMousePos;
                     float scale = _scaler != null && _scaler.scaleFactor > 0.01f ? _scaler.scaleFactor : 1f;
                     _windowPanelRt.anchoredPosition = _dragStartWindowPos + (delta / scale);
+                    e.Use();
                 }
                 else if (_activeDraggingSlider != null)
                 {
-                    UpdateSliderValue(_activeDraggingSlider, mousePos);
+                    UpdateSliderValue(_activeDraggingSlider, screenPos);
+                    e.Use();
                 }
             }
-
-            if (Input.GetMouseButtonUp(0))
+            else if (e.type == EventType.MouseUp && e.button == 0)
             {
                 _isDragging = false;
                 _activeDraggingSlider = null;
+            }
+            else if (e.type == EventType.ScrollWheel && _settingsScrollRect != null)
+            {
+                _settingsScrollRect.verticalNormalizedPosition += e.delta.y * 0.05f;
+                _settingsScrollRect.verticalNormalizedPosition = Mathf.Clamp01(_settingsScrollRect.verticalNormalizedPosition);
+                e.Use();
             }
         }
 

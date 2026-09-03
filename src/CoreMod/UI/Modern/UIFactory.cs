@@ -347,19 +347,14 @@ namespace Milex.GMS1.Core.UI.Modern
             scrollRect.movementType = ScrollRect.MovementType.Clamped;
             scrollRect.scrollSensitivity = 35f;
 
-            // Viewport
-            var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(Mask), typeof(Image));
+            // Viewport with RectMask2D (stencil-free clipping for runtime Canvas)
+            var viewport = new GameObject("Viewport", typeof(RectTransform), typeof(RectMask2D));
             viewport.transform.SetParent(scrollRoot.transform, false);
             var vpRt = viewport.GetComponent<RectTransform>();
             vpRt.anchorMin = Vector2.zero;
             vpRt.anchorMax = Vector2.one;
             vpRt.offsetMin = Vector2.zero;
             vpRt.offsetMax = Vector2.zero;
-
-            var vpImg = viewport.GetComponent<Image>();
-            vpImg.color = Color.white;
-            var mask = viewport.GetComponent<Mask>();
-            mask.showMaskGraphic = false;
 
             // Content
             var content = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
