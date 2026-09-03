@@ -51,14 +51,12 @@ namespace Milex.GMS1.Core.UI.Modern
 
         public void Initialize()
         {
-            BuildCanvasHierarchy();
-            EnsureEventSystem();
-            Hide();
+            // Lazy initialization: Canvas GameObject will be built on first Show()
         }
 
         private void EnsureEventSystem()
         {
-            if (EventSystem.current == null)
+            if (EventSystem.current == null && FindObjectOfType<EventSystem>() == null)
             {
                 var esObj = new GameObject("Milex_EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
                 DontDestroyOnLoad(esObj);
@@ -70,7 +68,7 @@ namespace Milex.GMS1.Core.UI.Modern
             if (_canvasRoot != null) return;
 
             _canvasRoot = new GameObject("Milex_ModernMenu_Canvas", typeof(RectTransform), typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
-            DontDestroyOnLoad(_canvasRoot);
+            _canvasRoot.transform.SetParent(this.transform, false);
 
             _canvas = _canvasRoot.GetComponent<Canvas>();
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -82,6 +80,8 @@ namespace Milex.GMS1.Core.UI.Modern
             _scaler.matchWidthOrHeight = 0.5f;
 
             _raycaster = _canvasRoot.GetComponent<GraphicRaycaster>();
+            _raycaster.blockingObjects = GraphicRaycaster.BlockingObjects.None;
+            _raycaster.ignoreReversedGraphics = true;
 
             // Modal Dim Backdrop (semi-transparent)
             var backdrop = UIFactory.CreatePanel(_canvasRoot.transform, "Backdrop", new Color(0.04f, 0.05f, 0.08f, 0.55f));
@@ -91,6 +91,11 @@ namespace Milex.GMS1.Core.UI.Modern
             bdRt.offsetMin = Vector2.zero;
             bdRt.offsetMax = Vector2.zero;
 
+            // Clicking backdrop outside closes menu
+            var bdBtn = backdrop.AddComponent<Button>();
+            bdBtn.transition = Selectable.Transition.None;
+            bdBtn.onClick.AddListener(() => CorePlugin.ToggleMenu());
+
             // Main Window Panel (Dark Slate Container)
             var window = UIFactory.CreatePanel(_canvasRoot.transform, "WindowPanel", new Color(0.10f, 0.12f, 0.16f, 0.98f), UIFactory.RoundedBoxSprite);
             _windowPanelRt = window.GetComponent<RectTransform>();
@@ -99,6 +104,57 @@ namespace Milex.GMS1.Core.UI.Modern
 
             BuildHeader(window.transform);
             BuildBody(window.transform);
+        }
+
+        private void Update()
+        {
+            if (!IsVisible) return;
+
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                CorePlugin.ToggleMenu();
+                return;
+            }
+
+            // Direct pointer click processor: ensures clicks work seamlessly even if Rewired replaces StandaloneInputModule
+            if (Input.GetMouseButtonDown(0))
+            {
+                ProcessDirectClick(Input.mousePosition);
+            }
+        }
+
+        private void ProcessDirectClick(Vector2 screenPos)
+        {
+            if (_raycaster == null) return;
+
+            var es = EventSystem.current;
+            if (es == null) return;
+
+            var pData = new PointerEventData(es) { position = screenPos };
+            var results = new List<RaycastResult>();
+            _raycaster.Raycast(pData, results);
+
+            if (results.Count > 0)
+            {
+                foreach (var result in results)
+                {
+                    if (result.gameObject == null) continue;
+
+                    var btn = result.gameObject.GetComponentInParent<Button>();
+                    if (btn != null && btn.interactable)
+                    {
+                        btn.onClick?.Invoke();
+                        return;
+                    }
+
+                    var toggle = result.gameObject.GetComponentInParent<Toggle>();
+                    if (toggle != null && toggle.interactable)
+                    {
+                        toggle.isOn = !toggle.isOn;
+                        return;
+                    }
+                }
+            }
         }
 
         private void BuildHeader(Transform window)
@@ -271,20 +327,28 @@ namespace Milex.GMS1.Core.UI.Modern
         {
             if (_canvasRoot == null)
             {
-                Initialize();
+                BuildCanvasHierarchy();
             }
+
+            EnsureEventSystem();
 
             // Sync scale with CorePlugin.UIScale
             float scale = CorePlugin.UIScale != null ? Mathf.Clamp(CorePlugin.UIScale.Value, 0.8f, 1.8f) : 1.0f;
-            _scaler.scaleFactor = scale;
+            if (_scaler != null) _scaler.scaleFactor = scale;
 
-            _canvasRoot.SetActive(true);
+            if (_canvasRoot != null) _canvasRoot.SetActive(true);
+            if (_canvas != null) _canvas.enabled = true;
+
             RefreshSidebar();
             RefreshActiveModView();
         }
 
         public void Hide()
         {
+            if (_canvas != null)
+            {
+                _canvas.enabled = false;
+            }
             if (_canvasRoot != null)
             {
                 _canvasRoot.SetActive(false);
