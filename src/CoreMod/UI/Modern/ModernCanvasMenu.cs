@@ -42,9 +42,6 @@ namespace Milex.GMS1.Core.UI.Modern
         private readonly List<GameObject> _createdTabButtons = new List<GameObject>();
         private readonly List<GameObject> _createdSidebarButtons = new List<GameObject>();
 
-        // Dragging state
-        private bool _isDragging = false;
-
         private static readonly string CoreAssemblyName = typeof(CorePlugin).Assembly.GetName().Name;
         private string L(string key, string fallback) => LocalizationManager.Translate(CoreAssemblyName, key, fallback);
 
@@ -105,11 +102,6 @@ namespace Milex.GMS1.Core.UI.Modern
             BuildBody(window.transform);
         }
 
-        private RectTransform _headerRt;
-        private Vector2 _dragStartMousePos;
-        private Vector2 _dragStartWindowPos;
-        private Slider _activeDraggingSlider;
-
         private void Update()
         {
             if (!IsVisible) return;
@@ -122,154 +114,46 @@ namespace Milex.GMS1.Core.UI.Modern
 
         private void OnGUI()
         {
+            // The only purpose of OnGUI now is to consume Unity's legacy GUI events 
+            // so they don't fall through to the game world (Rewired ignores consumed events).
             if (!IsVisible) return;
-
+            
             Event e = Event.current;
-            if (e == null) return;
-
-            // Convert IMGUI top-left mouse coords to Unity bottom-left screen space
-            Vector2 screenPos = new Vector2(e.mousePosition.x, Screen.height - e.mousePosition.y);
-
-            bool isOverWindow = _windowPanelRt != null && RectTransformUtility.RectangleContainsScreenPoint(_windowPanelRt, screenPos, null);
-
-            if (e.type == EventType.MouseDown && e.button == 0)
+            if (e != null && (e.type == EventType.MouseDown || e.type == EventType.MouseUp || e.type == EventType.ScrollWheel || e.type == EventType.MouseDrag))
             {
-                if (!isOverWindow)
-                {
-                    // Clicked outside window on backdrop: close menu and consume click!
-                    CorePlugin.ToggleMenu();
-                    e.Use();
-                    return;
-                }
-
-                // Check if clicking controls inside the window
-                if (_raycaster != null)
-                {
-                    var results = RaycastUI(screenPos);
-                    if (results.Count > 0)
-                    {
-                        // 1. Check Toggle first (ensures toggle on mod card triggers toggle, not card selection)
-                        var clickedToggle = results.Select(r => r.gameObject.GetComponentInParent<Toggle>()).FirstOrDefault(t => t != null && t.interactable);
-                        if (clickedToggle != null)
-                        {
-                            clickedToggle.isOn = !clickedToggle.isOn;
-                            e.Use();
-                            return;
-                        }
-
-                        // 2. Check Slider
-                        var clickedSlider = results.Select(r => r.gameObject.GetComponentInParent<Slider>()).FirstOrDefault(s => s != null && s.interactable);
-                        if (clickedSlider != null)
-                        {
-                            _activeDraggingSlider = clickedSlider;
-                            UpdateSliderValue(clickedSlider, screenPos);
-                            e.Use();
-                            return;
-                        }
-
-                        // 3. Check Button (sidebar cards, tab buttons, reset buttons, header buttons)
-                        var clickedBtn = results.Select(r => r.gameObject.GetComponentInParent<Button>()).FirstOrDefault(b => b != null && b.interactable);
-                        if (clickedBtn != null)
-                        {
-                            clickedBtn.onClick?.Invoke();
-                            e.Use();
-                            return;
-                        }
-
-                        // 4. Check InputField
-                        var clickedInput = results.Select(r => r.gameObject.GetComponentInParent<InputField>()).FirstOrDefault(i => i != null && i.interactable);
-                        if (clickedInput != null)
-                        {
-                            clickedInput.ActivateInputField();
-                            e.Use();
-                            return;
-                        }
-                    }
-                }
-
-                // Header drag check
-                if (_headerRt != null && RectTransformUtility.RectangleContainsScreenPoint(_headerRt, screenPos, null))
-                {
-                    _isDragging = true;
-                    _dragStartMousePos = screenPos;
-                    _dragStartWindowPos = _windowPanelRt.anchoredPosition;
-                    e.Use();
-                    return;
-                }
-
-                // Always consume MouseDown inside the window so game world never receives clicks!
-                e.Use();
-            }
-            else if ((e.type == EventType.MouseDrag || e.type == EventType.MouseMove) && (e.button == 0 || _isDragging || _activeDraggingSlider != null))
-            {
-                if (_isDragging)
-                {
-                    Vector2 delta = screenPos - _dragStartMousePos;
-                    float scale = _scaler != null && _scaler.scaleFactor > 0.01f ? _scaler.scaleFactor : 1f;
-                    _windowPanelRt.anchoredPosition = _dragStartWindowPos + (delta / scale);
-                    e.Use();
-                }
-                else if (_activeDraggingSlider != null)
-                {
-                    UpdateSliderValue(_activeDraggingSlider, screenPos);
-                    e.Use();
-                }
-                else if (isOverWindow)
-                {
-                    e.Use();
-                }
-            }
-            else if (e.type == EventType.MouseUp && e.button == 0)
-            {
-                _isDragging = false;
-                _activeDraggingSlider = null;
-                if (isOverWindow)
-                {
-                    e.Use();
-                }
-            }
-            else if (e.type == EventType.ScrollWheel && isOverWindow)
-            {
-                if (_settingsScrollRect != null)
-                {
-                    _settingsScrollRect.verticalNormalizedPosition += e.delta.y * 0.05f;
-                    _settingsScrollRect.verticalNormalizedPosition = Mathf.Clamp01(_settingsScrollRect.verticalNormalizedPosition);
-                }
                 e.Use();
             }
         }
 
-        private List<RaycastResult> RaycastUI(Vector2 screenPos)
+        private class WindowDragHandler : MonoBehaviour, IDragHandler, IBeginDragHandler
         {
-            var results = new List<RaycastResult>();
-            if (_raycaster == null) return results;
+            public RectTransform TargetWindow;
+            private CanvasScaler _scaler;
+            private Vector2 _dragStartPos;
+            private Vector2 _windowStartPos;
 
-            var es = EventSystem.current;
-            var pData = new PointerEventData(es) { position = screenPos };
-            _raycaster.Raycast(pData, results);
-            return results;
-        }
-
-        private void UpdateSliderValue(Slider slider, Vector2 screenPos)
-        {
-            if (slider == null) return;
-            var sliderRt = slider.GetComponent<RectTransform>();
-            if (sliderRt == null) return;
-
-            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(sliderRt, screenPos, null, out Vector2 localPoint))
+            private void Start()
             {
-                float width = sliderRt.rect.width;
-                if (width > 0.01f)
-                {
-                    float normalized = Mathf.Clamp01((localPoint.x - sliderRt.rect.xMin) / width);
-                    slider.value = Mathf.Lerp(slider.minValue, slider.maxValue, normalized);
-                }
+                _scaler = GetComponentInParent<CanvasScaler>();
+            }
+
+            public void OnBeginDrag(PointerEventData eventData)
+            {
+                _dragStartPos = eventData.position;
+                if (TargetWindow != null) _windowStartPos = TargetWindow.anchoredPosition;
+            }
+
+            public void OnDrag(PointerEventData eventData)
+            {
+                if (TargetWindow == null) return;
+                Vector2 delta = eventData.position - _dragStartPos;
+                float scale = _scaler != null && _scaler.scaleFactor > 0.01f ? _scaler.scaleFactor : 1f;
+                TargetWindow.anchoredPosition = _windowStartPos + (delta / scale);
             }
         }
 
         private void BuildHeader(Transform window)
         {
-            // Header Bar
             var header = UIFactory.CreatePanel(window, "HeaderBar", new Color(0.14f, 0.16f, 0.22f, 1f), UIFactory.RoundedBoxSprite);
             var headerRt = header.GetComponent<RectTransform>();
             headerRt.anchorMin = new Vector2(0, 1);
@@ -277,7 +161,10 @@ namespace Milex.GMS1.Core.UI.Modern
             headerRt.pivot = new Vector2(0.5f, 1);
             headerRt.sizeDelta = new Vector2(0, 56);
             headerRt.anchoredPosition = Vector2.zero;
-            _headerRt = headerRt;
+
+            // Make the header act as a drag handle for the window
+            var dragHandler = header.AddComponent<WindowDragHandler>();
+            dragHandler.TargetWindow = _windowPanelRt;
 
             // Title & Gold Accent
             var titleBar = UIFactory.CreatePanel(header.transform, "AccentBar", new Color(0.88f, 0.65f, 0.18f, 1f));
@@ -426,6 +313,12 @@ namespace Milex.GMS1.Core.UI.Modern
             RefreshActiveModView();
 
             Canvas.ForceUpdateCanvases();
+            
+            // Force a full layout rebuild on the window after everything is instantiated
+            if (_windowPanelRt != null)
+            {
+                LayoutRebuilder.ForceRebuildLayoutImmediate(_windowPanelRt);
+            }
         }
 
         public void Hide()

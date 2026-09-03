@@ -39,18 +39,5 @@ namespace Milex.GMS1.Core.Patches
             return true;
         }
 
-        [HarmonyPatch(nameof(Input.GetMouseButton))]
-        [HarmonyPatch(nameof(Input.GetMouseButtonDown))]
-        [HarmonyPatch(nameof(Input.GetMouseButtonUp))]
-        [HarmonyPrefix]
-        public static bool Prefix_GetMouseButton(ref bool __result)
-        {
-            if (CorePlugin.IsMenuOpen)
-            {
-                __result = false;
-                return false;
-            }
-            return true;
-        }
     }
 }
