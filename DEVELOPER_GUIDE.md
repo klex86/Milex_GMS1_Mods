@@ -1,95 +1,110 @@
-# Milex GMS1 CoreMod - Sub-Mod Developer Guide
+# Milex GMS1 CoreMod - Third-Party Sub-Mod Developer Guide
 
-Welcome to the **Milex GMS1 CoreMod** developer handbook!
-This guide is written for modders, software engineers, and community developers who want to create mods for **Gold Mining Simulator** (*Gold Rush: The Game*) that integrate smoothly into the Milex CoreMod framework.
-
----
-
-## 1. Why Develop on the Milex Framework?
-
-Historically, modding Unity games with BepInEx required every mod author to write custom IMGUI code, manage configuration files manually, handle keybindings, and deal with game crashes when re-patching methods.
-
-The **Milex GMS1 CoreMod** provides a unified foundation:
-
-- **Zero-Code In-Game UI**: Declare your settings via standard BepInEx `Config.Bind(...)`, and CoreMod automatically generates modern UI cards, sliders, toggles, category tabs, and search indexing in both the **Modern Canvas Dashboard** (uGUI) and the **Classic IMGUI** fallback menu.
-- **Runtime Enable/Disable**: Players can turn your mod on and off in-game without restarting the game. Harmony patches and `Update()` loops are attached and detached cleanly.
-- **Multi-Language Localization**: Full localization engine built-in. Ship embedded JSON files; CoreMod extracts them, resolves player languages, and lets users add custom community translations.
-- **Input & Pause Management**: Opening the mod menu seamlessly unlocks the mouse cursor, blocks player/vehicle movement, and freezes or restores game time without disrupting the game state.
-- **Shared Architecture**: Built on clean, tested abstractions with zero dependencies on third-party binary assets.
+Welcome to the **Milex GMS1 CoreMod** developer guide!
+This handbook is written for **independent modders, creators, and software developers** who want to build their own standalone mod DLLs for **Gold Mining Simulator** (*Gold Rush: The Game*) and have them integrate seamlessly into the Milex CoreMod ecosystem.
 
 ---
 
-## 2. Prerequisites & Environment Setup
+## 1. How CoreMod & Sub-Mods Work Together
 
-Before starting, ensure you have:
-1. **.NET SDK 6.0 or newer** (supporting `netstandard2.0`).
+You **do not** need access to the CoreMod source code, nor do you need to modify `Milex_GMS1_CoreMod.dll`.
+
+### How CoreMod Detects and Hooks Your Mod:
+1. **BepInEx Plugin Loader**: At game launch, BepInEx scans `BepInEx/plugins/` and loads all DLLs.
+2. **Dependency Ordering**: By adding `[BepInDependency("com.milex.gms1.coremod")]`, BepInEx ensures `Milex_GMS1_CoreMod.dll` loads before your mod.
+3. **Automatic Registration**: Your mod inherits from `Milex.GMS1.Core.ModBase`. When your plugin starts, `base.Awake()` automatically registers your mod with `ModRegistry`.
+4. **Zero-Code UI Integration**: CoreMod inspects your mod's configuration and instantly creates a full-featured dashboard for your mod in the In-Game Mod Menu (**`Insert`** key) — with category tabs, smooth sliders, toggle switches, search filtering, and keybinding rebinders!
+5. **Runtime Enable/Disable**: Players can toggle your mod on or off in the in-game sidebar without restarting the game. `ModBase` attaches and detaches your Harmony patches and stops/resumes `Update()` loops automatically.
+6. **Built-in Localization**: Your embedded translation files (`_en.json`, `_de.json`) are automatically detected, extracted, and synchronized with the player's selected language.
+
+```mermaid
+flowchart TD
+    A[Game Starts] --> B[BepInEx Loads Milex_GMS1_CoreMod.dll]
+    B --> C[BepInEx Loads YourMod.dll]
+    C --> D[YourMod calls base.Awake in ModBase]
+    D --> E[Registers with ModRegistry & LocalizationManager]
+    D --> F[Applies Harmony Patches]
+    E --> G[Appears inside In-Game Mod Menu on 'Insert']
+```
+
+---
+
+## 2. Prerequisites & Tools
+
+To develop a mod for Gold Mining Simulator using CoreMod:
+
+1. **.NET SDK 6.0 or newer** (supporting `.NET Standard 2.0` class libraries).
 2. **Gold Mining Simulator** installed via Steam.
-3. **BepInEx 5.4.21+ (x64)** installed in your game directory (`<GameRoot>/BepInEx/`).
-4. An IDE of your choice:
-   - **VS Code** with the *C# Dev Kit* extension.
-   - **Visual Studio 2022** (.NET desktop development workload).
+3. **BepInEx 5.4.21+ (x64)** installed in your game root directory (`<GameRoot>/BepInEx/`).
+4. **Milex GMS1 CoreMod** installed in `BepInEx/plugins/Milex_GMS1_CoreMod.dll`.
+5. An IDE:
+   - **Visual Studio 2022** (.NET desktop development).
+   - **VS Code** (with the *C# Dev Kit* extension).
    - **JetBrains Rider**.
 
 ---
 
-## 3. Getting Started: Setting Up Your Project
+## 3. Step-by-Step: Creating Your Sub-Mod Project
 
-You can develop your mod either **inside this monorepo** or as a **standalone external project**.
+### Step 1: Create a New Project
+In your IDE or terminal, create a new Class Library:
+```powershell
+dotnet new classlib -n MyAwesomeMod -f netstandard2.0
+```
 
-### Option A: Inside the Monorepo (Recommended)
-
-1. Create a new directory under `src/Mods/<YourModName>/`.
-2. Add your `.csproj` file (see template below).
-3. Register the project in the central solution:
-   ```powershell
-   dotnet sln GMSModding.sln add src/Mods/<YourModName>/Milex_GMS1_<YourModName>.csproj
-   ```
-4. Build using:
-   ```powershell
-   dotnet build GMSModding.sln
-   ```
-   All assemblies will automatically be copied to your game's `BepInEx/plugins/` directory via `Directory.Build.props`.
-
-### Option B: Standalone External Project
-
-Create a new C# Class Library targeting `netstandard2.0`:
+### Step 2: Configure Your `.csproj`
+Edit `MyAwesomeMod.csproj` to reference the game files and `Milex_GMS1_CoreMod.dll`:
 
 ```xml
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <RootNamespace>Milex.GMS1.Mods.<YourModName></RootNamespace>
-    <AssemblyName>Milex_GMS1_<YourModName></AssemblyName>
+    <RootNamespace>MyAwesomeMod</RootNamespace>
+    <AssemblyName>MyAwesomeMod</AssemblyName>
     <Version>1.0.0</Version>
+
+    <!-- Adjust this to your Steam installation path -->
     <GameRootPath>D:\SteamLibrary\steamapps\common\Gold Rush The Game</GameRootPath>
     <ManagedDataPath>$(GameRootPath)\GoldMiningSimulator_Data\Managed</ManagedDataPath>
     <BepInExCorePath>$(GameRootPath)\BepInEx\core</BepInExCorePath>
     <BepInExPluginsPath>$(GameRootPath)\BepInEx\plugins</BepInExPluginsPath>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- CoreMod Reference -->
+    <!-- CoreMod Reference (Provides ModBase, ModRegistry, Localization) -->
     <Reference Include="Milex_GMS1_CoreMod">
       <HintPath>$(BepInExPluginsPath)\Milex_GMS1_CoreMod.dll</HintPath>
       <Private>false</Private>
     </Reference>
 
-    <!-- BepInEx & Harmony -->
-    <Reference Include="BepInEx"><HintPath>$(BepInExCorePath)\BepInEx.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="0Harmony"><HintPath>$(BepInExCorePath)\0Harmony.dll</HintPath><Private>false</Private></Reference>
+    <!-- BepInEx & Harmony References -->
+    <Reference Include="BepInEx">
+      <HintPath>$(BepInExCorePath)\BepInEx.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+    <Reference Include="0Harmony">
+      <HintPath>$(BepInExCorePath)\0Harmony.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
 
-    <!-- Unity & Game Assemblies -->
+    <!-- Unity Engine Modules -->
     <Reference Include="UnityEngine"><HintPath>$(ManagedDataPath)\UnityEngine.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.CoreModule"><HintPath>$(ManagedDataPath)\UnityEngine.CoreModule.dll</HintPath><Private>false</Private></Reference>
     <Reference Include="UnityEngine.UI"><HintPath>$(ManagedDataPath)\UnityEngine.UI.dll</HintPath><Private>false</Private></Reference>
-    <Reference Include="Assembly-CSharp"><HintPath>$(ManagedDataPath)\Assembly-CSharp.dll</HintPath><Private>false</Private></Reference>
 
-    <!-- Embedded Localization Resources -->
+    <!-- Game Assembly (Contains all game classes) -->
+    <Reference Include="Assembly-CSharp">
+      <HintPath>$(ManagedDataPath)\Assembly-CSharp.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
+
+    <!-- Embed all JSON localization files inside the DLL -->
     <EmbeddedResource Include="Localization\*.json" />
   </ItemGroup>
 
-  <!-- Auto-deploy on build -->
+  <!-- Optional: Automatically copy your compiled DLL directly into BepInEx plugins -->
   <Target Name="PostBuildDeploy" AfterTargets="PostBuildEvent">
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExPluginsPath)\" ContinueOnError="true" />
   </Target>
@@ -98,203 +113,168 @@ Create a new C# Class Library targeting `netstandard2.0`:
 
 ---
 
-## 4. The Plugin Class (`ModBase`)
+## 4. Writing Your Plugin Class (`ModBase`)
 
-Every sub-mod inherits from `Milex.GMS1.Core.ModBase` (which itself extends BepInEx's `BaseUnityPlugin`).
+Create a class `MyAwesomeModPlugin.cs`. Inherit from `Milex.GMS1.Core.ModBase`:
 
 ```csharp
 using BepInEx;
+using BepInEx.Configuration;
 using Milex.GMS1.Core;
 using UnityEngine;
 
-namespace Milex.GMS1.Mods.QuickFuel
+namespace MyAwesomeMod
 {
     [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
     [BepInDependency(CorePlugin.PluginGuid, BepInDependency.DependencyFlags.HardDependency)]
-    public class QuickFuelPlugin : ModBase
+    public class MyAwesomeModPlugin : ModBase
     {
-        public const string PluginGuid = "com.milex.gms1.quickfuel";
-        public const string PluginName = "Milex GMS1 Quick Fuel";
+        public const string PluginGuid = "com.yourname.gms1.myawesomemod";
+        public const string PluginName = "My Awesome Mod";
         public const string PluginVersion = "1.0.0";
 
         public override string ModGuid => PluginGuid;
         public override string ModName => PluginName;
         public override string ModVersion => PluginVersion;
 
-        public static QuickFuelPlugin Instance { get; private set; }
+        public static MyAwesomeModPlugin Instance { get; private set; }
+
+        // Configuration Entries
+        public static ConfigEntry<float> WashPlantSpeedMultiplier;
+        public static ConfigEntry<bool> AutoEmptyBuckets;
+        public static ConfigEntry<KeyCode> QuickActionKey;
 
         protected override void Awake()
         {
             Instance = this;
 
             // 1. Bind your settings (they will automatically appear in the In-Game Menu!)
-            BindSettings();
+            BindConfig();
 
-            // 2. Base initialization - handles ModRegistry, Harmony patching, and localization
+            // 2. Call base.Awake() - Registers with CoreMod, applies Harmony patches, sets up localization
             base.Awake();
 
-            LogInfo(Translate("log.ready", "Quick Fuel mod loaded and ready."));
+            LogInfo(Translate("log.ready", "My Awesome Mod loaded and ready!"));
         }
 
-        private void BindSettings()
+        private void BindConfig()
         {
-            // Settings go here...
+            WashPlantSpeedMultiplier = Config.Bind(
+                "Processing",                                                  // Section / Category Tab
+                "WashPlantSpeed",                                              // Key
+                1.5f,                                                          // Default Value
+                new ConfigDescription("Speed multiplier for wash plants.", new AcceptableValueRange<float>(0.5f, 5.0f))
+            );
+
+            AutoEmptyBuckets = Config.Bind(
+                "General",
+                "AutoEmptyBuckets",
+                false,
+                new ConfigDescription("Automatically empties full buckets into the hopper.")
+            );
+
+            QuickActionKey = Config.Bind(
+                "Controls",
+                "QuickActionKey",
+                KeyCode.K,
+                new ConfigDescription("Key to trigger quick action.")
+            );
         }
 
+        /// <summary>
+        /// Optional: Called when the player turns your mod on in the In-Game Menu.
+        /// </summary>
         protected override void OnModEnabled()
         {
-            LogInfo("Quick Fuel enabled by player.");
+            LogInfo("My Awesome Mod enabled.");
         }
 
+        /// <summary>
+        /// Optional: Called when the player turns your mod off in the In-Game Menu.
+        /// Revert any modified game state here.
+        /// </summary>
         protected override void OnModDisabled()
         {
-            LogInfo("Quick Fuel disabled by player.");
-            // Revert modified game state here
+            LogInfo("My Awesome Mod disabled. Restoring vanilla state.");
         }
     }
 }
 ```
 
-### What `base.Awake()` Does Automatically:
-1. **Creates `Config`**: Named after your DLL (`BepInEx/config/Milex_GMS1_<YourModName>.cfg`).
-2. **Registers with `ModRegistry`**: Appears in the In-Game Menu sidebar.
-3. **Registers Localization**: Loads embedded language files and maps them to your mod.
-4. **Applies Harmony Patches**: Calls `Harmony.PatchAll(Assembly)` if enabled.
-5. **Registers Lifecycle Handlers**: Hooks into live enable/disable toggles.
+---
+
+## 5. Automatic In-Game Menu UI (How Settings Are Rendered)
+
+When the player presses **`Insert`** in-game, CoreMod builds a clean, interactive user interface for your mod automatically. You don't write any GUI code.
+
+### Supported Data Types & Controls:
+
+| C# Type | In-Game UI Control | Configuration Code Example |
+|---|---|---|
+| `float` | **Continuous Slider** with numerical readout & Reset button | `Config.Bind("Section", "Key", 1.0f, new ConfigDescription("...", new AcceptableValueRange<float>(0.1f, 10.0f)))` |
+| `int` | **Integer Step Slider** & Reset button | `Config.Bind("Section", "Key", 5, new ConfigDescription("...", new AcceptableValueRange<int>(1, 20)))` |
+| `bool` | **Modern Toggle Switch** | `Config.Bind("Section", "Key", true, new ConfigDescription("..."))` |
+| `KeyCode` | **Keybinding Card** with interactive rebinding | `Config.Bind("Controls", "Key", KeyCode.G, new ConfigDescription("..."))` |
+
+### Category Tabs & Group Resets
+- The `Section` string in `Config.Bind(section, ...)` automatically becomes a **Category Tab** at the top of the Modern Dashboard (e.g. `Processing`, `Vehicles`, `Logistics`, `Controls`).
+- Each section header in the menu receives a **"Reset Group"** button that lets players reset all settings in that section at once.
 
 ---
 
-## 5. Automatic In-Game UI Generation
-
-When the player presses **`Insert`** in-game, CoreMod builds a clean configuration interface for your mod dynamically. You do **not** write a single line of UI rendering code!
-
-### 5.1 Continuous Numeric Sliders (`float`)
-
-Provide an `AcceptableValueRange<float>(min, max)`:
-
-```csharp
-public static ConfigEntry<float> FuelTransferSpeed;
-
-FuelTransferSpeed = Config.Bind(
-    "Logistics",                                    // Section Name (becomes Category Tab & Group Header)
-    "TransferSpeed",                               // Config Key Name
-    2.0f,                                          // Default Value
-    new ConfigDescription(
-        "Multiplier for fuel transfer rate.",      // Tooltip / Description
-        new AcceptableValueRange<float>(1.0f, 10.0f) // Slider range: 1.0x to 10.0x
-    )
-);
-```
-
-In the menu:
-- A smooth slider with visual track and gold progress bar.
-- Interactive text showing `2.00x`.
-- A dedicated **Reset to Default** (`[R]`) button that resets only this value.
-
-### 5.2 Stepped Integer Sliders (`int`)
-
-```csharp
-public static ConfigEntry<int> MaxJerryCans;
-
-MaxJerryCans = Config.Bind(
-    "Logistics",
-    "MaxCans",
-    4,
-    new ConfigDescription(
-        "Maximum simultaneous jerry cans allowed in the bed.",
-        new AcceptableValueRange<int>(1, 16)
-    )
-);
-```
-
-### 5.3 Toggle Switches (`bool`)
-
-```csharp
-public static ConfigEntry<bool> InfiniteGeneratorFuel;
-
-InfiniteGeneratorFuel = Config.Bind(
-    "Generators",
-    "InfiniteFuel",
-    false,
-    new ConfigDescription("Prevents generators from consuming fuel.")
-);
-```
-
-In the menu:
-- Rendered as a sleek animated toggle pill switch.
-
-### 5.4 Customizable Hotkeys (`KeyCode`)
-
-```csharp
-public static ConfigEntry<KeyCode> RefuelHotkey;
-
-RefuelHotkey = Config.Bind(
-    "Controls",
-    "RefuelKey",
-    KeyCode.R,
-    new ConfigDescription("Press this key while near a machine to trigger quick refuel.")
-);
-```
-
-In the menu:
-- Rendered with an interactive keybinding card showing the active key.
-- Clicking the button enters rebinding mode: *"Press any key..."*.
-
-### 5.5 Section Tabs & Group Resets
-- Every unique `Section` string in `Config.Bind(...)` automatically creates a category tab in the Modern Dashboard and a card group header.
-- Each header includes an automatic **"Reset Group"** button that resets all settings in that section at once.
-
----
-
-## 6. Safe Harmony Patching & The Golden Rule
+## 6. Writing Harmony Patches Safely (Baseline Preservation)
 
 > [!CAUTION]
-> **Avoid the Multiplicative Drift Trap!**
-> Never do this in an `Update()` loop or Harmony patch:
+> **Avoid Multiplicative Drift!**
+> In Unity, object properties persist in memory. If your patch executes:
 > ```csharp
-> // WRONG! This will multiply every frame or every time a slider moves!
-> __instance.fuelRate *= ConfigMultiplier.Value; 
+> // DANGEROUS! Compounding multiplication bug:
+> __instance.processingSpeed *= MyAwesomeModPlugin.WashPlantSpeedMultiplier.Value;
 > ```
-> In Unity, object state persists. If a player slides a slider back and forth, or if a method is called repeatedly, the value will exponentially explode (`1.5 * 1.5 * 1.5...`).
+> Every time the slider moves or the method is called, the value will exponentially multiply (`1.5 * 1.5 * 1.5...`), breaking the game.
 
-### The Safe Pattern: Baseline Memory (`OriginalValueStore`)
+### The Safe Solution: Baseline Tracking
 
-Always store the vanilla value on first encounter and calculate from the baseline:
+Store the original vanilla value on first encounter and calculate from that baseline:
 
 ```csharp
 using HarmonyLib;
-using Milex.GMS1.Mods.QuickFuel.Helpers;
+using System.Collections.Generic;
 
-[HarmonyPatch(typeof(FuelStation), "UpdateTransfer")]
-public static class FuelTransferPatch
+namespace MyAwesomeMod.Patches
 {
-    [HarmonyPrefix]
-    public static void Prefix(FuelStation __instance)
+    [HarmonyPatch(typeof(SluiceBox), "UpdateProcess")]
+    public static class SluiceBoxPatch
     {
-        if (!QuickFuelPlugin.Instance.IsEnabled) return;
+        // Store pristine vanilla baseline per instance ID
+        private static readonly Dictionary<int, float> _vanillaSpeeds = new Dictionary<int, float>();
 
-        // 1. Get or register pristine vanilla baseline
-        float vanillaRate = OriginalValueStore.GetOrRegisterFloat(
-            __instance,
-            "TransferRate",
-            __instance.transferSpeed,
-            (inst, original) => ((FuelStation)inst).transferSpeed = original
-        );
+        [HarmonyPrefix]
+        public static void Prefix(SluiceBox __instance)
+        {
+            if (!MyAwesomeModPlugin.Instance.IsEnabled) return;
 
-        // 2. Compute current rate strictly from vanilla baseline
-        __instance.transferSpeed = vanillaRate * QuickFuelPlugin.FuelTransferSpeed.Value;
+            int id = __instance.GetInstanceID();
+            if (!_vanillaSpeeds.TryGetValue(id, out float originalSpeed))
+            {
+                originalSpeed = __instance.flowSpeed;
+                _vanillaSpeeds[id] = originalSpeed;
+            }
+
+            // Always calculate from pristine baseline
+            __instance.flowSpeed = originalSpeed * MyAwesomeModPlugin.WashPlantSpeedMultiplier.Value;
+        }
+
+        public static void RestoreVanilla()
+        {
+            // Restore original values when mod is disabled
+            foreach (var kvp in _vanillaSpeeds)
+            {
+                // Revert fields if needed
+            }
+            _vanillaSpeeds.Clear();
+        }
     }
-}
-```
-
-### Reverting on Mod Disable
-When the player turns your mod off via the Mod Menu, `ModBase` removes all Harmony patches and calls `OnModDisabled()`. Revert your tracked instances:
-
-```csharp
-protected override void OnModDisabled()
-{
-    OriginalValueStore.RestoreAll();
-    LogInfo("Quick Fuel disabled. Original game values restored.");
 }
 ```
 
@@ -302,92 +282,78 @@ protected override void OnModDisabled()
 
 ## 7. Multi-Language Localization
 
-CoreMod provides a complete, automatic localization system.
+CoreMod features an automatic translation system.
 
-### 7.1 Key Naming Standard
-All config labels and descriptions can be localized using this naming pattern:
+### Step 1: Create JSON Files
+Add a `Localization` folder to your project:
+- `Localization/MyAwesomeMod_en.json` (English)
+- `Localization/MyAwesomeMod_de.json` (German)
 
-- **Section Header**: `config.<section_lowercase>.section`
-- **Setting Name**: `config.<section_lowercase>.<key_lowercase>.name`
-- **Setting Description**: `config.<section_lowercase>.<key_lowercase>.desc`
+### Step 2: Use the Standard Key Schema
+- **Section Headers**: `config.<section_lowercase>.section`
+- **Setting Names**: `config.<section_lowercase>.<key_lowercase>.name`
+- **Setting Descriptions**: `config.<section_lowercase>.<key_lowercase>.desc`
 
-### 7.2 Creating Embedded Localization Files
-
-Create a `Localization` folder in your mod project and add:
-- `Milex_GMS1_<YourModName>_en.json` (English template)
-- `Milex_GMS1_<YourModName>_de.json` (German template)
-
-#### Example `Milex_GMS1_QuickFuel_en.json`:
+#### Example `MyAwesomeMod_en.json`:
 ```json
 {
-  "config.logistics.section": "Logistics & Fuel",
-  "config.logistics.transferspeed.name": "Fuel Transfer Speed",
-  "config.logistics.transferspeed.desc": "Multiplier for fuel pumping speed.",
-  "config.generators.section": "Power Generators",
-  "config.generators.infinitefuel.name": "Infinite Generator Fuel",
-  "config.generators.infinitefuel.desc": "Prevents generators from running out of fuel.",
-  "log.ready": "Quick Fuel mod loaded and ready.",
-  "log.refuel_done": "Equipment fully refueled!"
+  "config.processing.section": "Processing Equipment",
+  "config.processing.washplantspeed.name": "Wash Plant Speed",
+  "config.processing.washplantspeed.desc": "Multiplier for wash plant processing speed.",
+  "config.general.autoemptybuckets.name": "Auto-Empty Buckets",
+  "config.general.autoemptybuckets.desc": "Automatically dumps full buckets into the hopper.",
+  "log.ready": "My Awesome Mod loaded and ready!"
 }
 ```
 
-#### Example `Milex_GMS1_QuickFuel_de.json`:
+#### Example `MyAwesomeMod_de.json`:
 ```json
 {
-  "config.logistics.section": "Logistik & Treibstoff",
-  "config.logistics.transferspeed.name": "Betankungs-Geschwindigkeit",
-  "config.logistics.transferspeed.desc": "Multiplikator für die Pump-Geschwindigkeit beim Betanken.",
-  "config.generators.section": "Generatoren",
-  "config.generators.infinitefuel.name": "Unendlicher Generator-Treibstoff",
-  "config.generators.infinitefuel.desc": "Verhindert, dass Generatoren Treibstoff verbrauchen.",
-  "log.ready": "Quick Fuel Mod geladen und einsatzbereit.",
-  "log.refuel_done": "Gerät erfolgreich betankt!"
+  "config.processing.section": "Aufbereitungsanlagen",
+  "config.processing.washplantspeed.name": "Waschanlagen-Geschwindigkeit",
+  "config.processing.washplantspeed.desc": "Multiplikator für die Durchlaufgeschwindigkeit von Waschanlagen.",
+  "config.general.autoemptybuckets.name": "Eimer automatisch entleeren",
+  "config.general.autoemptybuckets.desc": "Kippt volle Eimer automatisch in den Trichter.",
+  "log.ready": "My Awesome Mod erfolgreich geladen!"
 }
 ```
 
-In your code, access translations anytime using:
+### Step 3: Use Translations in Code
 ```csharp
-string msg = Translate("log.refuel_done", "Equipment fully refueled!");
+string greeting = Translate("log.ready", "My Awesome Mod ready!");
+LogInfo(greeting);
 ```
 
 ---
 
-## 8. Helper Methods & Core API Reference
+## 8. Helper Methods Reference (`ModBase`)
 
-Your mod inherits several helpful methods from `ModBase`:
+Your plugin class inherits these convenience methods:
 
 | Method / Property | Description |
 |---|---|
-| `IsEnabled` | Returns `true` if the mod is currently active. |
-| `Config` | Gets your mod's `ConfigFile` (`BepInEx/config/<AssemblyName>.cfg`). |
-| `Translate(key, fallback)` | Translates a key using your mod's localization tables. |
-| `LogInfo(msg)` | Logs an informational message prefixed with `[<ModName>]`. |
-| `LogWarning(msg)` | Logs a warning message prefixed with `[<ModName>]`. |
-| `LogError(msg)` | Logs an error message prefixed with `[<ModName>]`. |
-| `SetEnabled(bool)` | Programmatically toggles the mod's active state. |
-| `OnModEnabled()` | Virtual callback invoked after the mod is re-enabled. |
-| `OnModDisabled()` | Virtual callback invoked after the mod is disabled. |
+| `IsEnabled` | `bool` — Returns whether your mod is currently active. |
+| `Config` | `ConfigFile` — Access your mod's config (`BepInEx/config/MyAwesomeMod.cfg`). |
+| `Translate(key, fallback)` | `string` — Returns the translated string for the active language. |
+| `LogInfo(msg)` | Logs to BepInEx console with `[My Awesome Mod]` prefix. |
+| `LogWarning(msg)` | Logs a warning with mod prefix. |
+| `LogError(msg)` | Logs an error with mod prefix. |
+| `SetEnabled(bool)` | Programmatically enables/disables the mod at runtime. |
+| `OnModEnabled()` | Override to handle mod re-enabling. |
+| `OnModDisabled()` | Override to handle mod disabling and cleanup. |
 
 ---
 
-## 9. Best Practices & Modding Etiquette
+## 9. Building and Distributing Your Mod
 
-1. **Strict English in Code & Docs**: Write all C# identifiers, comments, BepInEx descriptions, and documentation in English.
-2. **Resource Neutrality**: If your mod increases machine speeds, ensure electrical generators and water pumps are not overloaded unintentionally.
-3. **No UI Emojis**: IMGUI and Unity dynamic fonts frequently corrupt Unicode emoji symbols. Use clean ASCII or alphanumeric text instead.
-4. **Clean Readme & Changelog**: Every mod should provide an informative `README.md` and `CHANGELOG.md`.
-
----
-
-## 10. Compiling & Publishing
-
-### Build
-Run `dotnet build` from the repository root:
+### Building
+Run:
 ```powershell
-dotnet build GMSModding.sln
+dotnet build -c Release
 ```
 
-### Files to Distribute
-To share your mod with players on NexusMods or GitHub:
-1. `BepInEx/plugins/Milex_GMS1_<YourModName>.dll`
-2. Remind users that `Milex_GMS1_CoreMod.dll` is required!
+### Distributing to Players
+When distributing your mod (e.g. on NexusMods or GitHub Releases), you only need to provide:
+1. `MyAwesomeMod.dll` (which contains your code and embedded localization).
+2. Tell players to put `MyAwesomeMod.dll` into `BepInEx/plugins/`.
+3. List **Milex GMS1 CoreMod** as a required prerequisite!
