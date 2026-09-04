@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>Milex.GMS1.Mods.ClaimMonitor</RootNamespace>
+    <AssemblyName>Milex_GMS1_ClaimMonitor</AssemblyName>
+    <Version>1.0.0</Version>
+    <Authors>Milex</Authors>
+    <Product>Milex GMS1 Claim Monitor</Product>
+    <Description>Live telemetry and status monitoring for wash plants, mats and feeding chains.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\CoreMod\Milex_GMS1_CoreMod.csproj" />
+    <EmbeddedResource Include="Localization\*.json" />
+  </ItemGroup>
+</Project>

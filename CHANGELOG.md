@@ -5,6 +5,30 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.8.0] - 2026-09-04
+
+### Added: Milex Claim Monitor & CoreMod Cursor Lock Bugfix
+
+- **New Sub-Mod: Milex GMS1 Claim Monitor (v1.0.0)**:
+  - Real-time on-screen Warning HUD telemetry dashboard with draggable, auto-saving UI.
+  - Setup-accurate wash plant classification across three tiers:
+    - **Setup 1**: Mobile Wash Plants (Mini & Mobile Wash Plants).
+    - **Setup 2**: Stationary Setup T3–T5 (Shaker, Trommel, Duplex Jigs, Sluices).
+    - **Setup 3**: Setup T6 / Orange Beast (Giant Shaker, Extended Sluices).
+  - Optional Feeding Chain monitoring (Hoppers and Conveyors) linked to wash plant setups.
+  - Malfunction detection for Trommel drive chain breakage, Shaker motor/water/power failures, Duplex Jig pump failures, and full buckets.
+  - Sluice mat fill level tracking with configurable warning thresholds (default: 90%) and critical overflow alerts (100%).
+  - Vehicle and heavy machinery fuel tracking with low fuel warnings (< 15%) and empty tank critical alerts.
+  - Power generator and water tower level/operation monitoring.
+  - Built-in Diagnostic Inspector (`F3` / `F8`) and deep memory object dumper for claim diagnostics.
+  - Complete English and German localization out of the box.
+- **CoreMod Cursor Lock/Visibility Bugfix**:
+  - Resolved cursor state leakage where the mouse cursor remained visible and unlocked after closing the in-game menu during gameplay.
+  - Intercepted cursor state before setting `IsMenuOpen = true` and prevented internal UI unlock calls from overwriting the remembered game lock state.
+  - Guarantees 1:1 restoration of first-person gameplay mouse lock and visibility upon menu close.
+
+---
+
 ## [1.7.0] - 2026-09-03
 
 ### Added: Next-Gen Modern Dashboard & Dual-Engine Menu Architecture

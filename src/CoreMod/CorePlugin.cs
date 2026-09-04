@@ -142,6 +142,15 @@ namespace Milex.GMS1.Core
 
         public static void ToggleMenu()
         {
+            if (!IsMenuOpen)
+            {
+                // Capture actual game cursor state BEFORE opening the menu
+                _previousLockMode = Cursor.lockState;
+                _previousCursorVisible = Cursor.visible;
+                Patches.CursorControlPatches.GameLockState = _previousLockMode;
+                Patches.CursorControlPatches.GameCursorVisible = _previousCursorVisible;
+            }
+
             IsMenuOpen = !IsMenuOpen;
 
             try
@@ -161,10 +170,6 @@ namespace Milex.GMS1.Core
 
             if (IsMenuOpen)
             {
-                // Save current game cursor state
-                _previousLockMode = Cursor.lockState;
-                _previousCursorVisible = Cursor.visible;
-
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
 
@@ -199,9 +204,16 @@ namespace Milex.GMS1.Core
                 Instance?._classicMenu?.Hide();
                 Instance?._modernMenu?.Hide();
 
-                // Restore game cursor state
-                Cursor.lockState = _previousLockMode;
-                Cursor.visible = _previousCursorVisible;
+                // Restore game cursor state accurately
+                CursorLockMode targetLock = Patches.CursorControlPatches.GameLockState != CursorLockMode.None
+                    ? Patches.CursorControlPatches.GameLockState
+                    : _previousLockMode;
+                bool targetVisible = !Patches.CursorControlPatches.GameCursorVisible 
+                    ? false 
+                    : _previousCursorVisible;
+
+                Cursor.lockState = targetLock;
+                Cursor.visible = targetVisible;
             }
         }
 

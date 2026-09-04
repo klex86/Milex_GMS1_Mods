@@ -1,0 +1,52 @@
+{
+  "config.setups.section": "Wash Plant Setups",
+  "config.setups.monitorsetup1.name": "Monitor Mobile Plants",
+  "config.setups.monitorsetup1.desc": "Enables warnings for detected mobile wash plants in the Warning HUD.",
+  "config.setups.monitorsetup2.name": "Monitor Setup T3-T5",
+  "config.setups.monitorsetup2.desc": "Enables warnings for the stationary setup (Shaker, Trommel, Duplex Jigs).",
+  "config.setups.setup2includefeedingchain.name": "T3-T5: Monitor Feeding Chain",
+  "config.setups.setup2includefeedingchain.desc": "Includes automatically assigned hoppers and conveyors into Setup T3-T5 overall status.",
+  "config.setups.monitorsetup3.name": "Monitor Setup T6 (Orange Beast)",
+  "config.setups.monitorsetup3.desc": "Enables warnings for the Orange Beast in the Warning HUD.",
+  "config.setups.setup3includefeedingchain.name": "T6: Monitor Feeding Chain",
+  "config.setups.setup3includefeedingchain.desc": "Includes automatically assigned hoppers and conveyors into Orange Beast overall status.",
+
+  "config.thresholds.section": "Alert Thresholds",
+  "config.thresholds.matwarningthreshold.name": "Mat Warning Threshold (%)",
+  "config.thresholds.matwarningthreshold.desc": "Mat fill percentage threshold to trigger an attention warning.",
+  "config.thresholds.vehiclelowfuelthreshold.name": "Vehicle Low Fuel Threshold (%)",
+  "config.thresholds.vehiclelowfuelthreshold.desc": "Fuel percentage threshold to trigger a low fuel warning for active machines.",
+
+  "config.warninghud.section": "Warning HUD",
+  "config.warninghud.hudenabled.name": "Enable Warning HUD",
+  "config.warninghud.hudenabled.desc": "Toggles the on-screen overlay for plant and equipment warnings.",
+  "config.warninghud.hudonlyshowwarnings.name": "Only Show On Warnings",
+  "config.warninghud.hudonlyshowwarnings.desc": "Automatically hides the HUD when all equipment and mats are operational.",
+  "config.warninghud.hudcompactmode.name": "Compact HUD Mode",
+  "config.warninghud.hudcompactmode.desc": "Renders the HUD as an ultra-compact single line badge.",
+  "config.warninghud.hudposx.name": "HUD X Position",
+  "config.warninghud.hudposx.desc": "Horizontal screen position of the Warning HUD in pixels.",
+  "config.warninghud.hudposy.name": "HUD Y Position",
+  "config.warninghud.hudposy.desc": "Vertical screen position of the Warning HUD in pixels.",
+  "config.warninghud.hudmaxwidth.name": "HUD Maximum Width",
+  "config.warninghud.hudmaxwidth.desc": "Maximum width of the warning HUD window.",
+  "config.warninghud.hudmaxheight.name": "HUD Maximum Height",
+  "config.warninghud.hudmaxheight.desc": "Maximum height of the warning HUD window.",
+
+  "config.fuel.section": "Fuel & Vehicle Telemetry",
+  "config.fuel.showfuelinvehicleswitcher.name": "Fuel in Vehicle Switcher",
+  "config.fuel.showfuelinvehicleswitcher.desc": "Displays fuel fill percentage directly inside the vehicle quick-switching bar.",
+
+  "config.debug.section": "Diagnostics & Inspection",
+  "config.debug.enabledebuggroup.name": "Enable Diagnostic Inspector",
+  "config.debug.enabledebuggroup.desc": "Enables detailed raw object inspection and claim dumping (toggle with F3 or F8).",
+
+  "log.ready": "Claim Monitor loaded and ready.",
+  "log.enabled": "Claim Monitor enabled.",
+  "log.disabled": "Claim Monitor disabled.",
+
+  "hud.title": "Claim Monitor",
+  "hud.all_nominal": "All Systems Nominal",
+  "hud.critical": "CRITICAL",
+  "hud.warning": "WARNING"
+}

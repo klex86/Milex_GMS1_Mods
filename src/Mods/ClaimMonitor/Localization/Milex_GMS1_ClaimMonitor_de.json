@@ -1,0 +1,52 @@
+{
+  "config.setups.section": "Waschanlagen-Setups",
+  "config.setups.monitorsetup1.name": "Mobile Anlagen überwachen",
+  "config.setups.monitorsetup1.desc": "Aktiviert Warnungen für gefundene mobile Waschanlagen im Warning-HUD.",
+  "config.setups.monitorsetup2.name": "Setup T3-T5 überwachen",
+  "config.setups.monitorsetup2.desc": "Aktiviert Warnungen für das stationäre Setup (Shaker, Trommel, Duplex Jigs).",
+  "config.setups.setup2includefeedingchain.name": "T3-T5: Zufuhrkette überwachen",
+  "config.setups.setup2includefeedingchain.desc": "Zieht automatisch zugeordnete Trichter und Förderbänder in den Gesamtstatus von Setup T3-T5 mit ein.",
+  "config.setups.monitorsetup3.name": "Setup T6 (Orange Beast) überwachen",
+  "config.setups.monitorsetup3.desc": "Aktiviert Warnungen für das Orange Beast im Warning-HUD.",
+  "config.setups.setup3includefeedingchain.name": "T6: Zufuhrkette überwachen",
+  "config.setups.setup3includefeedingchain.desc": "Zieht automatisch zugeordnete Trichter und Förderbänder in den Gesamtstatus des Orange Beast mit ein.",
+
+  "config.thresholds.section": "Warnschwellen",
+  "config.thresholds.matwarningthreshold.name": "Matten-Warnschwelle (%)",
+  "config.thresholds.matwarningthreshold.desc": "Füllstand der Matten in Prozent, ab dem eine Vorwarnung im HUD erscheint.",
+  "config.thresholds.vehiclelowfuelthreshold.name": "Fahrzeug-Tankschwelle (%)",
+  "config.thresholds.vehiclelowfuelthreshold.desc": "Füllstand des Tanks in Prozent, ab dem für aktive Fahrzeuge gewarnt wird.",
+
+  "config.warninghud.section": "Warning-HUD",
+  "config.warninghud.hudenabled.name": "Warning-HUD aktivieren",
+  "config.warninghud.hudenabled.desc": "Schaltet das Bildschirm-Overlay für Anlagen- und Mattenwarnungen ein oder aus.",
+  "config.warninghud.hudonlyshowwarnings.name": "Nur bei Warnungen anzeigen",
+  "config.warninghud.hudonlyshowwarnings.desc": "Blendet das HUD automatisch aus, solange alle Geräte und Matten normal laufen.",
+  "config.warninghud.hudcompactmode.name": "Kompakter HUD-Modus",
+  "config.warninghud.hudcompactmode.desc": "Zeigt das HUD als schlanke einzeilige Statusanzeige an.",
+  "config.warninghud.hudposx.name": "HUD X-Position",
+  "config.warninghud.hudposx.desc": "Horizontale Bildschirmposition des Warning-HUDs in Pixeln.",
+  "config.warninghud.hudposy.name": "HUD Y-Position",
+  "config.warninghud.hudposy.desc": "Vertikale Bildschirmposition des Warning-HUDs in Pixeln.",
+  "config.warninghud.hudmaxwidth.name": "Maximale HUD-Breite",
+  "config.warninghud.hudmaxwidth.desc": "Maximale Breite des Warning-HUD-Fensters in Pixeln.",
+  "config.warninghud.hudmaxheight.name": "Maximale HUD-Höhe",
+  "config.warninghud.hudmaxheight.desc": "Maximale Höhe des Warning-HUD-Fensters in Pixeln.",
+
+  "config.fuel.section": "Kraftstoff & Telemetrie",
+  "config.fuel.showfuelinvehicleswitcher.name": "Tankstand in Fahrzeugleiste",
+  "config.fuel.showfuelinvehicleswitcher.desc": "Zeigt den aktuellen Tankfüllstand in Prozent direkt in der Schnellwechselleiste an.",
+
+  "config.debug.section": "Diagnose & Inspektion",
+  "config.debug.enabledebuggroup.name": "Diagnose-Inspektor aktivieren",
+  "config.debug.enabledebuggroup.desc": "Schaltet detaillierte Rohdaten und Claim-Dumps frei (Umschalten mit F3 oder F8).",
+
+  "log.ready": "Claim Monitor initialisiert und einsatzbereit.",
+  "log.enabled": "Claim Monitor aktiviert.",
+  "log.disabled": "Claim Monitor deaktiviert.",
+
+  "hud.title": "Claim Monitor",
+  "hud.all_nominal": "Alle Systeme normal",
+  "hud.critical": "KRITISCH",
+  "hud.warning": "WARNUNG"
+}
