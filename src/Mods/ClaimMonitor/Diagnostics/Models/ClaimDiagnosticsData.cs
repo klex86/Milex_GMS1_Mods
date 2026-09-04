@@ -80,6 +80,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public float CurrentFuel { get; set; }
         public float MaxFuel { get; set; }
         public bool IsEngineRunning { get; set; }
+        public int SwitchSlotIndex { get; set; } = -1;
 
         public float FuelPercentage => MaxFuel > 0f ? Mathf.Clamp01(CurrentFuel / MaxFuel) * 100f : 0f;
     }

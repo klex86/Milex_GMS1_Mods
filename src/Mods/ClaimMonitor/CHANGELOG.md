@@ -5,6 +5,22 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.0.2] - 2026-09-04
+
+### Water Detection Fixes, Orange Beast T6 Support & Vehicle Switcher Fuel Overlay
+
+- **Stationary & Mobile Setup Water Supply Recognition (T2–T5)**:
+  - Fixed water supply detection across all stationary wash plants, shakers, sluices, and mobile plants by actively evaluating `WashplantShakerBase.IsWaterReady`, `WaterChangePhysicsMaterial.HasWater`, and attached `WaterConsumer.HaveWater` / `Producent` states.
+- **Orange Beast (T6) Power & Water Recognition**:
+  - Implemented dedicated GameObject matching and multi-component deduplication for `Washplant_Shaker_Beast(Clone)` and `OrangeBeast_Frame`.
+  - Accurately tracks electric power cables and water supply lines attached to the Orange Beast shaker.
+- **Vehicle Quick-Switcher Fuel Status Overlay**:
+  - Integrated real-time fuel status badges directly inside each card of the vanilla game's vehicle switching list.
+  - Features color-coded status circles (Green >= 50%, Yellow 25–49%, Orange 15–24%, Red < 15%) and fuel percentage text, eliminating any ambiguity regarding vehicle assignment.
+  - Fully reactive to the `ShowFuelInVehicleSwitcher` configuration toggle.
+
+---
+
 ## [1.0.1] - 2026-09-04
 
 ### Improvements & Power Detection Fix

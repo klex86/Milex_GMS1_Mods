@@ -5,6 +5,19 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.8.1] - 2026-09-04
+
+### Claim Monitor: Water & Orange Beast Detection Fixes & Vehicle Quick-Switcher Fuel Display
+
+- **Stationary & Mobile Setup Water Supply Recognition**:
+  - Resolved water status tracking across stationary (T3–T5) and mobile (T2) wash plants by checking `IsWaterReady`, `WaterChangePhysicsMaterial.HasWater`, and `WaterConsumer` connection states.
+- **Orange Beast (T6) Power & Water Recognition**:
+  - Implemented multi-component deduplication and dedicated recognition for `Washplant_Shaker_Beast(Clone)` / `OrangeBeast_Frame`.
+- **Vehicle Quick-Switcher Fuel Status Badges**:
+  - Integrated color-coded status circles (Green >= 50%, Yellow 25–49%, Orange 15–24%, Red < 15%) and percentage labels directly into the vanilla game's vehicle switching bar items.
+
+---
+
 ## [1.8.0] - 2026-09-04
 
 ### Added: Milex Claim Monitor & CoreMod Cursor Lock Bugfix
