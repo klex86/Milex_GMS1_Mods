@@ -45,7 +45,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             while (true)
             {
                 ForceScan();
-                yield return new WaitForSeconds(3.0f);
+                float interval = Config?.ScanIntervalSeconds?.Value ?? 3.0f;
+                yield return new WaitForSeconds(Mathf.Max(1.0f, interval));
             }
         }
 
@@ -240,6 +241,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             var go = comp.gameObject;
             var type = comp.GetType();
             string typeName = type.Name;
+            string displayName = GetMachineryDisplayName(comp, typeName);
 
             bool isWorking = true;
             bool isCritical = false;
@@ -251,8 +253,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             if (typeName.Contains("Shaker"))
             {
                 bool stopped = GetFieldValue<bool>(comp, type, "ShakerStopped");
-                hasPower = GetFieldValue<bool>(comp, type, "_hasPower");
-                hasWater = GetFieldValue<bool>(comp, type, "_hasWater");
+                hasPower = CheckPowerState(comp);
+                hasWater = CheckWaterState(comp);
                 
                 // Check if Orange Beast
                 if (comp.name.Contains("Orange") || comp.name.Contains("OB") || comp.GetComponentInParent(Type.GetType("GoldDigger.OrangeBeastWashPlantGoldCounter, Assembly-CSharp")) != null)
@@ -263,17 +265,17 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 if (stopped)
                 {
                     isWorking = false;
-                    issue = "Shaker is stopped.";
+                    issue = $"{displayName} is stopped.";
                 }
                 else if (!hasPower)
                 {
                     isWorking = false;
-                    issue = "Shaker has no electric power.";
+                    issue = $"{displayName} has no electric power.";
                 }
                 else if (!hasWater)
                 {
                     isWorking = false;
-                    issue = "Shaker has no water supply.";
+                    issue = $"{displayName} has no water supply.";
                 }
             }
             else if (typeName.Contains("Trommel"))
@@ -281,32 +283,32 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 setup = typeName.Contains("Mobile") ? WashPlantSetupType.Setup1_Mobile : WashPlantSetupType.Setup2_Stationary;
                 bool stopped = GetFieldValue<bool>(comp, type, "TrommelStopped");
                 bool chainBroken = GetFieldValue<bool>(comp, type, "_TrommelChainDestroyed");
-                hasPower = GetFieldValue<bool>(comp, type, "_hasPower");
+                hasPower = CheckPowerState(comp);
 
                 if (chainBroken)
                 {
                     isWorking = false;
                     isCritical = true;
-                    issue = "Trommel chain destroyed / broken!";
+                    issue = $"{displayName} drive chain destroyed / broken!";
                 }
                 else if (stopped)
                 {
                     isWorking = false;
-                    issue = "Trommel is stopped.";
+                    issue = $"{displayName} is stopped.";
                 }
                 else if (!hasPower)
                 {
                     isWorking = false;
-                    issue = "Trommel has no electric power.";
+                    issue = $"{displayName} has no electric power.";
                 }
             }
             else if (typeName.Contains("Duplex") || typeName == "GravelPump")
             {
                 setup = WashPlantSetupType.Setup2_Stationary;
                 bool pumpBroken = GetFieldValue<bool>(comp, type, "_DuplexJigBroken");
-                hasPower = GetFieldValue<bool>(comp, type, "_hasPower");
+                hasPower = CheckPowerState(comp);
 
-                // Check Duplex Buckets
+                // Check Buckets
                 object b1 = GetFieldValue<object>(comp, type, "Bucket1");
                 object b2 = GetFieldValue<object>(comp, type, "Bucket2");
                 bool bucketFull = false;
@@ -316,7 +318,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                     float max1 = GetFieldValue<float>(b1, b1.GetType(), "MaxVolume");
                     if (max1 > 0f && vol1 >= max1 * 0.98f) bucketFull = true;
                 }
-                if (b2 != null)
+                // GravelPump only uses 1 bucket
+                if (typeName != "GravelPump" && b2 != null)
                 {
                     float vol2 = GetFieldValue<float>(b2, b2.GetType(), "GroundVolume");
                     float max2 = GetFieldValue<float>(b2, b2.GetType(), "MaxVolume");
@@ -327,39 +330,39 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 {
                     isWorking = false;
                     isCritical = true;
-                    issue = "Duplex Jig pump broken!";
+                    issue = $"{displayName} mechanism broken!";
                 }
                 else if (bucketFull)
                 {
-                    issue = "Duplex Jig bucket is full (replace bucket).";
+                    issue = $"{displayName} bucket is full (replace bucket).";
                 }
                 else if (!hasPower)
                 {
                     isWorking = false;
-                    issue = "Duplex Jig has no electric power.";
+                    issue = $"{displayName} has no electric power.";
                 }
             }
             else if (typeName == "MobileWashplant" || typeName == "MiniWashplant")
             {
                 setup = WashPlantSetupType.Setup1_Mobile;
                 bool ready = GetFieldValue<bool>(comp, type, "IsReadyToWork") || GetFieldValue<bool>(comp, type, "IsOn");
-                hasPower = GetFieldValue<bool>(comp, type, "_HasPower");
-                hasWater = GetFieldValue<bool>(comp, type, "_HasWater");
+                hasPower = CheckPowerState(comp);
+                hasWater = CheckWaterState(comp);
 
                 if (!ready)
                 {
                     isWorking = false;
-                    issue = "Mobile wash plant is turned off.";
+                    issue = $"{displayName} is turned off.";
                 }
                 else if (!hasWater)
                 {
                     isWorking = false;
-                    issue = "Mobile wash plant has no water pressure.";
+                    issue = $"{displayName} has no water pressure.";
                 }
                 else if (!hasPower)
                 {
                     isWorking = false;
-                    issue = "Mobile wash plant has no electric power.";
+                    issue = $"{displayName} has no electric power.";
                 }
             }
             else if (typeName == "OrangeBeastWashPlantGoldCounter")
@@ -377,6 +380,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             {
                 InstanceId = go.GetInstanceID(),
                 TypeName = typeName,
+                DisplayName = displayName,
                 GameObjectName = go.name,
                 Position = go.transform.position,
                 IsWorking = isWorking,
@@ -389,7 +393,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
             CurrentData.PlantComponents.Add(status);
 
-            string details = $"Setup: {setup}, Working: {isWorking}, Issue: {issue ?? "None"}";
+            string details = $"Setup: {setup}, Name: {displayName}, Working: {isWorking}, Power: {hasPower}, Water: {hasWater}, Issue: {issue ?? "None"}";
             CurrentData.RawInspectionItems.Add(new RawDebugItem
             {
                 Category = GetCategoryForSetup(setup),
@@ -558,6 +562,110 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 || name == "WaterPumpMobile" || name == "WaterPumpElectricMobile"
                 || name == "PowerGenerator" || name == "PowerStationController"
                 || name == "FuelStationController";
+        }
+
+        private bool CheckPowerState(MonoBehaviour comp)
+        {
+            if (comp == null) return true;
+
+            // 1. Check PowerConsumer component attached directly to GameObject or parent/child
+            var pc = comp.GetComponent("PowerConsumer") ?? comp.GetComponentInChildren(Type.GetType("GoldDigger.PowerConsumer, Assembly-CSharp"));
+            if (pc != null)
+            {
+                var pcType = pc.GetType();
+                bool havePower = GetPropertyValue<bool>(pc, pcType, "HavePower") || GetFieldValue<bool>(pc, pcType, "_hasPower");
+                return havePower;
+            }
+
+            // 2. Check fields referencing PowerConsumer
+            string[] fieldNames = { "Power", "MyPower", "_powerConsumer", "_PowerConsumer", "MyPowerConsumer", "PowerConsumer" };
+            foreach (var fn in fieldNames)
+            {
+                object obj = GetFieldValue<object>(comp, comp.GetType(), fn);
+                if (obj != null)
+                {
+                    var objType = obj.GetType();
+                    if (objType.Name.Contains("PowerConsumer") || objType.Name.Contains("PowerSplitterConsumer"))
+                    {
+                        bool havePower = GetPropertyValue<bool>(obj, objType, "HavePower") || GetFieldValue<bool>(obj, objType, "_hasPower");
+                        return havePower;
+                    }
+                }
+            }
+
+            // 3. Check direct field on component
+            bool directField = GetFieldValue<bool>(comp, comp.GetType(), "_hasPower") 
+                            || GetFieldValue<bool>(comp, comp.GetType(), "_HasPower")
+                            || GetPropertyValue<bool>(comp, comp.GetType(), "HavePower");
+
+            return directField;
+        }
+
+        private bool CheckWaterState(MonoBehaviour comp)
+        {
+            if (comp == null) return true;
+
+            // 1. Check WaterConsumer component attached directly to GameObject
+            var wc = comp.GetComponent("WaterConsumer") ?? comp.GetComponentInChildren(Type.GetType("GoldDigger.WaterConsumer, Assembly-CSharp"));
+            if (wc != null)
+            {
+                var wcType = wc.GetType();
+                bool haveWater = GetPropertyValue<bool>(wc, wcType, "HaveWater") || GetFieldValue<bool>(wc, wcType, "_hasWater");
+                return haveWater;
+            }
+
+            // 2. Check fields referencing WaterConsumer
+            string[] fieldNames = { "Water", "MyWater", "_waterConsumer", "MyWaterConsumer", "WaterConsumer" };
+            foreach (var fn in fieldNames)
+            {
+                object obj = GetFieldValue<object>(comp, comp.GetType(), fn);
+                if (obj != null)
+                {
+                    var objType = obj.GetType();
+                    if (objType.Name.Contains("WaterConsumer"))
+                    {
+                        bool haveWater = GetPropertyValue<bool>(obj, objType, "HaveWater") || GetFieldValue<bool>(obj, objType, "_hasWater");
+                        return haveWater;
+                    }
+                }
+            }
+
+            // 3. Check direct field on component
+            bool directField = GetFieldValue<bool>(comp, comp.GetType(), "_hasWater") 
+                            || GetFieldValue<bool>(comp, comp.GetType(), "_HasWater")
+                            || GetPropertyValue<bool>(comp, comp.GetType(), "HaveWater");
+
+            return directField;
+        }
+
+        private string GetMachineryDisplayName(MonoBehaviour comp, string typeName)
+        {
+            string goName = comp?.gameObject?.name ?? "";
+            
+            if (typeName == "GravelPump" || goName.Contains("GravelPump"))
+                return "Gravel Pump";
+            if (typeName == "WashPlantDuplex" || goName.Contains("Duplex"))
+                return "Duplex Jig";
+            if (typeName.Contains("Shaker"))
+            {
+                if (goName.Contains("Glacier") || typeName.Contains("Glacier")) return "Glacier Creek";
+                if (goName.Contains("Orange") || goName.Contains("OB")) return "Orange Beast Shaker";
+                return "Shaker";
+            }
+            if (typeName.Contains("Trommel"))
+            {
+                if (goName.Contains("Reinforced")) return "Reinforced Trommel";
+                if (goName.Contains("Arnold")) return "Old Arnold's Trommel";
+                return "Trommel";
+            }
+            if (typeName == "MobileWashplant")
+                return "Mobile Wash Plant";
+            if (typeName == "MiniWashplant")
+                return "Mini Wash Plant";
+            if (typeName == "OrangeBeastWashPlantGoldCounter")
+                return "Orange Beast";
+
+            return typeName;
         }
 
         private string NormalizeVehicleName(string goName, string typeName)

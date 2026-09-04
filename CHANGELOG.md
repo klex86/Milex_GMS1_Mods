@@ -9,18 +9,20 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ### Added: Milex Claim Monitor & CoreMod Cursor Lock Bugfix
 
-- **New Sub-Mod: Milex GMS1 Claim Monitor (v1.0.0)**:
+- **New Sub-Mod: Milex GMS1 Claim Monitor (v1.0.1)**:
   - Real-time on-screen Warning HUD telemetry dashboard with draggable, auto-saving UI.
   - Setup-accurate wash plant classification across three tiers:
     - **Setup 1**: Mobile Wash Plants (Mini & Mobile Wash Plants).
-    - **Setup 2**: Stationary Setup T3–T5 (Shaker, Trommel, Duplex Jigs, Sluices).
+    - **Setup 2**: Stationary Setup T3–T5 (Shaker/Glacier Creek, Trommel/Reinforced Trommel, Duplex Jigs/Gravel Pumps, Sluices).
     - **Setup 3**: Setup T6 / Orange Beast (Giant Shaker, Extended Sluices).
   - Optional Feeding Chain monitoring (Hoppers and Conveyors) linked to wash plant setups.
-  - Malfunction detection for Trommel drive chain breakage, Shaker motor/water/power failures, Duplex Jig pump failures, and full buckets.
+  - Malfunction detection for Trommel drive chain breakage, Shaker motor/water/power failures, Duplex Jig pump failures, and full buckets (with dedicated single-bucket logic for Tier 5 Gravel Pumps).
+  - Robust power and water status verification via active `PowerConsumer` and `WaterConsumer` game properties.
   - Sluice mat fill level tracking with configurable warning thresholds (default: 90%) and critical overflow alerts (100%).
   - Vehicle and heavy machinery fuel tracking with low fuel warnings (< 15%) and empty tank critical alerts.
   - Power generator and water tower level/operation monitoring.
-  - Built-in Diagnostic Inspector (`F3` / `F8`) and deep memory object dumper for claim diagnostics.
+  - Built-in Diagnostic Inspector (`F3`) and deep memory object dumper for claim diagnostics.
+  - Configurable update scan interval (1.0s to 30.0s).
   - Complete English and German localization out of the box.
 - **CoreMod Cursor Lock/Visibility Bugfix**:
   - Resolved cursor state leakage where the mouse cursor remained visible and unlocked after closing the in-game menu during gameplay.

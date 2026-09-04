@@ -1,9 +1,13 @@
 {
+  "config.general.section": "General Settings",
+  "config.general.scanintervalseconds.name": "Scan Interval (Seconds)",
+  "config.general.scanintervalseconds.desc": "Interval in seconds between background equipment scans and warning evaluations.",
+
   "config.setups.section": "Wash Plant Setups",
-  "config.setups.monitorsetup1.name": "Monitor Mobile Plants",
+  "config.setups.monitorsetup1.name": "Monitor Mobile Plants (Tier 2)",
   "config.setups.monitorsetup1.desc": "Enables warnings for detected mobile wash plants in the Warning HUD.",
   "config.setups.monitorsetup2.name": "Monitor Setup T3-T5",
-  "config.setups.monitorsetup2.desc": "Enables warnings for the stationary setup (Shaker, Trommel, Duplex Jigs).",
+  "config.setups.monitorsetup2.desc": "Enables warnings for the stationary setup (Shakers, Trommels, Duplex Jigs / Gravel Pumps).",
   "config.setups.setup2includefeedingchain.name": "T3-T5: Monitor Feeding Chain",
   "config.setups.setup2includefeedingchain.desc": "Includes automatically assigned hoppers and conveyors into Setup T3-T5 overall status.",
   "config.setups.monitorsetup3.name": "Monitor Setup T6 (Orange Beast)",
@@ -39,7 +43,7 @@
 
   "config.debug.section": "Diagnostics & Inspection",
   "config.debug.enabledebuggroup.name": "Enable Diagnostic Inspector",
-  "config.debug.enabledebuggroup.desc": "Enables detailed raw object inspection and claim dumping (toggle with F3 or F8).",
+  "config.debug.enabledebuggroup.desc": "Enables detailed raw object inspection and claim dumping (toggle with F3).",
 
   "log.ready": "Claim Monitor loaded and ready.",
   "log.enabled": "Claim Monitor enabled.",

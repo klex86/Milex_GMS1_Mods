@@ -33,8 +33,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             _windowRect.width = Mathf.Min(900f, Screen.width - 40f);
             _windowRect.height = Mathf.Min(600f, Screen.height - 40f);
 
-            GUI.depth = -1000;
-            _windowRect = GUI.Window(992341, _windowRect, DrawWindow, "Claim Monitor - Diagnostic Inspector (Toggle: F8)");
+            _windowRect = GUI.Window(992341, _windowRect, DrawWindow, "Claim Monitor - Diagnostic Inspector (Toggle: F3)", GUI.skin.window);
         }
 
         private void DrawWindow(int windowId)

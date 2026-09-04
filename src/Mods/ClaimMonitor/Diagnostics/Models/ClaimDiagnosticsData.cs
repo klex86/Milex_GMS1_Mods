@@ -49,6 +49,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
     {
         public int InstanceId { get; set; }
         public string TypeName { get; set; }
+        public string DisplayName { get; set; }
         public string GameObjectName { get; set; }
         public Vector3 Position { get; set; }
         public bool IsWorking { get; set; }
@@ -227,6 +228,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                 if (comp.Setup == WashPlantSetupType.Setup3_OrangeBeast && !config.MonitorSetup3.Value) continue;
 
                 string setupName = GetSetupName(comp.Setup);
+                string name = !string.IsNullOrEmpty(comp.DisplayName) ? comp.DisplayName : comp.TypeName;
 
                 if (comp.IsCritical)
                 {
@@ -234,8 +236,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     {
                         Severity = AlertSeverity.Critical,
                         Category = "WashPlant",
-                        Title = $"{setupName}: {comp.TypeName} Failure",
-                        Description = comp.SpecificIssue ?? $"{comp.TypeName} has suffered a critical failure.",
+                        Title = $"{setupName}: {name} Failure",
+                        Description = comp.SpecificIssue ?? $"{name} has suffered a critical failure.",
                         Position = comp.Position,
                         SourceId = comp.InstanceId
                     });
@@ -246,8 +248,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     {
                         Severity = AlertSeverity.Warning,
                         Category = "WashPlant",
-                        Title = $"{setupName}: {comp.TypeName} Stopped",
-                        Description = comp.SpecificIssue ?? $"{comp.TypeName} is not working.",
+                        Title = $"{setupName}: {name} Issue",
+                        Description = comp.SpecificIssue ?? $"{name} is not operational.",
                         Position = comp.Position,
                         SourceId = comp.InstanceId
                     });

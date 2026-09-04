@@ -4,6 +4,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Config
 {
     public class MonitorConfig
     {
+        // General
+        public ConfigEntry<float> ScanIntervalSeconds { get; private set; }
+
         // Setups & Monitoring
         public ConfigEntry<bool> MonitorSetup1 { get; private set; }
 
@@ -34,6 +37,14 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Config
 
         public MonitorConfig(ConfigFile config)
         {
+            // General
+            ScanIntervalSeconds = config.Bind(
+                "General",
+                "ScanIntervalSeconds",
+                3.0f,
+                new ConfigDescription("Interval in seconds between background equipment scans and health evaluations.", new AcceptableValueRange<float>(1.0f, 30.0f))
+            );
+
             // Setups
             MonitorSetup1 = config.Bind(
                 "Setups",

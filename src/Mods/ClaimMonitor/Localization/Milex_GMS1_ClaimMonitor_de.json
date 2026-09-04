@@ -1,9 +1,13 @@
 {
+  "config.general.section": "Allgemeine Einstellungen",
+  "config.general.scanintervalseconds.name": "Aktualisierungsintervall (Sekunden)",
+  "config.general.scanintervalseconds.desc": "Intervall in Sekunden zwischen den Hintergrund-Scans der Ausrüstung und Warnungs-Auswertungen.",
+
   "config.setups.section": "Waschanlagen-Setups",
-  "config.setups.monitorsetup1.name": "Mobile Anlagen überwachen",
+  "config.setups.monitorsetup1.name": "Mobile Anlagen überwachen (Stufe 2)",
   "config.setups.monitorsetup1.desc": "Aktiviert Warnungen für gefundene mobile Waschanlagen im Warning-HUD.",
   "config.setups.monitorsetup2.name": "Setup T3-T5 überwachen",
-  "config.setups.monitorsetup2.desc": "Aktiviert Warnungen für das stationäre Setup (Shaker, Trommel, Duplex Jigs).",
+  "config.setups.monitorsetup2.desc": "Aktiviert Warnungen für das stationäre Setup (Rüttler, Trommeln, Duplex Jigs / Kiespumpen).",
   "config.setups.setup2includefeedingchain.name": "T3-T5: Zufuhrkette überwachen",
   "config.setups.setup2includefeedingchain.desc": "Zieht automatisch zugeordnete Trichter und Förderbänder in den Gesamtstatus von Setup T3-T5 mit ein.",
   "config.setups.monitorsetup3.name": "Setup T6 (Orange Beast) überwachen",
@@ -39,7 +43,7 @@
 
   "config.debug.section": "Diagnose & Inspektion",
   "config.debug.enabledebuggroup.name": "Diagnose-Inspektor aktivieren",
-  "config.debug.enabledebuggroup.desc": "Schaltet detaillierte Rohdaten und Claim-Dumps frei (Umschalten mit F3 oder F8).",
+  "config.debug.enabledebuggroup.desc": "Schaltet detaillierte Rohdaten und Claim-Dumps frei (Umschalten mit F3).",
 
   "log.ready": "Claim Monitor initialisiert und einsatzbereit.",
   "log.enabled": "Claim Monitor aktiviert.",

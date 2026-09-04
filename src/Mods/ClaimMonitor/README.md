@@ -1,6 +1,6 @@
 # Milex GMS1 Claim Monitor
 
-- **Version:** `1.0.0` ([View Changelog](CHANGELOG.md))
+- **Version:** `1.0.1` ([View Changelog](CHANGELOG.md))
 - **Mod Name:** Milex Claim Monitor
 - **Author:** Milex
 - **Assembly File:** `Milex_GMS1_ClaimMonitor.dll`
@@ -59,7 +59,7 @@ Live telemetry, real-time warning HUD, and component malfunction monitoring for 
 ## 4. In-Game Usage & Hotkeys
 
 - **`Insert`**: Opens the CoreMod in-game configuration menu to adjust settings and thresholds.
-- **`F3` / `F8`**: Toggles the Diagnostic Inspector window for raw object and component diagnostics.
+- **`F3`**: Toggles the Diagnostic Inspector window for raw object and component diagnostics.
 - **HUD Drag & Drop**: Click and drag the top title bar of the Warning HUD to reposition it on your screen. Positions are saved automatically.
 - **Minimize / Expand Button**: Click `[ - Minimize ]` on the HUD to toggle between compact status and full alert lists.
 
@@ -69,12 +69,18 @@ Live telemetry, real-time warning HUD, and component malfunction monitoring for 
 
 Configuration is saved in `BepInEx/config/Milex_GMS1_ClaimMonitor.cfg`:
 
+### Section `[General]` (General Settings)
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **`ScanIntervalSeconds`** | `Single` | `3.0` | Interval in seconds between background equipment scans and warning evaluations (1.0s–30.0s). |
+
 ### Section `[Setups]` (Wash Plant Setups)
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **`MonitorSetup1`** | `Boolean` | `true` | Monitor mobile wash plants in the Warning HUD. |
-| **`MonitorSetup2`** | `Boolean` | `true` | Monitor stationary setup (T3–T5) in the Warning HUD. |
+| **`MonitorSetup1`** | `Boolean` | `true` | Monitor mobile wash plants (Tier 2) in the Warning HUD. |
+| **`MonitorSetup2`** | `Boolean` | `true` | Monitor stationary setup (Tier 3–T5: Shakers, Trommels, Duplex Jigs / Gravel Pumps) in the Warning HUD. |
 | **`Setup2IncludeFeedingChain`** | `Boolean` | `false` | Include hoppers and conveyors in Setup T3–T5 evaluation. |
 | **`MonitorSetup3`** | `Boolean` | `true` | Monitor Setup T6 (Orange Beast) in the Warning HUD. |
 | **`Setup3IncludeFeedingChain`** | `Boolean` | `false` | Include hoppers and conveyors in Orange Beast evaluation. |

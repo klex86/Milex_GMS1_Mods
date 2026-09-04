@@ -5,6 +5,23 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.0.1] - 2026-09-04
+
+### Improvements & Power Detection Fix
+
+- **Robust Power & Water Consumer Integration**:
+  - Resolved false "no electric power" warnings on Duplex Jigs and Gravel Pumps by directly querying attached `PowerConsumer.HavePower` properties and referenced power cords.
+  - Implemented universal `PowerConsumer` and `WaterConsumer` state evaluation across all stationary, mobile, and feeder machinery.
+- **Enhanced Tier 5 Component Support (Gravel Pump & Glacier Creek)**:
+  - Added dedicated support and single-bucket handling for Tier 5 Gravel Pumps (`GoldDigger.GravelPump`) alongside Tier 4 Duplex Jigs.
+  - Setup-accurate display names reflecting official in-game terminology (DE: "Kiespumpe", "Duplex Jig", "Rüttler", "Trommel"; EN: "Gravel Pump", "Duplex Jig", "Shaker", "Trommel").
+- **Configurable Scan Interval**:
+  - Added `ScanIntervalSeconds` setting in `[General]` (range: 1.0s to 30.0s, default: 3.0s) allowing players to tune update frequency.
+- **Diagnostic Inspector Window Title**:
+  - Corrected window header and localization hints to reference **`F3`** toggle hotkey.
+
+---
+
 ## [1.0.0] - 2026-09-04
 
 ### Initial Release
@@ -27,7 +44,7 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
   - Full card view, ultra-compact badge view, and optional "Only Show on Warnings" mode.
   - Full configuration exposure through the CoreMod in-game menu (**`Insert`** key).
 - **Diagnostics & Scene Object Dumper**:
-  - Interactive Diagnostic Inspector window toggleable via **`F3`** or **`F8`**.
+  - Interactive Diagnostic Inspector window toggleable via **`F3`**.
   - One-click scene hierarchy object dumper with comprehensive property and field inspection.
 - **Multi-Language Support**:
   - Complete English and German localization out of the box with embedded template extraction.
