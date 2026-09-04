@@ -11,6 +11,8 @@ Direct links to documentation, guides, and changelogs for all repository compone
 | Topic / Mod | Description | Documentation | Changelog |
 |---|---|---|---|
 | **Entire Monorepo** | Overview, architecture, and general setup | [Main Documentation](README.md) | [Root Changelog](CHANGELOG.md) |
+| **Sub-Mod Developer Guide** | Human modder handbook for creating CoreMod-compatible DLL mods | [Developer Guide](DEVELOPER_GUIDE.md) | - |
+| **AI Agent Sub-Mod Blueprint** | Complete technical prompt and specification for AI coding agents | [Agent Guide](AGENT_MOD_GUIDE.md) | - |
 | **Milex GMS1 CoreMod** | Central manager, in-game menu & localization engine | [CoreMod Guide](src/CoreMod/README.md) | [CoreMod Changelog](src/CoreMod/CHANGELOG.md) |
 | **Milex GMS1 HelloMod** | Example mod demonstrating framework features | [HelloMod Guide](src/Mods/HelloMod/README.md) | [HelloMod Changelog](src/Mods/HelloMod/CHANGELOG.md) |
 | **Milex GMS1 Production Tuner** | High-performance tuning for speeds, capacities, and hydraulics across 29 components | [Production Tuner Guide](src/Mods/ProductionTuner/README.md) | [Production Tuner Changelog](src/Mods/ProductionTuner/CHANGELOG.md) |

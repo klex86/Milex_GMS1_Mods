@@ -34,6 +34,13 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 - **Mutual Exclusivity & Permanent Visibility**: Both "Use Game Language" and "Select Language" remain permanently visible in CoreMod settings; the manual selector dynamically disables and dims when automatic detection is enabled.
 - **Interactive Missing Translation Template Generator Modal**: Selecting any language missing translations now triggers a dedicated modal dialog prompting the player to generate JSON templates on-demand directly into the localization directory.
 - **Fixed Header Hierarchy**: Guaranteed that the top-left main title permanently displays `Milex GMS1 CoreMod (v1.3.0)` while sub-mod titles and versions cleanly route to the secondary gold subtitle.
+- **Compact Missing Translation Modal & Localization Folder Opener**:
+  - Redesigned the missing translation prompt into a sleek, compact 460x252 modal card with centered layout and high-contrast styling.
+  - Displays the target destination directory path (`BepInEx/plugins/Milex GMS1 Mod Localization/`) right inside the dialog.
+  - Added a direct **`[ Open Folder ]`** button that instantly opens the localization directory in Windows Explorer using `Process.Start`.
+- **Sub-Mod Developer Guide & AI Agent Blueprint Documentation**:
+  - Created [`DEVELOPER_GUIDE.md`](../../DEVELOPER_GUIDE.md): A comprehensive handbook for human modders explaining `ModBase` inheritance, zero-code UI generation, baseline memory (`OriginalValueStore`), and multi-language localization.
+  - Created [`AGENT_MOD_GUIDE.md`](../../AGENT_MOD_GUIDE.md): A complete technical specification and system prompt designed for AI coding agents to create 100% framework-compliant sub-mods from game code excerpts.
 - **Dual-Engine Menu Architecture (`IMenuRenderer`)**:
   - Cleanly decoupled rendering layer from core plugin logic.
   - Seamless in-game switching between **Modern (uGUI Canvas)** and **Classic (IMGUI)** via configuration and header buttons.
