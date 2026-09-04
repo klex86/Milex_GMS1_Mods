@@ -5,6 +5,26 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.0.3] - 2026-09-04
+
+### Visual Indicator Inspection, Orange Beast Deduplication & Front-Aligned Vehicle Fuel Bar
+
+- **Visual Indicator-Driven Power & Water Detection (T2–T5 & T6)**:
+  - Overhauled detection to directly inspect the game's `GoldDigger.Indicator` components (the exact green/gray water drop and lightning bolt icons rendered above machines in game).
+  - Evaluates `Indicator.LastState` (Green = Active/Nominal, Gray/Red = Disconnected/No Resource) alongside direct `PowerConsumer` and `WaterConsumer` states.
+  - Exempted Trommels from water supply requirements (Trommels only consume electric power).
+- **Orange Beast Setup Presence & Deduplication**:
+  - Prevented ghost warnings on claims without an Orange Beast by requiring active `OrangeBeastWashPlantGoldCounter` presence before evaluating Beast components.
+  - Eliminated duplicate entries by strictly ignoring static structural frame objects (`OrangeBeast_Frame`) and deduplicating Shaker instances.
+- **Front-Aligned Vehicle Quick-Switcher Fuel Bar**:
+  - Re-positioned fuel status indicator directly in front of each vehicle item card (to the left of the yellow selection background).
+  - Features a crisp 6px vertical status bar with color grading and clear percentage text, resolving overlap with distance labels (`174 ft`).
+- **HUD Position Configuration Cleanup**:
+  - Removed redundant `HudPosX` and `HudPosY` sliders from the configuration menu.
+  - Position is now saved automatically to `PlayerPrefs` when dragging the window with the mouse.
+
+---
+
 ## [1.0.2] - 2026-09-04
 
 ### Water Detection Fixes, Orange Beast T6 Support & Vehicle Switcher Fuel Overlay

@@ -7,14 +7,19 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [1.8.1] - 2026-09-04
 
-### Claim Monitor: Water & Orange Beast Detection Fixes & Vehicle Quick-Switcher Fuel Display
+### Claim Monitor: Indicator-Driven Detection, Orange Beast Deduplication & Fuel Bar Overlay
 
-- **Stationary & Mobile Setup Water Supply Recognition**:
-  - Resolved water status tracking across stationary (T3–T5) and mobile (T2) wash plants by checking `IsWaterReady`, `WaterChangePhysicsMaterial.HasWater`, and `WaterConsumer` connection states.
-- **Orange Beast (T6) Power & Water Recognition**:
-  - Implemented multi-component deduplication and dedicated recognition for `Washplant_Shaker_Beast(Clone)` / `OrangeBeast_Frame`.
-- **Vehicle Quick-Switcher Fuel Status Badges**:
-  - Integrated color-coded status circles (Green >= 50%, Yellow 25–49%, Orange 15–24%, Red < 15%) and percentage labels directly into the vanilla game's vehicle switching bar items.
+- **In-Game Visual Indicator-Driven State Detection**:
+  - Overhauled power and water tracking by reading the state of `GoldDigger.Indicator` instances (the actual in-game green/gray water drop and lightning bolt icons).
+  - Exempted Trommels from water supply requirements (Trommels only require electric power).
+- **Orange Beast Setup Presence & Deduplication**:
+  - Requires active `OrangeBeastWashPlantGoldCounter` on the claim to prevent false alarms on uninstalled setups.
+  - Ignores structural frame GameObjects and deduplicates Orange Beast Shaker items.
+- **Front-Aligned Vehicle Quick-Switcher Fuel Status Bar**:
+  - Re-positioned fuel status indicator directly in front of each vehicle card (to the left of the selection area).
+  - Displays a clean 6px vertical status bar with fuel percentage text, completely eliminating overlap with distance labels (`174 ft`).
+- **HUD Position Cleanup**:
+  - Removed non-functioning X/Y position sliders from the config menu; dragged window position is persisted automatically via `PlayerPrefs`.
 
 ---
 

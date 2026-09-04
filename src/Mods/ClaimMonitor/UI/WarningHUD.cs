@@ -37,10 +37,11 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
 
         private void Start()
         {
-            if (Config != null)
-            {
-                _windowRect = new Rect(Config.HudPosX.Value, Config.HudPosY.Value, Config.HudMaxWidth.Value, Config.HudMaxHeight.Value);
-            }
+            float posX = PlayerPrefs.GetFloat("Milex_ClaimMonitor_HudPosX", 20f);
+            float posY = PlayerPrefs.GetFloat("Milex_ClaimMonitor_HudPosY", 100f);
+            float width = Config != null ? Config.HudMaxWidth.Value : 340f;
+            float height = Config != null ? Config.HudMaxHeight.Value : 380f;
+            _windowRect = new Rect(posX, posY, width, height);
         }
 
         private void InitStyles()
@@ -146,15 +147,17 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             GUI.depth = -500;
             _windowRect = GUI.Window(887123, _windowRect, DrawWindow, title, _windowStyle);
 
-            // Persist dragged position
-            if (Event.current.type == EventType.Repaint && (_windowRect.x != Config.HudPosX.Value || _windowRect.y != Config.HudPosY.Value))
+            // Persist dragged position to PlayerPrefs
+            float savedX = PlayerPrefs.GetFloat("Milex_ClaimMonitor_HudPosX", 20f);
+            float savedY = PlayerPrefs.GetFloat("Milex_ClaimMonitor_HudPosY", 100f);
+            if (Event.current.type == EventType.Repaint && (Mathf.Abs(_windowRect.x - savedX) > 1f || Mathf.Abs(_windowRect.y - savedY) > 1f))
             {
                 if (Time.realtimeSinceStartup - _lastSaveTime > 1.5f)
                 {
                     _lastSaveTime = Time.realtimeSinceStartup;
-                    Config.HudPosX.Value = (float)Math.Round(_windowRect.x, 0);
-                    Config.HudPosY.Value = (float)Math.Round(_windowRect.y, 0);
-                    Config.HudPosX.ConfigFile?.Save();
+                    PlayerPrefs.SetFloat("Milex_ClaimMonitor_HudPosX", (float)Math.Round(_windowRect.x, 0));
+                    PlayerPrefs.SetFloat("Milex_ClaimMonitor_HudPosY", (float)Math.Round(_windowRect.y, 0));
+                    PlayerPrefs.Save();
                 }
             }
         }

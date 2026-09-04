@@ -24,8 +24,6 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Config
         public ConfigEntry<bool> HudEnabled { get; private set; }
         public ConfigEntry<bool> HudOnlyShowWarnings { get; private set; }
         public ConfigEntry<bool> HudCompactMode { get; private set; }
-        public ConfigEntry<float> HudPosX { get; private set; }
-        public ConfigEntry<float> HudPosY { get; private set; }
         public ConfigEntry<float> HudMaxWidth { get; private set; }
         public ConfigEntry<float> HudMaxHeight { get; private set; }
 
@@ -116,20 +114,6 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Config
                 "HudCompactMode",
                 false,
                 "Render HUD in ultra-compact mode with single-line status badge."
-            );
-
-            HudPosX = config.Bind(
-                "WarningHUD",
-                "HudPosX",
-                20f,
-                new ConfigDescription("Horizontal screen position of the Warning HUD.", new AcceptableValueRange<float>(0f, 3840f))
-            );
-
-            HudPosY = config.Bind(
-                "WarningHUD",
-                "HudPosY",
-                100f,
-                new ConfigDescription("Vertical screen position of the Warning HUD.", new AcceptableValueRange<float>(0f, 2160f))
             );
 
             HudMaxWidth = config.Bind(

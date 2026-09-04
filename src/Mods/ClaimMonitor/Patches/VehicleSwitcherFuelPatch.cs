@@ -7,11 +7,12 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Patches
 {
     /// <summary>
     /// Harmony patches for displaying vehicle fuel status badges directly inside the vanilla vehicle switcher UI.
+    /// Renders a vertical status bar and percentage label directly in front of the vehicle row.
     /// </summary>
     [HarmonyPatch]
     public static class VehicleSwitcherFuelPatch
     {
-        private static Sprite _circleSprite;
+        private static Sprite _barSprite;
         private static readonly BindingFlags Flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 
         [HarmonyPatch(typeof(VehicleInPanel), "UpdateRare")]
@@ -84,43 +85,44 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Patches
                 statusColor = new Color(0.91f, 0.30f, 0.24f, 1f); // Red (#E74C3C)
 
             Transform badgeTransform = panelItem.transform.Find("ClaimMonitor_FuelBadge");
-            Image dotImage;
+            Image barImage;
             Text fuelText;
 
             if (badgeTransform == null)
             {
+                // Container positioned to the LEFT of the vehicle card (in front of the yellow selection area)
                 var badgeGo = new GameObject("ClaimMonitor_FuelBadge");
                 badgeGo.transform.SetParent(panelItem.transform, false);
 
                 var rect = badgeGo.AddComponent<RectTransform>();
-                rect.anchorMin = new Vector2(1f, 0.5f);
-                rect.anchorMax = new Vector2(1f, 0.5f);
+                rect.anchorMin = new Vector2(0f, 0f);
+                rect.anchorMax = new Vector2(0f, 1f);
                 rect.pivot = new Vector2(1f, 0.5f);
-                rect.anchoredPosition = new Vector2(-12f, 0f);
-                rect.sizeDelta = new Vector2(64f, 22f);
+                rect.anchoredPosition = new Vector2(-6f, 0f);
+                rect.sizeDelta = new Vector2(70f, 0f);
 
-                // 1. Dot Image
-                var dotGo = new GameObject("Dot");
-                dotGo.transform.SetParent(badgeGo.transform, false);
-                var dotRect = dotGo.AddComponent<RectTransform>();
-                dotRect.anchorMin = new Vector2(0f, 0.5f);
-                dotRect.anchorMax = new Vector2(0f, 0.5f);
-                dotRect.pivot = new Vector2(0f, 0.5f);
-                dotRect.anchoredPosition = new Vector2(0f, 0f);
-                dotRect.sizeDelta = new Vector2(10f, 10f);
+                // 1. Vertical Status Bar (in front of vehicle selection area)
+                var barGo = new GameObject("Bar");
+                barGo.transform.SetParent(badgeGo.transform, false);
+                var barRect = barGo.AddComponent<RectTransform>();
+                barRect.anchorMin = new Vector2(1f, 0.12f);
+                barRect.anchorMax = new Vector2(1f, 0.88f);
+                barRect.pivot = new Vector2(1f, 0.5f);
+                barRect.anchoredPosition = new Vector2(0f, 0f);
+                barRect.sizeDelta = new Vector2(6f, 0f);
 
-                dotImage = dotGo.AddComponent<Image>();
-                dotImage.sprite = GetOrCreateCircleSprite();
+                barImage = barGo.AddComponent<Image>();
+                barImage.sprite = GetOrCreateBarSprite();
 
-                // 2. Fuel Text
+                // 2. Fuel Text directly to the left of the vertical bar
                 var textGo = new GameObject("Text");
                 textGo.transform.SetParent(badgeGo.transform, false);
                 var textRect = textGo.AddComponent<RectTransform>();
                 textRect.anchorMin = new Vector2(0f, 0f);
                 textRect.anchorMax = new Vector2(1f, 1f);
-                textRect.pivot = new Vector2(0f, 0.5f);
-                textRect.anchoredPosition = new Vector2(14f, 0f);
-                textRect.sizeDelta = new Vector2(50f, 22f);
+                textRect.pivot = new Vector2(1f, 0.5f);
+                textRect.anchoredPosition = new Vector2(-10f, 0f);
+                textRect.sizeDelta = new Vector2(55f, 0f);
 
                 fuelText = textGo.AddComponent<Text>();
                 var nameText = typeof(VehicleInPanel).GetField("vehicleName", Flags)?.GetValue(panelItem) as Text;
@@ -129,20 +131,20 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Patches
                 else
                     fuelText.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
 
-                fuelText.fontSize = 12;
+                fuelText.fontSize = 13;
                 fuelText.fontStyle = FontStyle.Bold;
-                fuelText.alignment = TextAnchor.MiddleLeft;
+                fuelText.alignment = TextAnchor.MiddleRight;
             }
             else
             {
                 badgeTransform.gameObject.SetActive(true);
-                dotImage = badgeTransform.Find("Dot")?.GetComponent<Image>();
+                barImage = badgeTransform.Find("Bar")?.GetComponent<Image>();
                 fuelText = badgeTransform.Find("Text")?.GetComponent<Text>();
             }
 
-            if (dotImage != null)
+            if (barImage != null)
             {
-                dotImage.color = statusColor;
+                barImage.color = statusColor;
             }
 
             if (fuelText != null)
@@ -152,40 +154,28 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Patches
             }
         }
 
-        private static Sprite GetOrCreateCircleSprite()
+        private static Sprite GetOrCreateBarSprite()
         {
-            if (_circleSprite != null) return _circleSprite;
+            if (_barSprite != null) return _barSprite;
 
-            int size = 32;
-            Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+            int w = 8;
+            int h = 32;
+            Texture2D tex = new Texture2D(w, h, TextureFormat.RGBA32, false);
             tex.hideFlags = HideFlags.HideAndDontSave;
-            float r = size / 2f;
-            Vector2 center = new Vector2(r, r);
 
-            for (int y = 0; y < size; y++)
+            for (int y = 0; y < h; y++)
             {
-                for (int x = 0; x < size; x++)
+                for (int x = 0; x < w; x++)
                 {
-                    float dist = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), center);
-                    if (dist <= r - 1.5f)
-                    {
-                        tex.SetPixel(x, y, Color.white);
-                    }
-                    else if (dist <= r)
-                    {
-                        float alpha = Mathf.Clamp01(r - dist);
-                        tex.SetPixel(x, y, new Color(1f, 1f, 1f, alpha));
-                    }
-                    else
-                    {
-                        tex.SetPixel(x, y, Color.clear);
-                    }
+                    // Slightly rounded top and bottom corners
+                    bool isCorner = (x == 0 || x == w - 1) && (y == 0 || y == h - 1);
+                    tex.SetPixel(x, y, isCorner ? new Color(1f, 1f, 1f, 0.3f) : Color.white);
                 }
             }
 
             tex.Apply();
-            _circleSprite = Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f));
-            return _circleSprite;
+            _barSprite = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f));
+            return _barSprite;
         }
     }
 }
