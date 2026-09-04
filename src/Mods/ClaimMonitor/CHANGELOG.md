@@ -5,6 +5,20 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.0.5] - 2026-09-05
+
+### Tier 3–5 Stationary Wash Plant Water Detection Overhaul & Glacier Creek / Derocker Support
+
+- **Tier 3–5 Stationary Wash Plant Water Supply Recognition**:
+  - Overhauled water detection on all stationary wash plants to directly query the simulation engine (`WashplantShakerBase.Water.HaveWater`, `CheckHasWater()`, and `_hasWater`), eliminating false alarms caused by stale or unrendered visual HUD indicators.
+  - Added first-class type support for `GlacierCreek` (Tier 4) and `DeRocker` (Tier 3/4) so all stationary shaker variants are recognized and monitored seamlessly.
+- **Granular Water Failure Diagnostics**:
+  - Machinery warnings now provide exact, actionable reasons for missing water (hose disconnected, pump turned off, pump intake dry / tower empty, pump disabled, broken/frozen hose, or damaged nozzle).
+- **Strongly-Typed Power & Water Engine Integration**:
+  - Replaced reflection fallbacks with direct, strongly-typed checks against the game's simulation classes (`WashplantShakerBase`, `WashplantTrommelBase`, `WashplantDuplexJigBase`, `MobileWashplant`, `MiniWashplant`).
+
+---
+
 ## [1.0.4] - 2026-09-05
 
 ### Generator/Pump Running State Validation, Jig Water Exemption & Sleek Minimal Compact HUD
