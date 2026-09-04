@@ -351,7 +351,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 setup = WashPlantSetupType.Setup2_Stationary;
                 bool pumpBroken = GetFieldValue<bool>(comp, type, "_DuplexJigBroken");
                 hasPower = CheckPowerState(comp);
-                hasWater = CheckWaterState(comp);
+                hasWater = true; // Duplex Jigs and Gravel Pumps only consume electric power, not water
 
                 // Check Buckets
                 object b1 = GetFieldValue<object>(comp, type, "Bucket1");
@@ -386,17 +386,14 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                     isWorking = false;
                     issue = $"{displayName} has no electric power.";
                 }
-                else if (!hasWater)
-                {
-                    isWorking = false;
-                    issue = $"{displayName} has no water supply.";
-                }
             }
             else if (typeName == "MobileWashplant" || typeName == "MiniWashplant")
             {
                 setup = WashPlantSetupType.Setup1_Mobile;
                 bool ready = GetFieldValue<bool>(comp, type, "IsReadyToWork") || GetFieldValue<bool>(comp, type, "IsOn");
-                hasPower = CheckPowerState(comp);
+                
+                // Mini Wash Plant has internal combustion engine (fuel) and only consumes water; Mobile Wash Plant consumes power + water
+                hasPower = typeName == "MiniWashplant" ? true : CheckPowerState(comp);
                 hasWater = CheckWaterState(comp);
 
                 if (!ready)
@@ -457,10 +454,34 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             bool isWorking = true;
 
             // Check PowerConsumer
-            object powerConsumer = GetFieldValue<object>(comp, type, "MyPower");
+            object powerConsumer = GetFieldValue<object>(comp, type, "MyPower")
+                                ?? comp.GetComponent("PowerConsumer");
             if (powerConsumer != null)
             {
-                hasPower = GetPropertyValue<bool>(powerConsumer, powerConsumer.GetType(), "HavePower");
+                var pcType = powerConsumer.GetType();
+                hasPower = GetPropertyValue<bool>(powerConsumer, pcType, "HavePower")
+                        || GetFieldValue<bool>(powerConsumer, pcType, "_hasPower");
+
+                object ind = GetFieldValue<object>(powerConsumer, pcType, "PowerIndicator");
+                if (CheckIndicatorActive(ind)) hasPower = true;
+                else if (CheckIndicatorInactive(ind)) hasPower = false;
+                else
+                {
+                    object prod = GetFieldValue<object>(powerConsumer, pcType, "Producent");
+                    bool brokenRopes = GetFieldValue<bool>(powerConsumer, pcType, "_hasBrokenRopes");
+                    if (prod == null || brokenRopes)
+                    {
+                        hasPower = false;
+                    }
+                    else
+                    {
+                        bool prodWorking = GetPropertyValue<bool>(prod, prod.GetType(), "IsWorking")
+                                        || GetFieldValue<bool>(prod, prod.GetType(), "_isWorking");
+                        bool prodEnabled = GetFieldValue<bool>(prod, prod.GetType(), "isEnabled");
+                        bool prodOverload = GetFieldValue<bool>(prod, prod.GetType(), "IsOverLoaded");
+                        hasPower = prodWorking && prodEnabled && !prodOverload;
+                    }
+                }
             }
 
             if (typeName == "ConveyorGround")
@@ -624,29 +645,47 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
             var compType = comp.GetType();
 
-            // 1. Direct PowerConsumer reference in field (e.g. WashplantShakerBase.Power, WashplantTrommelBase.Power, WashplantDuplexJigBase.Power)
+            // 1. Direct PowerConsumer reference in field or component
             object pcObj = GetFieldValue<object>(comp, compType, "Power")
                         ?? GetFieldValue<object>(comp, compType, "MyPower")
                         ?? GetFieldValue<object>(comp, compType, "_powerConsumer")
-                        ?? comp.GetComponent("PowerConsumer");
+                        ?? comp.GetComponent("PowerConsumer")
+                        ?? comp.GetComponentInChildren(Type.GetType("GoldDigger.PowerConsumer, Assembly-CSharp"));
 
             if (pcObj != null)
             {
                 var pcType = pcObj.GetType();
-                bool havePower = GetPropertyValue<bool>(pcObj, pcType, "HavePower") 
-                              || GetFieldValue<bool>(pcObj, pcType, "_hasPower");
-                if (havePower) return true;
 
                 // Check PowerIndicator (the in-game visual lightning bolt icon)
                 object ind = GetFieldValue<object>(pcObj, pcType, "PowerIndicator");
                 if (CheckIndicatorActive(ind)) return true;
                 if (CheckIndicatorInactive(ind)) return false;
 
-                // Connected to active producer?
+                // Check HavePower property / _hasPower field
+                bool havePower = GetPropertyValue<bool>(pcObj, pcType, "HavePower") 
+                              || GetFieldValue<bool>(pcObj, pcType, "_hasPower");
+                if (havePower) return true;
+
+                // Inspect connected power station / generator
                 object prod = GetFieldValue<object>(pcObj, pcType, "Producent");
                 bool brokenRopes = GetFieldValue<bool>(pcObj, pcType, "_hasBrokenRopes");
-                if (prod != null && !brokenRopes) return true;
-                if (brokenRopes) return false;
+                if (prod == null || brokenRopes)
+                {
+                    return false;
+                }
+
+                var prodType = prod.GetType();
+                bool isWorking = GetPropertyValue<bool>(prod, prodType, "IsWorking")
+                              || GetFieldValue<bool>(prod, prodType, "_isWorking");
+                bool isEnabled = GetFieldValue<bool>(prod, prodType, "isEnabled");
+                bool isOverloaded = GetFieldValue<bool>(prod, prodType, "IsOverLoaded");
+
+                if (!isWorking || !isEnabled || isOverloaded)
+                {
+                    return false;
+                }
+
+                return true;
             }
 
             // 2. Direct _hasPower field on the machine itself
@@ -689,15 +728,23 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             if (comp == null) return true;
 
             var compType = comp.GetType();
+            string typeName = compType.Name;
+            string goName = comp.gameObject.name;
 
-            // Trommel never requires or consumes water directly (only electric power)
-            if (compType.Name.Contains("Trommel") || comp.gameObject.name.Contains("Trommel"))
+            // Trommels, Duplex Jigs, and Gravel Pumps do not consume water directly
+            if (typeName.Contains("Trommel") || goName.Contains("Trommel")
+                || typeName.Contains("Duplex") || goName.Contains("Duplex")
+                || typeName == "GravelPump" || goName.Contains("GravelPump"))
+            {
                 return true;
+            }
 
-            // 1. Check direct WaterConsumer reference in field (e.g. WashplantShakerBase.Water, MobileWashplant.Water)
+            // 1. Check direct WaterConsumer reference in field or component
             object wcObj = GetFieldValue<object>(comp, compType, "Water")
+                        ?? GetFieldValue<object>(comp, compType, "_waterConsumer")
                         ?? GetFieldValue<object>(comp, compType, "MyWaterConsumer")
-                        ?? comp.GetComponent("WaterConsumer");
+                        ?? comp.GetComponent("WaterConsumer")
+                        ?? comp.GetComponentInChildren(Type.GetType("GoldDigger.WaterConsumer, Assembly-CSharp"));
 
             // For Duplex Jig and GravelPump: MyWater is WaterChangePhysicsMaterial
             object myWater = GetFieldValue<object>(comp, compType, "MyWater");
@@ -717,20 +764,40 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             if (wcObj != null)
             {
                 var wcType = wcObj.GetType();
-                bool haveWater = GetPropertyValue<bool>(wcObj, wcType, "HaveWater")
-                              || GetFieldValue<bool>(wcObj, wcType, "<HaveWater>k__BackingField");
-                if (haveWater) return true;
 
                 // Check WaterIndicator (the in-game green/gray water drop icon)
                 object ind = GetFieldValue<object>(wcObj, wcType, "WaterIndicator");
                 if (CheckIndicatorActive(ind)) return true;
                 if (CheckIndicatorInactive(ind)) return false;
 
-                // Connected to active producer?
+                // Check HaveWater property / field
+                bool haveWater = GetPropertyValue<bool>(wcObj, wcType, "HaveWater")
+                              || GetFieldValue<bool>(wcObj, wcType, "<HaveWater>k__BackingField");
+                if (haveWater) return true;
+
+                // Inspect connected water station / pump
                 object prod = GetFieldValue<object>(wcObj, wcType, "Producent");
                 bool brokenRopes = GetFieldValue<bool>(wcObj, wcType, "_hasBrokenRopes");
-                if (prod != null && !brokenRopes) return true;
-                if (brokenRopes) return false;
+                if (prod == null || brokenRopes)
+                {
+                    return false;
+                }
+
+                var prodType = prod.GetType();
+                bool isWorking = GetPropertyValue<bool>(prod, prodType, "IsWorking")
+                              || GetFieldValue<bool>(prod, prodType, "_isWorking");
+                bool isEnabled = GetFieldValue<bool>(prod, prodType, "IsEnabled")
+                              || GetFieldValue<bool>(prod, prodType, "isEnabled");
+                bool isOverloaded = GetPropertyValue<bool>(prod, prodType, "IsOverLoaded")
+                                 || GetFieldValue<bool>(prod, prodType, "FlowOverloaded")
+                                 || GetFieldValue<bool>(prod, prodType, "PressureOverloaded");
+
+                if (!isWorking || !isEnabled || isOverloaded)
+                {
+                    return false;
+                }
+
+                return true;
             }
 
             // 2. Direct _hasWater field on the machine itself
@@ -777,7 +844,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             if (indicator == null) return false;
             var indType = indicator.GetType();
 
-            // Check LastState: 2 == Green
+            // Check LastState: 2 == Green (Active / Working)
             var lastStateField = indType.GetField("LastState", FieldFlags);
             if (lastStateField != null)
             {
@@ -803,7 +870,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             if (indicator == null) return false;
             var indType = indicator.GetType();
 
-            // Check LastState: 1 == Gray or 3 == Red
+            // Check LastState: 0 == White (Producer Off), 1 == Gray (Disconnected), 3 == Red (Overloaded / Broken)
             var lastStateField = indType.GetField("LastState", FieldFlags);
             if (lastStateField != null)
             {
@@ -811,7 +878,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 if (val != null)
                 {
                     int state = (int)val;
-                    if (state == 1 || state == 3)
+                    if (state == 0 || state == 1 || state == 3)
                         return true;
                 }
             }
@@ -822,6 +889,24 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             {
                 var grayGo = grayField.GetValue(indicator) as GameObject;
                 if (grayGo != null && grayGo.activeSelf)
+                    return true;
+            }
+
+            // Check Red GameObject
+            var redField = indType.GetField("Red", FieldFlags);
+            if (redField != null)
+            {
+                var redGo = redField.GetValue(indicator) as GameObject;
+                if (redGo != null && redGo.activeSelf)
+                    return true;
+            }
+
+            // Check White GameObject
+            var whiteField = indType.GetField("White", FieldFlags);
+            if (whiteField != null)
+            {
+                var whiteGo = whiteField.GetValue(indicator) as GameObject;
+                if (whiteGo != null && whiteGo.activeSelf)
                     return true;
             }
 

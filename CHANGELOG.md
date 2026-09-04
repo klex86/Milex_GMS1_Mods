@@ -5,6 +5,22 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.8.2] - 2026-09-05
+
+### Claim Monitor: Generator/Pump Running State Validation & Sleek Minimal Compact HUD
+
+- **Generator & Water Pump Running State Validation**:
+  - Fixed power state checks where machines connected to a stopped/empty generator were falsely reported as powered.
+  - Actively validates generator/pump controller states (`PowerStationController.IsWorking`, `isEnabled`, `!IsOverLoaded`, and `WaterStationController.IsWorking`) alongside `Indicator.LastState` (State 0 = White/Off, State 1 = Gray/Disconnected, State 3 = Red/Overload).
+- **Duplex Jig, Gravel Pump & Mini Wash Plant Requirements**:
+  - Corrected requirement profiles: Duplex Jigs and Gravel Pumps only consume electric power and do not require water connections (eliminating false water warnings on Tier 5 Glacier Creek / Gravel Pump setups).
+  - Configured Mini Wash Plant to run on internal fuel engine without external electric power requirements.
+- **Sleek Minimal Compact HUD Overlay**:
+  - Redesigned Compact Mode into a sleek, minimal text HUD overlay that directly lists active warnings as clean, compact bullet points with color-coded severity tags (`• [CRITICAL]`, `• [WARN]`).
+  - Automatically sizes to fit active warnings tightly and supports full window drag & drop across the entire compact banner.
+
+---
+
 ## [1.8.1] - 2026-09-04
 
 ### Claim Monitor: Indicator-Driven Detection, Orange Beast Deduplication & Fuel Bar Overlay

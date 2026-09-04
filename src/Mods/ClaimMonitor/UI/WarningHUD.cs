@@ -19,13 +19,16 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
 
         // Custom GUIStyles
         private GUIStyle _windowStyle;
+        private GUIStyle _compactWindowStyle;
         private GUIStyle _criticalBoxStyle;
         private GUIStyle _warningBoxStyle;
         private GUIStyle _nominalBoxStyle;
         private GUIStyle _titleStyle;
         private GUIStyle _descStyle;
+        private GUIStyle _compactItemStyle;
 
         private Texture2D _bgTex;
+        private Texture2D _compactBgTex;
         private Texture2D _criticalTex;
         private Texture2D _warningTex;
         private Texture2D _nominalTex;
@@ -49,6 +52,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             if (_windowStyle != null) return;
 
             _bgTex = MakeTex(2, 2, new Color(0.09f, 0.11f, 0.16f, 0.94f));
+            _compactBgTex = MakeTex(2, 2, new Color(0.06f, 0.08f, 0.12f, 0.82f));
             _criticalTex = MakeTex(2, 2, new Color(0.42f, 0.12f, 0.12f, 0.92f));
             _warningTex = MakeTex(2, 2, new Color(0.38f, 0.28f, 0.08f, 0.92f));
             _nominalTex = MakeTex(2, 2, new Color(0.10f, 0.25f, 0.16f, 0.92f));
@@ -59,6 +63,15 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                 onNormal = { background = _bgTex, textColor = new Color(0.92f, 0.72f, 0.20f, 1f) },
                 padding = new RectOffset(8, 8, 22, 8),
                 fontSize = 12,
+                fontStyle = FontStyle.Bold
+            };
+
+            _compactWindowStyle = new GUIStyle(GUI.skin.window)
+            {
+                normal = { background = _compactBgTex, textColor = new Color(0.92f, 0.72f, 0.20f, 1f) },
+                onNormal = { background = _compactBgTex, textColor = new Color(0.92f, 0.72f, 0.20f, 1f) },
+                padding = new RectOffset(8, 8, 20, 6),
+                fontSize = 11,
                 fontStyle = FontStyle.Bold
             };
 
@@ -96,6 +109,15 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                 normal = { textColor = new Color(0.88f, 0.88f, 0.88f, 1f) },
                 wordWrap = true
             };
+
+            _compactItemStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                normal = { textColor = Color.white },
+                wordWrap = true,
+                padding = new RectOffset(0, 0, 1, 1),
+                margin = new RectOffset(0, 0, 1, 1)
+            };
         }
 
         private void OnGUI()
@@ -113,11 +135,23 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             if (Config.HudOnlyShowWarnings.Value && !hasAlerts)
                 return;
 
+            bool isCompact = _isMinimized || Config.HudCompactMode.Value;
+
             // Apply configured sizes and screen boundaries
-            float currentWidth = Mathf.Min(Config.HudMaxWidth.Value, Screen.width - 20f);
-            float currentHeight = _isMinimized || Config.HudCompactMode.Value
-                ? 62f
-                : Mathf.Min(Config.HudMaxHeight.Value, Screen.height - 40f);
+            float currentWidth = isCompact
+                ? Mathf.Clamp(Config.HudMaxWidth.Value, 280f, 450f)
+                : Mathf.Min(Config.HudMaxWidth.Value, Screen.width - 20f);
+
+            float currentHeight;
+            if (isCompact)
+            {
+                int alertCount = hasAlerts ? alerts.Count : 1;
+                currentHeight = Mathf.Min(24f + (alertCount * 22f) + 8f, Screen.height - 40f);
+            }
+            else
+            {
+                currentHeight = Mathf.Min(Config.HudMaxHeight.Value, Screen.height - 40f);
+            }
 
             _windowRect.width = currentWidth;
             _windowRect.height = currentHeight;
@@ -142,10 +176,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             else if (warningCount > 0)
                 headerBadge = $"[^ {warningCount} WARNINGS]";
 
-            string title = $"Claim Monitor  {headerBadge}";
+            string title = isCompact
+                ? $"Claim Warnings  {headerBadge}"
+                : $"Claim Monitor  {headerBadge}";
 
             GUI.depth = -500;
-            _windowRect = GUI.Window(887123, _windowRect, DrawWindow, title, _windowStyle);
+            var activeStyle = isCompact ? _compactWindowStyle : _windowStyle;
+            _windowRect = GUI.Window(887123, _windowRect, DrawWindow, title, activeStyle);
 
             // Persist dragged position to PlayerPrefs
             float savedX = PlayerPrefs.GetFloat("Milex_ClaimMonitor_HudPosX", 20f);
@@ -167,37 +204,42 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             var data = ClaimScanner.Instance?.CurrentData;
             var alerts = data?.ActiveAlerts;
             bool hasAlerts = alerts != null && alerts.Count > 0;
+            bool isCompact = _isMinimized || Config.HudCompactMode.Value;
 
-            // Header Bar Buttons
+            // Header Bar Minimize / Expand button
             GUILayout.BeginHorizontal();
             GUILayout.FlexibleSpace();
 
-            string toggleLabel = _isMinimized ? "[ + Expand ]" : "[ - Minimize ]";
-            if (GUILayout.Button(toggleLabel, GUILayout.Height(18), GUILayout.Width(80)))
+            string toggleLabel = _isMinimized ? "[ + Full ]" : "[ - Compact ]";
+            if (GUILayout.Button(toggleLabel, GUILayout.Height(16), GUILayout.Width(75)))
             {
                 _isMinimized = !_isMinimized;
             }
             GUILayout.EndHorizontal();
 
-            // Compact / Minimized View
-            if (_isMinimized || Config.HudCompactMode.Value)
+            // Compact View: Compact list of active warnings
+            if (isCompact)
             {
-                GUILayout.BeginVertical(_nominalBoxStyle);
                 if (!hasAlerts)
                 {
-                    GUILayout.Label("<b>STATUS:</b> All Systems Operational", _titleStyle);
+                    GUILayout.Label("<color=#7CFC00>[OK]</color> All Systems Operational", _compactItemStyle);
                 }
                 else
                 {
-                    GUILayout.Label($"<b>ATTENTION:</b> {alerts.Count} issue(s) detected. Click Expand.", _titleStyle);
+                    for (int i = 0; i < alerts.Count; i++)
+                    {
+                        var alert = alerts[i];
+                        string bulletColor = alert.Severity == AlertSeverity.Critical ? "#FF4500" : "#FFD700";
+                        string tag = alert.Severity == AlertSeverity.Critical ? "CRITICAL" : "WARN";
+                        GUILayout.Label($"<color={bulletColor}><b>• [{tag}]</b></color> <b>{alert.Title}:</b> {alert.Description}", _compactItemStyle);
+                    }
                 }
-                GUILayout.EndVertical();
 
-                GUI.DragWindow(new Rect(0, 0, 10000, 24));
+                GUI.DragWindow(new Rect(0, 0, 10000, 10000));
                 return;
             }
 
-            // Overview Summary
+            // Overview Summary (Full Window View)
             int matCount = data?.Mats.Count ?? 0;
             int plantCount = data?.PlantComponents.Count ?? 0;
             int vehicleCount = data?.Vehicles.Count ?? 0;
@@ -207,7 +249,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             GUILayout.EndHorizontal();
             GUILayout.Space(2);
 
-            // Alerts View
+            // Alerts View (Full Window View)
             if (!hasAlerts)
             {
                 GUILayout.BeginVertical(_nominalBoxStyle);
