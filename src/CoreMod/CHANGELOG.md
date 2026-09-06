@@ -5,6 +5,17 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.3.1] - 2026-09-04
+
+### Bug Fixes & Stability
+
+- **Mouse Cursor State Restoration Fix**:
+  - Resolved cursor state leakage where the mouse cursor remained visible and unlocked after closing the in-game menu during gameplay.
+  - Intercepted cursor state before setting `IsMenuOpen = true` and prevented internal UI unlock calls from overwriting the remembered game lock state.
+  - Guarantees 1:1 restoration of first-person gameplay mouse lock and visibility upon menu close.
+
+---
+
 ## [1.3.0] - 2026-09-03
 
 ### Added & Architectural Improvements

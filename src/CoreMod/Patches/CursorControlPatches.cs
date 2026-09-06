@@ -20,9 +20,13 @@ namespace Milex.GMS1.Core.Patches
         {
             if (CorePlugin.IsMenuOpen)
             {
-                // Remember what the game wanted to set
-                GameLockState = value;
-                // Force None so mouse is free
+                // Only remember if the game requested a non-None state (e.g. Locked)
+                // so our own unlock calls don't overwrite the game's actual intent
+                if (value != CursorLockMode.None)
+                {
+                    GameLockState = value;
+                }
+                // Force None so mouse is free while menu is open
                 value = CursorLockMode.None;
             }
             return true;
@@ -34,8 +38,12 @@ namespace Milex.GMS1.Core.Patches
         {
             if (CorePlugin.IsMenuOpen)
             {
-                GameCursorVisible = value;
-                // Force visible
+                // Only remember if the game requested to hide the cursor
+                if (!value)
+                {
+                    GameCursorVisible = false;
+                }
+                // Force visible while menu is open
                 value = true;
             }
             return true;

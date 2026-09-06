@@ -5,6 +5,80 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.8.3] - 2026-09-05
+
+### Claim Monitor: Stationary Wash Plant Water Detection Overhaul & Glacier Creek / Derocker Support
+
+- **Tier 3–5 Stationary Wash Plant Water Supply Recognition**:
+  - Overhauled water detection across all stationary wash plants to directly query the simulation engine (`WashplantShakerBase.Water.HaveWater`, `CheckHasWater()`, and `_hasWater`), eliminating false alarms caused by stale or unrendered visual HUD indicators.
+  - Added full first-class support for `GlacierCreek` (Tier 4) and `DeRocker` (Tier 3/4) so all stationary shaker variants are recognized and monitored seamlessly.
+- **Granular Water Failure Diagnostics**:
+  - Machinery warnings now provide exact, actionable reasons for missing water (hose disconnected, pump turned off, pump intake dry / tower empty, pump disabled, broken/frozen hose, or damaged nozzle).
+- **Strongly-Typed Engine Integration**:
+  - Replaced reflection fallbacks with direct, strongly-typed checks against the game's simulation classes (`WashplantShakerBase`, `WashplantTrommelBase`, `WashplantDuplexJigBase`, `MobileWashplant`, `MiniWashplant`).
+
+---
+
+## [1.8.2] - 2026-09-05
+
+### Claim Monitor: Generator/Pump Running State Validation & Sleek Minimal Compact HUD
+
+- **Generator & Water Pump Running State Validation**:
+  - Fixed power state checks where machines connected to a stopped/empty generator were falsely reported as powered.
+  - Actively validates generator/pump controller states (`PowerStationController.IsWorking`, `isEnabled`, `!IsOverLoaded`, and `WaterStationController.IsWorking`) alongside `Indicator.LastState` (State 0 = White/Off, State 1 = Gray/Disconnected, State 3 = Red/Overload).
+- **Duplex Jig, Gravel Pump & Mini Wash Plant Requirements**:
+  - Corrected requirement profiles: Duplex Jigs and Gravel Pumps only consume electric power and do not require water connections (eliminating false water warnings on Tier 5 Glacier Creek / Gravel Pump setups).
+  - Configured Mini Wash Plant to run on internal fuel engine without external electric power requirements.
+- **Sleek Minimal Compact HUD Overlay**:
+  - Redesigned Compact Mode into a sleek, minimal text HUD overlay that directly lists active warnings as clean, compact bullet points with color-coded severity tags (`• [CRITICAL]`, `• [WARN]`).
+  - Automatically sizes to fit active warnings tightly and supports full window drag & drop across the entire compact banner.
+
+---
+
+## [1.8.1] - 2026-09-04
+
+### Claim Monitor: Indicator-Driven Detection, Orange Beast Deduplication & Fuel Bar Overlay
+
+- **In-Game Visual Indicator-Driven State Detection**:
+  - Overhauled power and water tracking by reading the state of `GoldDigger.Indicator` instances (the actual in-game green/gray water drop and lightning bolt icons).
+  - Exempted Trommels from water supply requirements (Trommels only require electric power).
+- **Orange Beast Setup Presence & Deduplication**:
+  - Requires active `OrangeBeastWashPlantGoldCounter` on the claim to prevent false alarms on uninstalled setups.
+  - Ignores structural frame GameObjects and deduplicates Orange Beast Shaker items.
+- **Front-Aligned Vehicle Quick-Switcher Fuel Status Bar**:
+  - Re-positioned fuel status indicator directly in front of each vehicle card (to the left of the selection area).
+  - Displays a clean 6px vertical status bar with fuel percentage text, completely eliminating overlap with distance labels (`174 ft`).
+- **HUD Position Cleanup**:
+  - Removed non-functioning X/Y position sliders from the config menu; dragged window position is persisted automatically via `PlayerPrefs`.
+
+---
+
+## [1.8.0] - 2026-09-04
+
+### Added: Milex Claim Monitor & CoreMod Cursor Lock Bugfix
+
+- **New Sub-Mod: Milex GMS1 Claim Monitor (v1.0.1)**:
+  - Real-time on-screen Warning HUD telemetry dashboard with draggable, auto-saving UI.
+  - Setup-accurate wash plant classification across three tiers:
+    - **Setup 1**: Mobile Wash Plants (Mini & Mobile Wash Plants).
+    - **Setup 2**: Stationary Setup T3–T5 (Shaker/Glacier Creek, Trommel/Reinforced Trommel, Duplex Jigs/Gravel Pumps, Sluices).
+    - **Setup 3**: Setup T6 / Orange Beast (Giant Shaker, Extended Sluices).
+  - Optional Feeding Chain monitoring (Hoppers and Conveyors) linked to wash plant setups.
+  - Malfunction detection for Trommel drive chain breakage, Shaker motor/water/power failures, Duplex Jig pump failures, and full buckets (with dedicated single-bucket logic for Tier 5 Gravel Pumps).
+  - Robust power and water status verification via active `PowerConsumer` and `WaterConsumer` game properties.
+  - Sluice mat fill level tracking with configurable warning thresholds (default: 90%) and critical overflow alerts (100%).
+  - Vehicle and heavy machinery fuel tracking with low fuel warnings (< 15%) and empty tank critical alerts.
+  - Power generator and water tower level/operation monitoring.
+  - Built-in Diagnostic Inspector (`F3`) and deep memory object dumper for claim diagnostics.
+  - Configurable update scan interval (1.0s to 30.0s).
+  - Complete English and German localization out of the box.
+- **CoreMod Cursor Lock/Visibility Bugfix**:
+  - Resolved cursor state leakage where the mouse cursor remained visible and unlocked after closing the in-game menu during gameplay.
+  - Intercepted cursor state before setting `IsMenuOpen = true` and prevented internal UI unlock calls from overwriting the remembered game lock state.
+  - Guarantees 1:1 restoration of first-person gameplay mouse lock and visibility upon menu close.
+
+---
+
 ## [1.7.0] - 2026-09-03
 
 ### Added: Next-Gen Modern Dashboard & Dual-Engine Menu Architecture

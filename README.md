@@ -16,6 +16,7 @@ Direct links to documentation, guides, and changelogs for all repository compone
 | **Milex GMS1 CoreMod** | Central manager, in-game menu & localization engine | [CoreMod Guide](src/CoreMod/README.md) | [CoreMod Changelog](src/CoreMod/CHANGELOG.md) |
 | **Milex GMS1 HelloMod** | Example mod demonstrating framework features | [HelloMod Guide](src/Mods/HelloMod/README.md) | [HelloMod Changelog](src/Mods/HelloMod/CHANGELOG.md) |
 | **Milex GMS1 Production Tuner** | High-performance tuning for speeds, capacities, and hydraulics across 29 components | [Production Tuner Guide](src/Mods/ProductionTuner/README.md) | [Production Tuner Changelog](src/Mods/ProductionTuner/CHANGELOG.md) |
+| **Milex GMS1 Claim Monitor** | Real-time warning HUD, equipment health, fuel levels, and sluice mat monitoring | [Claim Monitor Guide](src/Mods/ClaimMonitor/README.md) | [Claim Monitor Changelog](src/Mods/ClaimMonitor/CHANGELOG.md) |
 | **Community Knowledge Compendium** | Comprehensive reverse-engineering findings from 10 community mods & vanilla codebase | [Knowledge Compendium](Community%20Knowledge/COMMUNITY_KNOWLEDGE_COMPENDIUM.md) | - |
 | **Keybindings** | Overview of hotkeys and in-game rebinding | [Keybindings Guide](KEYBINDINGS.md) | - |
 
