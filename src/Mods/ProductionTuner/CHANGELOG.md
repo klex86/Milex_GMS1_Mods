@@ -3,6 +3,25 @@
 All notable changes to this mod are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.1] – 2026-09-06
+
+### Added & Fixed: Robust Fuel Hose Reach Scaling (`FuelHose_Length`)
+
+- **Root Cause Resolution for Breaking Fuel Nozzle**:
+  - Identified and fixed the root cause of the broken fuel nozzle bug (`ROPE_REKT` and 10,000 durability damage to `CheckAndRepair`).
+  - Previously, joint limits were applied only on `FuelPistolHoldable.Attach` and targeted the temporary vehicle lock joint instead of the actual physical rope joint (`MyCJoint` in `ShovelRopeDestruction`) on the fuel trailer/tank.
+  - Additionally, `FuelPistolHoldable.MyConfigurableJ` was unassigned in vanilla game code, causing `Attach` to spawn a weak 1,000 N joint that immediately tore itself apart against the rope tension.
+- **Dedicated `ShovelRopeDestruction` Physical Joint Scaling**:
+  - Patched `ShovelRopeDestruction.Awake` and `CreateJoint` to directly scale `MyCJoint.linearLimit` by the configured multiplier.
+  - Automatically updates the internal `jlimit` field on `ShovelRopeDestruction` to ensure any recreated joint retains the extended reach.
+  - Explicitly assigns `FuelPistolHoldable.MyConfigurableJ = MyCJoint`, allowing `Attach()` to validate reach against the extended distance and dock with full 5,000,000 N locking force.
+- **Break Force & Impulse Buffering**:
+  - Buffered `cjoint.breakForce` and `_breakForce` (and `breakTorque`) to a minimum of 50,000 N. Completely prevents false joint snaps and nozzle destruction when running, jumping, or moving across bumpy terrain while carrying the nozzle.
+  - Preserves legitimate drive-away penalties if a heavy vehicle drives off while the nozzle is still plugged in.
+- **Continuous In-Game Slider (`[Group5_Trailers] FuelHose_Length`)**:
+  - Added `FuelHose_Length` with range 1.0x to 5.0x (default 2.0x, reaching 10–12 meters).
+  - Fully integrated with real-time menu updates, reset buttons, and English/German localizations.
+
 ---
 
 ## [1.4.0] – 2026-09-06

@@ -73,6 +73,10 @@
   "config.group5_trailers.magnetitetrailer_capacity.desc": "Payload capacity of the magnetite trailer.",
   "config.group5_trailers.fueltrailer_capacity.name": "Fuel Trailer Capacity",
   "config.group5_trailers.fueltrailer_capacity.desc": "Fuel capacity and refueling flow rate of the mobile fuel tanker.",
+  "config.group5_trailers.fueltank_capacity.name": "Stationary Fuel Tank Capacity",
+  "config.group5_trailers.fueltank_capacity.desc": "Capacity of stationary fuel tanks placed on the claim (not the mobile trailer).",
+  "config.group5_trailers.fuelhose_length.name": "Fuel Hose Reach",
+  "config.group5_trailers.fuelhose_length.desc": "Physical reach and length multiplier of the fuel dispenser hose on fuel trailers and stationary tanks.",
 
   "ui.reset_group": "[ Reset Group ]",
   "ui.reset_all": "[ Reset All ]",

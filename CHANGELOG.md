@@ -3,6 +3,17 @@
 All notable changes and releases for this mod collection are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.8.7] - 2026-09-06
+
+### Production Tuner: Robust Fuel Hose Reach Scaling (`FuelHose_Length`) & Physics Integrity
+
+- **Production Tuner v1.4.1 — Fixed & Re-introduced Fuel Hose Reach (`FuelHose_Length`)**:
+  - Fixed the fatal issue where extending fuel hose reach broke the dispenser nozzle (`ROPE_REKT`, 10,000 durability damage).
+  - Properly scales the true rope joint `ConfigurableJoint.linearLimit` on `ShovelRopeDestruction` and updates internal `jlimit` fields.
+  - Automatically wires `FuelPistolHoldable.MyConfigurableJ`, allowing vanilla `Attach` distance validation and strong 5,000,000 N vehicle locking.
+  - Buffers `breakForce` and `breakTorque` (min 50,000 N) to prevent false snaps during player running and vehicle suspension movement.
+  - Configurable in `[Group5_Trailers]` via continuous slider (1.0x–5.0x, default 2.0x).
+
 ---
 
 ## [1.8.6] - 2026-09-06

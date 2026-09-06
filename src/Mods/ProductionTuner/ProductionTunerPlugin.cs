@@ -17,7 +17,7 @@ namespace Milex.GMS1.Mods.ProductionTuner
     {
         public const string PluginGuid = "com.milex.gms1.productiontuner";
         public const string PluginName = "Milex GMS1 Production Tuner";
-        public const string PluginVersion = "1.3.0";
+        public const string PluginVersion = "1.4.1";
 
         public override string ModGuid => PluginGuid;
         public override string ModName => PluginName;
