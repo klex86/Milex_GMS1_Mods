@@ -33,16 +33,16 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
   - Synchronized `_invmaxShovelVolume = 1f / targetVol` in `DiggingController` for excavators, wheel loaders, and backhoes, keeping internal game event triggers and diagnostic meters accurate.
   - Synchronized Nuggetator (`MatScrubber`) internal cleaning ratio `_ratio` with scaled bucket mat capacities.
 
-### Added: Stationary Fuel Tanks & Fuel Hose Length
+### Added: Stationary Fuel Tanks & Refueling Speed
 
 - **Stationary Fuel Tank Capacity (`FuelTank_Capacity`)**:
   - Extends fuel capacity scaling to all stationary `FuelStationController` objects placed on the claim.
   - Separate config key and tracking dictionary — fully independent from the mobile trailer multiplier.
   - Default: `2.0x`.
-- **Fuel Hose Length (`FuelHoseLength`)**:
-  - Scales the physical reach of the fuel hose / refueling pistol via `ConfigurableJoint.linearLimit.limit`.
-  - Applied to both the `FuelPistolHoldable` component joint and `MyConfigurableJ` in the `Attach()` callback.
-  - Default: `2.0x` (doubles the hose reach).
+- **Fuel Nozzle Physics Integrity & Hose Reach Reversion**:
+  - Completely reverted experimental physics joint manipulation (`FuelHoseLength`) on `FuelPistolHoldable`.
+  - The previous joint limit modification conflicted with `ConfigurableJoint` recreation in `ShovelRopeDestruction.OnJointBreak`, causing fuel nozzles to instantly break (`ROPE_REKT`) with 10,000 durability damage even at minimal distance.
+  - Safe refuel flow rate scaling (`TankingSpeed`) is cleanly retained without touching rope joints or physics anchors.
 
 ---
 

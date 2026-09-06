@@ -64,7 +64,7 @@ All sliders operate in **0.5 increments**. Standard components range from **0.5x
 | `[Group2_Vehicles]` | Excavator Bucket Capacity (3.0x), Excavator Arm Speed (2.0x), Excavator Turret Rotation Speed (2.0x), Excavator Bucket Tilt Speed (1.0x), Wheel Loader Loading Speed (3.0x), Backhoe Loader Loading Speed (3.0x), Dump Truck Load Capacity (3.0x), Frankenstein Conveyor Capacity (2.0x), Frankenstein Conveyor Speed (2.0x), Cordylus Conveyor Capacity (2.0x), Cordylus Conveyor Speed (2.0x) |
 | `[Group3_WashPlantModules]` | Feeder Hopper Capacity (2.0x), Conveyor Bucket Capacity (2.0x), Wash Plant Buffer Capacity (2.0x), Wash Plant Processing Speed (2.0x), Sluice Box Capacity (2.0x), Miner's Moss Mat Capacity (2.0x) |
 | `[Group4_FineProcessing]` | Gold Nuggetator Speed (2.0x), Magnetite Separator Speed (2.0x), Magnetite Separator Capacity (2.0x), Wave Table Speed (3.0x), Wave Table Capacity (3.0x) |
-| `[Group5_Trailers]` | Magnetite Trailer Capacity (2.0x), Fuel Trailer Capacity (3.0x) |
+| `[Group5_Trailers]` | Magnetite Trailer Capacity (2.0x), Fuel Trailer Capacity (3.0x), Stationary Fuel Tank Capacity (2.0x) |
 
 ### Cascade Protection & Bucket Cap (`AutoScaleDependentInputs = true`)
 

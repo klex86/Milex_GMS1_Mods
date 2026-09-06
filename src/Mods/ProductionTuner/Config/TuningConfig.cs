@@ -101,7 +101,6 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         public ConfigEntry<float> MagnetiteTrailer_Capacity { get; private set; }
         public ConfigEntry<float> FuelTrailer_Capacity { get; private set; }
         public ConfigEntry<float> FuelTank_Capacity { get; private set; }
-        public ConfigEntry<float> FuelHoseLength { get; private set; }
 
         // ===========================================================
         // CONSTRUCTOR
@@ -190,8 +189,6 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                 "Load capacity of the mobile fuel trailer.");
             FuelTank_Capacity = BindStep("Group5_Trailers", "FuelTank_Capacity", 2.0f,
                 "Capacity of stationary fuel tanks placed on the claim (not the mobile trailer).");
-            FuelHoseLength = BindStep("Group5_Trailers", "FuelHoseLength", 2.0f,
-                "Physical reach of the fuel hose / refueling pistol (scales the joint limit).");
 
             // Event listeners: reactive cascade protection
             AutoScaleDependentInputs.SettingChanged += (s, e) => ApplyCascadeProtection();
@@ -344,7 +341,6 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                         MagnetiteTrailer_Capacity.Value = (float)MagnetiteTrailer_Capacity.DefaultValue;
                         FuelTrailer_Capacity.Value = (float)FuelTrailer_Capacity.DefaultValue;
                         FuelTank_Capacity.Value = (float)FuelTank_Capacity.DefaultValue;
-                        FuelHoseLength.Value = (float)FuelHoseLength.DefaultValue;
                         break;
                 }
             }

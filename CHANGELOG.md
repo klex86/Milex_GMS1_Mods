@@ -30,8 +30,14 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
   - Synchronized Nuggetator (`MatScrubber`) internal cleaning ratio `_ratio` with scaled bucket capacities.
 - **Production Tuner v1.4.0 — Stationary Fuel Tank Capacity (`FuelTank_Capacity`)**:
   - Extends fuel capacity scaling to all stationary `FuelStationController` objects on the claim (separate from the mobile fuel trailer). Default: `2.0x`.
-- **Production Tuner v1.4.0 — Fuel Hose Length Multiplier (`FuelHoseLength`)**:
-  - Scales the physical reach of the refueling pistol/hose via `ConfigurableJoint.linearLimit.limit`. Default: `2.0x`.
+- **Production Tuner v1.4.0 — Fuel Nozzle Physics Integrity & Hose Reach Reversion**:
+  - Completely reverted experimental physics joint manipulation (`FuelHoseLength`) on `FuelPistolHoldable` which conflicted with `ConfigurableJoint` recreation in `ShovelRopeDestruction.OnJointBreak`, causing fuel nozzles to instantly break (`ROPE_REKT`) and suffer 10,000 durability damage upon attachment.
+  - Safe refuel pump flow speed scaling (`TankingSpeed`) is cleanly retained without touching rope joints or physics anchors.
+- **CoreMod v1.3.2 — Mouse Cursor State Capture & Hardware Lock Fix**:
+  - Fixed cursor state leakage where the mouse cursor remained visible and unlocked after closing the Mod Menu during gameplay.
+  - Added getter suppression (`SuppressGetterPatch`) and captured the game's actual lock state prior to setting `IsMenuOpen = true`.
+  - Fixed `InputManager.SetPauseMenuBlocked` reflection/direct parameter mismatch (`blocked, "MilexModMenu"`).
+  - Integrated `CursorManager.Instance.Refresh()` on menu close to re-engage the game's native hardware window clipping and hide the cursor cleanly.
 
 ---
 

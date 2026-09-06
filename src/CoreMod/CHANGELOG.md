@@ -25,6 +25,11 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 - **Centralized Cursor Requester Architecture (`CorePlugin.RequestCursorUnlock` / `ReleaseCursorUnlock`)**:
   - Provides a centralized cursor registry enabling external overlays and sub-mods (e.g. Diagnostic Inspectors) to unlock the mouse cursor and block game input without forcing the main Mod Menu to open.
   - Ensures clean 1:1 restoration of first-person mouse locking and camera control only after all requesters have released their hold.
+- **Mouse Cursor Capture & Hardware Lock Fix**:
+  - Resolved cursor state leakage where the mouse cursor remained visible and unlocked after closing the in-game menu.
+  - Added `SuppressGetterPatch` during state capture and ensured the game's actual lock state is recorded prior to flipping `IsMenuOpen = true`.
+  - Fixed `InputManager.SetPauseMenuBlocked` parameter count exception by passing both `pauseMenuBlocked` and the reason string (`"MilexModMenu"`).
+  - Integrated `CursorManager.Instance.Refresh()` on menu close to re-engage the game's native hardware window clipping and hide the cursor cleanly.
 - **Modern Canvas Menu Backdrop Decoupling**:
   - Removed click-to-close behavior from the semi-transparent canvas backdrop. Clicks outside the dashboard container or into other active mod overlays will no longer unintentionally dismiss the Mod Menu.
 

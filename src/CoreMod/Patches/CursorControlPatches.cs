@@ -13,6 +13,7 @@ namespace Milex.GMS1.Core.Patches
     {
         public static CursorLockMode GameLockState { get; set; } = CursorLockMode.None;
         public static bool GameCursorVisible { get; set; } = true;
+        public static bool SuppressGetterPatch { get; set; } = false;
 
         [HarmonyPatch(nameof(Cursor.lockState), MethodType.Setter)]
         [HarmonyPrefix]
@@ -48,11 +49,12 @@ namespace Milex.GMS1.Core.Patches
             }
             return true;
         }
+
         [HarmonyPatch(nameof(Cursor.lockState), MethodType.Getter)]
         [HarmonyPrefix]
         public static bool Prefix_get_lockState(ref CursorLockMode __result)
         {
-            if (CorePlugin.IsCursorUnlocked)
+            if (CorePlugin.IsCursorUnlocked && !SuppressGetterPatch)
             {
                 __result = CursorLockMode.None; // Tell the game the cursor is unlocked
                 return false;
@@ -64,7 +66,7 @@ namespace Milex.GMS1.Core.Patches
         [HarmonyPrefix]
         public static bool Prefix_get_visible(ref bool __result)
         {
-            if (CorePlugin.IsCursorUnlocked)
+            if (CorePlugin.IsCursorUnlocked && !SuppressGetterPatch)
             {
                 __result = true; // Tell the game the cursor is visible
                 return false;

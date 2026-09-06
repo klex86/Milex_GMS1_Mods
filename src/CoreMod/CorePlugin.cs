@@ -103,11 +103,11 @@ namespace Milex.GMS1.Core
         {
             if (string.IsNullOrEmpty(requesterId)) return;
             bool wasActive = IsCursorUnlocked;
-            _cursorRequesters.Add(requesterId);
-            if (!wasActive && IsCursorUnlocked)
+            if (!wasActive)
             {
                 OnCursorFreed();
             }
+            _cursorRequesters.Add(requesterId);
         }
 
         public static void ReleaseCursorUnlock(string requesterId)
@@ -123,10 +123,18 @@ namespace Milex.GMS1.Core
 
         private static void OnCursorFreed()
         {
-            _previousLockMode = Cursor.lockState;
-            _previousCursorVisible = Cursor.visible;
-            Patches.CursorControlPatches.GameLockState = _previousLockMode;
-            Patches.CursorControlPatches.GameCursorVisible = _previousCursorVisible;
+            Patches.CursorControlPatches.SuppressGetterPatch = true;
+            try
+            {
+                _previousLockMode = Cursor.lockState;
+                _previousCursorVisible = Cursor.visible;
+                Patches.CursorControlPatches.GameLockState = _previousLockMode;
+                Patches.CursorControlPatches.GameCursorVisible = _previousCursorVisible;
+            }
+            finally
+            {
+                Patches.CursorControlPatches.SuppressGetterPatch = false;
+            }
 
             SetNativeInputBlocked(true);
 
@@ -141,29 +149,56 @@ namespace Milex.GMS1.Core
             CursorLockMode targetLock = Patches.CursorControlPatches.GameLockState != CursorLockMode.None
                 ? Patches.CursorControlPatches.GameLockState
                 : _previousLockMode;
-            bool targetVisible = !Patches.CursorControlPatches.GameCursorVisible 
-                ? false 
+            bool targetVisible = Patches.CursorControlPatches.GameLockState != CursorLockMode.None 
+                ? Patches.CursorControlPatches.GameCursorVisible 
                 : _previousCursorVisible;
 
             Cursor.lockState = targetLock;
             Cursor.visible = targetVisible;
+
+            try
+            {
+                if (CursorManager.Instance != null)
+                {
+                    CursorManager.Instance.Refresh();
+                }
+            }
+            catch { }
+
+            Patches.CursorControlPatches.GameLockState = CursorLockMode.None;
+            Patches.CursorControlPatches.GameCursorVisible = true;
         }
 
         private static void SetNativeInputBlocked(bool blocked)
         {
             try
             {
-                var inputManagerType = Type.GetType("InputManager, Assembly-CSharp");
-                if (inputManagerType != null)
+                InputManager.SetPauseMenuBlocked(blocked, "MilexModMenu");
+            }
+            catch
+            {
+                try
                 {
-                    var setPauseMethod = inputManagerType.GetMethod("SetPauseMenuBlocked", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-                    if (setPauseMethod != null)
+                    var inputManagerType = Type.GetType("InputManager, Assembly-CSharp");
+                    if (inputManagerType != null)
                     {
-                        setPauseMethod.Invoke(null, new object[] { blocked });
+                        var setPauseMethod = inputManagerType.GetMethod("SetPauseMenuBlocked", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+                        if (setPauseMethod != null)
+                        {
+                            var parameters = setPauseMethod.GetParameters();
+                            if (parameters.Length == 2)
+                            {
+                                setPauseMethod.Invoke(null, new object[] { blocked, "MilexModMenu" });
+                            }
+                            else if (parameters.Length == 1)
+                            {
+                                setPauseMethod.Invoke(null, new object[] { blocked });
+                            }
+                        }
                     }
                 }
+                catch { }
             }
-            catch { }
         }
 
         private void Update()
@@ -215,14 +250,16 @@ namespace Milex.GMS1.Core
         public static void ToggleMenu()
         {
             bool wasUnlocked = IsCursorUnlocked;
-            IsMenuOpen = !IsMenuOpen;
+            bool willOpen = !IsMenuOpen;
 
-            if (IsMenuOpen)
+            if (willOpen)
             {
                 if (!wasUnlocked)
                 {
                     OnCursorFreed();
                 }
+
+                IsMenuOpen = true;
 
                 if (PauseGameOnMenu != null && PauseGameOnMenu.Value)
                 {
@@ -245,6 +282,8 @@ namespace Milex.GMS1.Core
             }
             else
             {
+                IsMenuOpen = false;
+
                 if (_isGamePausedByMenu)
                 {
                     Time.timeScale = _previousTimeScale > 0.001f ? _previousTimeScale : 1.0f;
@@ -255,7 +294,7 @@ namespace Milex.GMS1.Core
                 Instance?._classicMenu?.Hide();
                 Instance?._modernMenu?.Hide();
 
-                if (!IsCursorUnlocked)
+                if (wasUnlocked && !IsCursorUnlocked)
                 {
                     OnCursorRestored();
                 }

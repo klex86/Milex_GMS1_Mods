@@ -29,10 +29,6 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
         private static readonly Dictionary<int, (GoldDigger.FuelPistolHoldable instance, float baseSpeed)> TrackedPistols =
             new Dictionary<int, (GoldDigger.FuelPistolHoldable, float)>();
 
-        // Fuel pistol joint limits (hose length)
-        private static readonly Dictionary<int, (GoldDigger.FuelPistolHoldable instance, float baseLimit)> TrackedPistolJoints =
-            new Dictionary<int, (GoldDigger.FuelPistolHoldable, float)>();
-
         private static float _lastTrailerMult = -1f;
         private static float _lastTankMult = -1f;
 
@@ -132,7 +128,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
         }
 
         // -------------------------------------------------------------------------
-        // FuelPistol Attach Postfix — scales tanking speed and hose joint limit
+        // FuelPistol Attach Postfix — scales tanking speed safely
         // -------------------------------------------------------------------------
         [HarmonyPatch(typeof(GoldDigger.FuelPistolHoldable), "Attach")]
         public static class FuelPistolSubPatch
@@ -144,7 +140,6 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 
                 int id = __instance.GetInstanceID();
                 float speedMult = ProductionTunerPlugin.Service?.FuelTrailerCapacityMultiplier ?? 1f;
-                float hoseMult  = ProductionTunerPlugin.Service?.FuelHoseLengthMultiplier ?? 1f;
 
                 // --- Tanking speed ---
                 if (!TrackedPistols.TryGetValue(id, out var speedData))
@@ -153,32 +148,6 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                     TrackedPistols[id] = speedData;
                 }
                 __instance.TankingSpeed = speedData.baseSpeed * Mathf.Max(1f, speedMult);
-
-                // --- Hose reach (ConfigurableJoint on the pistol GameObject) ---
-                ConfigurableJoint goJoint = __instance.GetComponent<ConfigurableJoint>();
-                if (goJoint != null)
-                {
-                    if (!TrackedPistolJoints.TryGetValue(id, out var jointData))
-                    {
-                        jointData = (__instance, goJoint.linearLimit.limit);
-                        TrackedPistolJoints[id] = jointData;
-                    }
-                    SoftJointLimit lim = goJoint.linearLimit;
-                    lim.limit = jointData.baseLimit * Mathf.Max(1f, hoseMult);
-                    goJoint.linearLimit = lim;
-                }
-
-                // --- Hose reach (MyConfigurableJ field on the pistol) ---
-                if (__instance.MyConfigurableJ != null)
-                {
-                    float baseLimit = TrackedPistolJoints.TryGetValue(id, out var jd)
-                        ? jd.baseLimit
-                        : __instance.MyConfigurableJ.linearLimit.limit;
-
-                    SoftJointLimit lim2 = __instance.MyConfigurableJ.linearLimit;
-                    lim2.limit = baseLimit * Mathf.Max(1f, hoseMult);
-                    __instance.MyConfigurableJ.linearLimit = lim2;
-                }
             }
         }
 
@@ -218,7 +187,6 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
             TrackedTrailers.Clear();
             TrackedStationary.Clear();
             TrackedPistols.Clear();
-            TrackedPistolJoints.Clear();
             _lastTrailerMult = -1f;
             _lastTankMult = -1f;
         }
