@@ -6,38 +6,18 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
     /// <summary>
     /// Scales Hog Pan dirt capacity while protecting water consumption rate from accelerating.
-    /// Save/load safe: Start() prefix ensures the multiplier is applied before vanilla code can
-    /// clamp the serialized PlaneVolume against the unmodified vanilla PlaneVolumeMax on load.
+    /// Uses the fixed vanilla capacity (10.0f) from Assembly-CSharp to guard against savegame drift.
     /// </summary>
     public static class HogPanDirtBoxPatch
     {
-        private static readonly Dictionary<int, (GoldDigger.HogPanDirtBox instance, float baseCap)> Tracked =
-            new Dictionary<int, (GoldDigger.HogPanDirtBox, float)>();
+        public const float VanillaHogPanCapacity = 10.0f;
+
+        private static readonly Dictionary<int, GoldDigger.HogPanDirtBox> Tracked =
+            new Dictionary<int, GoldDigger.HogPanDirtBox>();
         private static float _lastMultiplier = -1f;
 
         // -------------------------------------------------------------------------
-        // Start() Prefix — apply multiplier before vanilla code runs to prevent
-        // PlaneVolume being clamped against vanilla PlaneVolumeMax on load.
-        // -------------------------------------------------------------------------
-        [HarmonyPatch(typeof(GoldDigger.HogPanDirtBox), "Start")]
-        public static class HogPanStartSafetyPatch
-        {
-            [HarmonyPostfix]
-            public static void Postfix(GoldDigger.HogPanDirtBox __instance)
-            {
-                if (__instance == null) return;
-                int id = __instance.GetInstanceID();
-                if (Tracked.ContainsKey(id)) return;
-                float baseCap = __instance.PlaneVolumeMax;
-                float multiplier = ProductionTunerPlugin.Service?.HogPanCapacityMultiplier ?? 1f;
-                Tracked[id] = (__instance, baseCap);
-                __instance.PlaneVolumeMax = baseCap * multiplier;
-                _lastMultiplier = multiplier;
-            }
-        }
-
-        // -------------------------------------------------------------------------
-        // Update() Postfix — fast-path for live multiplier changes in the in-game menu
+        // Update() Postfix — Safe initial scaling on first sight & live multiplier changes
         // -------------------------------------------------------------------------
         [HarmonyPatch(typeof(GoldDigger.HogPanDirtBox), "Update")]
         public static class HogPanUpdatePatch
@@ -46,52 +26,50 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             public static void UpdatePostfix(GoldDigger.HogPanDirtBox __instance)
             {
                 if (__instance == null) return;
-
-                float multiplier = ProductionTunerPlugin.Service?.HogPanCapacityMultiplier ?? 1f;
                 int id = __instance.GetInstanceID();
 
-                // Zero-allocation fast-path
-                if (Tracked.TryGetValue(id, out var data))
+                float multiplier = ProductionTunerPlugin.Service?.HogPanCapacityMultiplier ?? 1f;
+
+                if (!Tracked.ContainsKey(id))
                 {
-                    if (multiplier == _lastMultiplier) return;
-                    __instance.PlaneVolumeMax = data.baseCap * multiplier;
-                    _lastMultiplier = multiplier;
-                    return;
+                    Tracked[id] = __instance;
+                    __instance.PlaneVolumeMax = VanillaHogPanCapacity * multiplier;
                 }
 
-                // Fallback registration
-                float baseCap = __instance.PlaneVolumeMax;
-                Tracked[id] = (__instance, baseCap);
-                __instance.PlaneVolumeMax = baseCap * multiplier;
-                _lastMultiplier = multiplier;
+                if (multiplier != _lastMultiplier)
+                {
+                    _lastMultiplier = multiplier;
+                    foreach (var hogPan in Tracked.Values)
+                    {
+                        if (hogPan != null)
+                        {
+                            hogPan.PlaneVolumeMax = VanillaHogPanCapacity * multiplier;
+                        }
+                    }
+                }
             }
-        }
-
-        public static float GetBaseCap(int id, float fallback)
-        {
-            return Tracked.TryGetValue(id, out var data) ? data.baseCap : fallback;
         }
 
         public static void RestoreVanilla()
         {
-            foreach (var kvp in Tracked.Values)
+            foreach (var hogPan in Tracked.Values)
             {
-                if (kvp.instance != null)
-                    kvp.instance.PlaneVolumeMax = kvp.baseCap;
+                if (hogPan != null)
+                {
+                    hogPan.PlaneVolumeMax = VanillaHogPanCapacity;
+                }
             }
+            Tracked.Clear();
             _lastMultiplier = 1f;
         }
 
         public static void Reset()
         {
             RestoreVanilla();
-            Tracked.Clear();
-            _lastMultiplier = -1f;
         }
 
         /// <summary>
         /// Sub-patch on ProcessPlane to refund excess water drainage caused by the enlarged PlaneVolumeMax.
-        /// Direct typed access with 0 reflection overhead.
         /// </summary>
         [HarmonyPatch(typeof(GoldDigger.HogPanDirtBox), "ProcessPlane")]
         public static class ProcessPlaneWaterGuardPatch
@@ -102,11 +80,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
                 if (__instance == null) return;
 
                 float currentCap = __instance.PlaneVolumeMax;
-                float baseCap = GetBaseCap(__instance.GetInstanceID(), 10f);
-
-                if (currentCap > baseCap)
+                if (currentCap > VanillaHogPanCapacity)
                 {
-                    float excessDrain = Time.deltaTime * ((currentCap - baseCap) / 7.5f);
+                    float excessDrain = Time.deltaTime * ((currentCap - VanillaHogPanCapacity) / 7.5f);
                     __instance.WaterVolume += excessDrain;
                 }
             }

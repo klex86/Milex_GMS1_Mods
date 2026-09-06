@@ -7,21 +7,42 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [1.4.0] – 2026-09-06
 
-### Added: Stationary Fuel Tanks, Fuel Hose Length & Save/Load Data Safety
+### Fixed: Continuous Float Sliders, Baseline Constants & Multi-Instance Synchronization
+
+- **Continuous Float Slider Support (`AcceptableValueRange`)**:
+  - Replaced all BepInEx `AcceptableValueList<float>` bindings with continuous `AcceptableValueRange<float>(0.5f, max)`.
+  - Resolves a critical bug where moving sliders in the Modern Canvas or Classic IMGUI menus generated continuous float values (e.g., 5.81x) that were rejected by BepInEx validation and silently forced back to the first item in the list (`0.5f`).
+  - Added dedicated support in `TuningConfig.GetEntryMax` to read `AcceptableValueRange<float>.MaxValue`, properly supporting up to 20.0x multipliers.
+- **Verified Vanilla Baseline Constants Architecture**:
+  - Replaced fragile live-object dynamic base reading with verified hardcoded vanilla baseline constants across all stationary and hand equipment patches (`VanillaHogPanCapacity = 10f`, `VanillaBucketCapacity = 15f`, `VanillaShovelVolume = 0.1f`, `VanillaTrailerCapacity = 1000f`, `VanillaStationaryTankCapacity = 10000f`, `VanillaMaxFill = 15f`, `VanillaCleanSpeed = 0.01f`, etc.).
+  - Completely eliminates savegame drift and compounding multiplier calculations when loading games with pre-existing modded values.
+- **Vehicle Prefab Baseline Architecture & Dump Truck Fill Display Fix**:
+  - Vehicle shovels and beds (`DumpTruck`, `WheelLoader`, `Excavator`, `BackhoeLoader`) store capacity in `DiggingController._maxShovelVolume`, which is marked `[XmlIgnore]` and never serialized into savegames. Unity always instantiates vehicles with pristine prefab defaults.
+  - Replaced arbitrary hardcoded constants with dynamic prefab baseline capture upon first registration in `Update()`, coupled with synchronized reciprocal volume `_invmaxShovelVolume = 1f / targetVol` and zero-allocation fast-paths.
+  - Completely resolves the issue where a bogus `6400f` baseline caused dump trucks loaded from savegames to jump and freeze at 100% fill.
+- **Harmony Startup Lifecycle Safety**:
+  - Removed invalid `[HarmonyPatch(..., "Start")]` hooks from classes lacking a `Start()` method in `Assembly-CSharp` (`HogPanDirtBox`, `Bucket`, `Shovel`, `ConveyorElevator`, `DumpTruck`).
+  - Completely fixes the fatal startup exception (`Undefined target method`) in `Harmony.PatchAll()` that previously aborted mod initialization and left patches unapplied.
+- **Mobile Fuel Trailer Detection Fix**:
+  - Replaced brittle GameObject name filtering with robust `Trailer.MyMachineType == MachineType.TrailerFuel` and `TRAILER_FUELTANK_FUELMAXCAPACITY` detection.
+  - Prevents the mobile fuel trailer from being misidentified as a 10,000L stationary tank and assigned incorrect capacity multipliers.
+- **Multi-Instance Synchronization & Fast-Path Integrity**:
+  - Synchronized instance iteration across all patches: when a multiplier changes, all active equipment instances in `Tracked.Values` are updated at once before `_lastMultiplier` updates, eliminating skipped equipment items and frame-rate hitching.
+  - Corrected loader fast-paths (`ExcavatorPatch`, `WheelLoaderPatch`, `BackhoeLoaderPatch`) to update tracked state timestamps, preventing per-frame joint loops.
+- **Reciprocal Shovel Volume & Nuggetator Ratio Synchronization**:
+  - Synchronized `_invmaxShovelVolume = 1f / targetVol` in `DiggingController` for excavators, wheel loaders, and backhoes, keeping internal game event triggers and diagnostic meters accurate.
+  - Synchronized Nuggetator (`MatScrubber`) internal cleaning ratio `_ratio` with scaled bucket mat capacities.
+
+### Added: Stationary Fuel Tanks & Fuel Hose Length
 
 - **Stationary Fuel Tank Capacity (`FuelTank_Capacity`)**:
   - Extends fuel capacity scaling to all stationary `FuelStationController` objects placed on the claim.
-  - Detected automatically: any fuel station that is **not** the mobile fuel trailer (name `End_Bottom`, 1000 L baseline, child of `Trailer`) is treated as a stationary tank.
   - Separate config key and tracking dictionary — fully independent from the mobile trailer multiplier.
   - Default: `2.0x`.
 - **Fuel Hose Length (`FuelHoseLength`)**:
   - Scales the physical reach of the fuel hose / refueling pistol via `ConfigurableJoint.linearLimit.limit`.
   - Applied to both the `FuelPistolHoldable` component joint and `MyConfigurableJ` in the `Attach()` callback.
   - Default: `2.0x` (doubles the hose reach).
-- **Save/Load Data Safety (All Capacity Patches)**:
-  - Added `Start()` Prefix Harmony patches to 7 components: Fuel Trailer, Stationary Fuel Tanks, Magnetite Trailer, Mobile Wash Plant, Mini Wash Plant, Hog Pan, Wash Plant Shaker, Magnetite Separator, Wave Table.
-  - Guarantees that all capacity multipliers are applied **before** vanilla `Start()`/`Update()` code runs, preventing serialized `CurrentCapacity` values from being silently clamped to the lower vanilla maximum on game load.
-  - Example: Setting `FuelTrailer_Capacity = 3.0x`, filling to 3000 L, saving and reloading will now correctly restore the full 3000 L instead of clamping to 1000 L.
 
 ---
 

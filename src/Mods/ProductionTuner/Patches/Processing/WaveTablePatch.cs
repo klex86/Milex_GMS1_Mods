@@ -5,22 +5,23 @@ using UnityEngine;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
 {
     /// <summary>
-    /// Scales Wave Table concentrate capacity (MaxGroundVolume) and wash cycle speed.
-    /// Save/load safe: Start() prefix ensures the capacity multiplier is applied before vanilla
-    /// code can clamp the serialized CurrentGroundVolume against vanilla MaxGroundVolume on load.
+    /// Scales Wave Table concentrate capacity (MaxGroundVolume) and wash cycle speed
+    /// using pristine vanilla constant (0.6f) from Assembly-CSharp.
+    /// Prevents savegame drift and multi-instance desynchronization.
     /// </summary>
     public static class WaveTablePatch
     {
-        private static readonly Dictionary<int, (GoldDigger.WaveTable instance, float baseVol)> Tracked =
-            new Dictionary<int, (GoldDigger.WaveTable, float)>();
+        public const float VanillaMaxGroundVolume = 0.6f;
+
+        private static readonly Dictionary<int, GoldDigger.WaveTable> Tracked =
+            new Dictionary<int, GoldDigger.WaveTable>();
         private static readonly AccessTools.FieldRef<GoldDigger.WaveTable, float> ElapsedTimeRef =
             AccessTools.FieldRefAccess<GoldDigger.WaveTable, float>("_ElapsedTimeThrow");
 
         private static float _lastMultiplier = -1f;
 
         // -------------------------------------------------------------------------
-        // Start() Prefix — apply capacity multiplier before vanilla code runs to prevent
-        // CurrentGroundVolume being clamped against vanilla MaxGroundVolume on load.
+        // Start() Postfix — apply capacity multiplier on spawn/load before vanilla clamping
         // -------------------------------------------------------------------------
         [HarmonyPatch(typeof(GoldDigger.WaveTable), "Start")]
         public static class WaveTableStartSafetyPatch
@@ -30,18 +31,16 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
             {
                 if (__instance == null) return;
                 int id = __instance.GetInstanceID();
-                if (Tracked.ContainsKey(id)) return;
-                float baseVol = __instance.MaxGroundVolume;
+                Tracked[id] = __instance;
+
                 float capMult = ProductionTunerPlugin.Service?.WaveTableCapacityMultiplier ?? 1f;
-                Tracked[id] = (__instance, baseVol);
-                __instance.MaxGroundVolume = baseVol * capMult;
-                _lastMultiplier = capMult;
+                __instance.MaxGroundVolume = VanillaMaxGroundVolume * capMult;
             }
         }
 
         // -------------------------------------------------------------------------
         // Update() Prefix — advance elapsed timer for speed multiplier
-        // Update() Postfix — fast-path for live capacity multiplier changes
+        // Update() Postfix — Live capacity multiplier changes in the in-game menu
         // -------------------------------------------------------------------------
         [HarmonyPatch(typeof(GoldDigger.WaveTable), "Update")]
         public static class WaveTableUpdatePatch
@@ -68,41 +67,40 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
             {
                 if (__instance == null) return;
 
-                float capMultiplier = ProductionTunerPlugin.Service?.WaveTableCapacityMultiplier ?? 1f;
                 int id = __instance.GetInstanceID();
+                Tracked[id] = __instance;
 
-                // Zero-allocation fast-path
-                if (Tracked.TryGetValue(id, out var data))
+                float capMultiplier = ProductionTunerPlugin.Service?.WaveTableCapacityMultiplier ?? 1f;
+                if (capMultiplier != _lastMultiplier)
                 {
-                    if (capMultiplier == _lastMultiplier) return;
-                    __instance.MaxGroundVolume = data.baseVol * capMultiplier;
                     _lastMultiplier = capMultiplier;
-                    return;
+                    foreach (var table in Tracked.Values)
+                    {
+                        if (table != null)
+                        {
+                            table.MaxGroundVolume = VanillaMaxGroundVolume * capMultiplier;
+                        }
+                    }
                 }
-
-                // Fallback registration
-                float baseVol = __instance.MaxGroundVolume;
-                Tracked[id] = (__instance, baseVol);
-                __instance.MaxGroundVolume = baseVol * capMultiplier;
-                _lastMultiplier = capMultiplier;
             }
         }
 
         public static void RestoreVanilla()
         {
-            foreach (var kvp in Tracked.Values)
+            foreach (var table in Tracked.Values)
             {
-                if (kvp.instance != null)
-                    kvp.instance.MaxGroundVolume = kvp.baseVol;
+                if (table != null)
+                {
+                    table.MaxGroundVolume = VanillaMaxGroundVolume;
+                }
             }
+            Tracked.Clear();
             _lastMultiplier = 1f;
         }
 
         public static void Reset()
         {
             RestoreVanilla();
-            Tracked.Clear();
-            _lastMultiplier = -1f;
         }
     }
 }

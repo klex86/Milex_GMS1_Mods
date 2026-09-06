@@ -5,28 +5,25 @@ using UnityEngine;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 {
     /// <summary>
-    /// Scales mobile fuel trailer capacity, stationary fuel tank capacity, refuel pump speed,
-    /// and physical fuel hose reach — with save/load data safety and clean vanilla state restoration.
-    ///
-    /// Save/Load Safety Strategy:
-    ///   All Start() patches use [HarmonyPostfix] so that vanilla Start() runs first and
-    ///   establishes true initialized field values before we capture the base. This prevents
-    ///   accidentally reading a previously-serialized modded value as the base.
-    ///   For the mobile trailer, a hardcoded vanilla capacity (1000 L) is always used as the
-    ///   base to guard against serialized modded values regardless of Start() ordering.
+    /// Scales mobile fuel trailer capacity (1000.0f), stationary fuel tank capacity (10000.0f),
+    /// refuel pump speed, and physical fuel hose reach — using pristine vanilla constants
+    /// from Assembly-CSharp. Prevents savegame drift and multi-instance desynchronization.
     /// </summary>
     public static class FuelTrailerPatch
     {
-        /// <summary>Known vanilla capacity of the mobile fuel trailer.</summary>
-        private const float VanillaTrailerCapacity = 1000f;
+        /// <summary>Genuine vanilla capacity of the mobile fuel trailer in liters.</summary>
+        public const float VanillaTrailerCapacity = 1000f;
+
+        /// <summary>Genuine vanilla capacity of stationary fuel stations/tanks on the claim in liters.</summary>
+        public const float VanillaStationaryTankCapacity = 10000f;
 
         // Mobile fuel trailer (End_Bottom, child of a Trailer component)
-        private static readonly Dictionary<int, (GoldDigger.FuelStationController instance, float baseCap)> TrackedTrailers =
-            new Dictionary<int, (GoldDigger.FuelStationController, float)>();
+        private static readonly Dictionary<int, GoldDigger.FuelStationController> TrackedTrailers =
+            new Dictionary<int, GoldDigger.FuelStationController>();
 
         // Stationary fuel tanks (all other FuelStationController instances)
-        private static readonly Dictionary<int, (GoldDigger.FuelStationController instance, float baseCap)> TrackedStationary =
-            new Dictionary<int, (GoldDigger.FuelStationController, float)>();
+        private static readonly Dictionary<int, GoldDigger.FuelStationController> TrackedStationary =
+            new Dictionary<int, GoldDigger.FuelStationController>();
 
         // Fuel pistol tanking speed
         private static readonly Dictionary<int, (GoldDigger.FuelPistolHoldable instance, float baseSpeed)> TrackedPistols =
@@ -40,20 +37,19 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
         private static float _lastTankMult = -1f;
 
         /// <summary>
-        /// Detects mobile fuel trailer by object name and parent hierarchy only.
-        /// Does NOT use MaxCapacity value — this avoids misclassification when
-        /// MaxCapacity was serialized as a previously-modded value.
+        /// Detects mobile fuel trailer by machine type and balance sheet key.
         /// </summary>
-        private static bool IsMobileTrailerByHierarchy(GoldDigger.FuelStationController fsc)
+        private static bool IsMobileTrailer(GoldDigger.FuelStationController fsc)
         {
-            return fsc.gameObject.name.Contains("End_Bottom")
-                   && fsc.GetComponentInParent<GoldDigger.Trailer>() != null;
+            if (fsc == null) return false;
+            var trailer = fsc.GetComponentInParent<GoldDigger.Trailer>();
+            if (trailer != null && trailer.MyMachineType == MachineType.TrailerFuel)
+                return true;
+            return fsc.MaxCapacityPropertyDrawerKey == "TRAILER_FUELTANK_FUELMAXCAPACITY";
         }
 
         // -------------------------------------------------------------------------
-        // Start() Postfix — runs AFTER vanilla Start() so fields are in their true
-        // initialized state. Captures the vanilla base AFTER the object is ready.
-        // For the mobile trailer we always use the hardcoded vanilla 1000 L.
+        // Start() Postfix — Safe initial scaling on spawn/load
         // -------------------------------------------------------------------------
         [HarmonyPatch(typeof(GoldDigger.FuelStationController), "Start")]
         public static class FuelStationStartSafetyPatch
@@ -64,35 +60,23 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                 if (__instance == null) return;
                 int id = __instance.GetInstanceID();
 
-                if (IsMobileTrailerByHierarchy(__instance))
+                if (IsMobileTrailer(__instance))
                 {
-                    // Always use the hardcoded vanilla capacity as base — never read the
-                    // possibly-serialized modded MaxCapacity.
+                    TrackedTrailers[id] = __instance;
                     float multiplier = ProductionTunerPlugin.Service?.FuelTrailerCapacityMultiplier ?? 1f;
-                    if (!TrackedTrailers.ContainsKey(id))
-                        TrackedTrailers[id] = (__instance, VanillaTrailerCapacity);
                     __instance.MaxCapacity = VanillaTrailerCapacity * multiplier;
-                    _lastTrailerMult = multiplier;
                 }
                 else
                 {
-                    // For stationary tanks, read vanilla MaxCapacity AFTER vanilla Start().
-                    // Vanilla Start() should have initialized it to the true default.
-                    if (!TrackedStationary.ContainsKey(id))
-                    {
-                        float baseCap = __instance.MaxCapacity;
-                        float multiplier = ProductionTunerPlugin.Service?.FuelTankCapacityMultiplier ?? 1f;
-                        TrackedStationary[id] = (__instance, baseCap);
-                        __instance.MaxCapacity = baseCap * multiplier;
-                        _lastTankMult = multiplier;
-                    }
+                    TrackedStationary[id] = __instance;
+                    float multiplier = ProductionTunerPlugin.Service?.FuelTankCapacityMultiplier ?? 1f;
+                    __instance.MaxCapacity = VanillaStationaryTankCapacity * multiplier;
                 }
             }
         }
 
         // -------------------------------------------------------------------------
-        // Update() Postfix — fast-path for live multiplier changes in the in-game menu.
-        // Fallback registration for objects that were not yet initialized during Start.
+        // Update() Postfix — Live multiplier changes in the in-game menu
         // -------------------------------------------------------------------------
         [HarmonyPatch(typeof(GoldDigger.FuelStationController), "Update")]
         public static class FuelStationUpdatePatch
@@ -103,43 +87,46 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                 if (__instance == null) return;
                 int id = __instance.GetInstanceID();
 
-                // Mobile trailer fast-path
-                if (TrackedTrailers.TryGetValue(id, out var trailerData))
-                {
-                    float multiplier = ProductionTunerPlugin.Service?.FuelTrailerCapacityMultiplier ?? 1f;
-                    if (multiplier == _lastTrailerMult) return;
-                    __instance.MaxCapacity = trailerData.baseCap * multiplier;
-                    _lastTrailerMult = multiplier;
-                    return;
-                }
+                float trailerMult = ProductionTunerPlugin.Service?.FuelTrailerCapacityMultiplier ?? 1f;
+                float tankMult = ProductionTunerPlugin.Service?.FuelTankCapacityMultiplier ?? 1f;
 
-                // Stationary tank fast-path
-                if (TrackedStationary.TryGetValue(id, out var tankData))
+                if (IsMobileTrailer(__instance))
                 {
-                    float multiplier = ProductionTunerPlugin.Service?.FuelTankCapacityMultiplier ?? 1f;
-                    if (multiplier == _lastTankMult) return;
-                    __instance.MaxCapacity = tankData.baseCap * multiplier;
-                    _lastTankMult = multiplier;
-                    return;
-                }
-
-                // Fallback registration (objects active after initial load, no Start() was caught)
-                if (IsMobileTrailerByHierarchy(__instance))
-                {
-                    float multiplier = ProductionTunerPlugin.Service?.FuelTrailerCapacityMultiplier ?? 1f;
-                    TrackedTrailers[id] = (__instance, VanillaTrailerCapacity);
-                    __instance.MaxCapacity = VanillaTrailerCapacity * multiplier;
-                    _lastTrailerMult = multiplier;
+                    if (!TrackedTrailers.ContainsKey(id))
+                    {
+                        TrackedTrailers[id] = __instance;
+                        __instance.MaxCapacity = VanillaTrailerCapacity * trailerMult;
+                    }
                 }
                 else
                 {
-                    // For stationary: read current MaxCapacity only as last resort.
-                    // Ideally Start() already ran; this is just a safety net.
-                    float curCap = __instance.MaxCapacity;
-                    float multiplier = ProductionTunerPlugin.Service?.FuelTankCapacityMultiplier ?? 1f;
-                    TrackedStationary[id] = (__instance, curCap);
-                    __instance.MaxCapacity = curCap * multiplier;
-                    _lastTankMult = multiplier;
+                    if (!TrackedStationary.ContainsKey(id))
+                    {
+                        TrackedStationary[id] = __instance;
+                        __instance.MaxCapacity = VanillaStationaryTankCapacity * tankMult;
+                    }
+                }
+
+                if (trailerMult != _lastTrailerMult || tankMult != _lastTankMult)
+                {
+                    _lastTrailerMult = trailerMult;
+                    _lastTankMult = tankMult;
+
+                    foreach (var trailer in TrackedTrailers.Values)
+                    {
+                        if (trailer != null)
+                        {
+                            trailer.MaxCapacity = VanillaTrailerCapacity * trailerMult;
+                        }
+                    }
+
+                    foreach (var tank in TrackedStationary.Values)
+                    {
+                        if (tank != null)
+                        {
+                            tank.MaxCapacity = VanillaStationaryTankCapacity * tankMult;
+                        }
+                    }
                 }
             }
         }
@@ -197,17 +184,29 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 
         public static void RestoreVanilla()
         {
-            foreach (var kvp in TrackedTrailers.Values)
-                if (kvp.instance != null)
-                    kvp.instance.MaxCapacity = kvp.baseCap;
+            foreach (var trailer in TrackedTrailers.Values)
+            {
+                if (trailer != null)
+                {
+                    trailer.MaxCapacity = VanillaTrailerCapacity;
+                }
+            }
 
-            foreach (var kvp in TrackedStationary.Values)
-                if (kvp.instance != null)
-                    kvp.instance.MaxCapacity = kvp.baseCap;
+            foreach (var tank in TrackedStationary.Values)
+            {
+                if (tank != null)
+                {
+                    tank.MaxCapacity = VanillaStationaryTankCapacity;
+                }
+            }
 
             foreach (var kvp in TrackedPistols.Values)
+            {
                 if (kvp.instance != null)
+                {
                     kvp.instance.TankingSpeed = kvp.baseSpeed;
+                }
+            }
 
             _lastTrailerMult = 1f;
             _lastTankMult = 1f;

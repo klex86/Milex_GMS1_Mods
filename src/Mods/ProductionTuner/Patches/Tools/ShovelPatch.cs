@@ -5,21 +5,16 @@ using UnityEngine;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Tools
 {
     /// <summary>
-    /// Scales hand shovel volume and blade surface area so that digging fills the enlarged volume proportionally.
-    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
+    /// Scales hand shovel volume and blade surface area using pristine vanilla constants (0.1f volume, 0.2f blade bounds).
+    /// Digging fills the enlarged volume proportionally without savegame drift.
     /// </summary>
-    [HarmonyPatch(typeof(GoldDigger.Shovel), "Update")]
     public static class ShovelPatch
     {
-        private struct ShovelBase
-        {
-            public GoldDigger.Shovel Instance;
-            public float BaseVolume;
-            public float BaseBladeX;
-            public float BaseBladeZ;
-        }
+        public const float VanillaShovelVolume = 0.1f;
+        public const float VanillaBladeSize = 0.2f;
 
-        private static readonly Dictionary<int, ShovelBase> BaseValues = new Dictionary<int, ShovelBase>();
+        private static readonly Dictionary<int, GoldDigger.Shovel> Tracked =
+            new Dictionary<int, GoldDigger.Shovel>();
         private static readonly AccessTools.FieldRef<GoldDigger.Shovel, float> BladeXRef =
             AccessTools.FieldRefAccess<GoldDigger.Shovel, float>("_bladeSizex");
         private static readonly AccessTools.FieldRef<GoldDigger.Shovel, float> BladeZRef =
@@ -27,74 +22,77 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Tools
 
         private static float _lastMultiplier = -1f;
 
-        [HarmonyPostfix]
-        public static void Postfix(GoldDigger.Shovel __instance)
+        // -------------------------------------------------------------------------
+        // Update() Postfix — Safe initial scaling on first sight & live multiplier changes
+        // -------------------------------------------------------------------------
+        [HarmonyPatch(typeof(GoldDigger.Shovel), "Update")]
+        public static class ShovelUpdatePatch
         {
-            if (__instance == null) return;
-
-            float multiplier = ProductionTunerPlugin.Service != null
-                ? ProductionTunerPlugin.Service.ShovelFillSpeedMultiplier
-                : 1f;
-
-            int id = __instance.GetInstanceID();
-
-            // Zero-allocation fast-path
-            if (BaseValues.TryGetValue(id, out var baseVal))
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.Shovel __instance)
             {
-                if (multiplier == _lastMultiplier) return;
-                ApplyShovel(__instance, baseVal, multiplier);
-                return;
+                if (__instance == null) return;
+
+                int id = __instance.GetInstanceID();
+                float multiplier = ProductionTunerPlugin.Service?.ShovelFillSpeedMultiplier ?? 1f;
+
+                if (!Tracked.ContainsKey(id))
+                {
+                    Tracked[id] = __instance;
+                    ApplyShovel(__instance, multiplier);
+                }
+
+                if (multiplier != _lastMultiplier)
+                {
+                    _lastMultiplier = multiplier;
+                    foreach (var shovel in Tracked.Values)
+                    {
+                        if (shovel != null)
+                        {
+                            ApplyShovel(shovel, multiplier);
+                        }
+                    }
+                }
             }
-
-            float curBladeX = BladeXRef != null ? BladeXRef(__instance) : 0.2f;
-            float curBladeZ = BladeZRef != null ? BladeZRef(__instance) : 0.2f;
-
-            baseVal = new ShovelBase
-            {
-                Instance = __instance,
-                BaseVolume = __instance.MaxVolume,
-                BaseBladeX = curBladeX,
-                BaseBladeZ = curBladeZ
-            };
-            BaseValues[id] = baseVal;
-            ApplyShovel(__instance, baseVal, multiplier);
-            _lastMultiplier = multiplier;
         }
 
-        private static void ApplyShovel(GoldDigger.Shovel shovel, ShovelBase baseVal, float multiplier)
+        private static void ApplyShovel(GoldDigger.Shovel shovel, float? overrideMultiplier = null)
         {
             if (shovel == null) return;
 
-            shovel.MaxVolume = baseVal.BaseVolume * multiplier;
+            int id = shovel.GetInstanceID();
+            Tracked[id] = shovel;
+
+            float multiplier = overrideMultiplier ?? ProductionTunerPlugin.Service?.ShovelFillSpeedMultiplier ?? 1f;
+            shovel.MaxVolume = VanillaShovelVolume * multiplier;
 
             float bladeScale = Mathf.Sqrt(Mathf.Max(1f, multiplier));
             if (BladeXRef != null)
             {
-                BladeXRef(shovel) = baseVal.BaseBladeX * bladeScale;
+                BladeXRef(shovel) = VanillaBladeSize * bladeScale;
             }
             if (BladeZRef != null)
             {
-                BladeZRef(shovel) = baseVal.BaseBladeZ * bladeScale;
+                BladeZRef(shovel) = VanillaBladeSize * bladeScale;
             }
         }
 
         public static void RestoreVanilla()
         {
-            foreach (var data in BaseValues.Values)
+            foreach (var shovel in Tracked.Values)
             {
-                if (data.Instance != null)
+                if (shovel != null)
                 {
-                    ApplyShovel(data.Instance, data, 1f);
+                    ApplyShovel(shovel, 1f);
                 }
             }
+            Tracked.Clear();
             _lastMultiplier = 1f;
         }
 
         public static void Reset()
         {
             RestoreVanilla();
-            BaseValues.Clear();
-            _lastMultiplier = -1f;
         }
     }
 }

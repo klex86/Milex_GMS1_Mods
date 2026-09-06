@@ -4,58 +4,80 @@ using HarmonyLib;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 {
     /// <summary>
-    /// Scales feed hopper (ConveyorGround) maximum dirt storage capacity with zero frame rate impact
-    /// and clean vanilla state restoration.
+    /// Scales feed hopper (ConveyorGround) dirt capacity using pristine vanilla constant (40.0f) from Assembly-CSharp.
+    /// Prevents savegame drift and multi-instance desynchronization.
     /// </summary>
-    [HarmonyPatch(typeof(GoldDigger.ConveyorGround), "Update")]
     public static class ConveyorGroundPatch
     {
-        private static readonly Dictionary<int, (GoldDigger.ConveyorGround instance, float baseDirt)> Tracked =
-            new Dictionary<int, (GoldDigger.ConveyorGround, float)>();
+        public const float VanillaHopperMaxDirt = 40.0f;
+
+        private static readonly Dictionary<int, GoldDigger.ConveyorGround> Tracked =
+            new Dictionary<int, GoldDigger.ConveyorGround>();
         private static float _lastMultiplier = -1f;
 
-        [HarmonyPostfix]
-        public static void Postfix(GoldDigger.ConveyorGround __instance)
+        // -------------------------------------------------------------------------
+        // Start() Postfix — apply multiplier on spawn/load before vanilla clamping
+        // -------------------------------------------------------------------------
+        [HarmonyPatch(typeof(GoldDigger.ConveyorGround), "Start")]
+        public static class ConveyorGroundStartSafetyPatch
         {
-            if (__instance == null) return;
-
-            float multiplier = ProductionTunerPlugin.Service != null
-                ? ProductionTunerPlugin.Service.HopperCapacityMultiplier
-                : 1f;
-
-            int id = __instance.GetInstanceID();
-
-            // Zero-allocation fast-path
-            if (Tracked.TryGetValue(id, out var data))
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.ConveyorGround __instance)
             {
-                if (multiplier == _lastMultiplier) return;
-                __instance.MaxDirt = data.baseDirt * multiplier;
-                return;
-            }
+                if (__instance == null) return;
+                int id = __instance.GetInstanceID();
+                Tracked[id] = __instance;
 
-            float baseDirt = __instance.MaxDirt;
-            Tracked[id] = (__instance, baseDirt);
-            __instance.MaxDirt = baseDirt * multiplier;
-            _lastMultiplier = multiplier;
+                float multiplier = ProductionTunerPlugin.Service?.HopperCapacityMultiplier ?? 1f;
+                __instance.MaxDirt = VanillaHopperMaxDirt * multiplier;
+            }
+        }
+
+        // -------------------------------------------------------------------------
+        // Update() Postfix — Live multiplier changes in the in-game menu
+        // -------------------------------------------------------------------------
+        [HarmonyPatch(typeof(GoldDigger.ConveyorGround), "Update")]
+        public static class ConveyorGroundUpdatePatch
+        {
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.ConveyorGround __instance)
+            {
+                if (__instance == null) return;
+
+                int id = __instance.GetInstanceID();
+                Tracked[id] = __instance;
+
+                float multiplier = ProductionTunerPlugin.Service?.HopperCapacityMultiplier ?? 1f;
+                if (multiplier != _lastMultiplier)
+                {
+                    _lastMultiplier = multiplier;
+                    foreach (var conveyor in Tracked.Values)
+                    {
+                        if (conveyor != null)
+                        {
+                            conveyor.MaxDirt = VanillaHopperMaxDirt * multiplier;
+                        }
+                    }
+                }
+            }
         }
 
         public static void RestoreVanilla()
         {
-            foreach (var kvp in Tracked.Values)
+            foreach (var conveyor in Tracked.Values)
             {
-                if (kvp.instance != null)
+                if (conveyor != null)
                 {
-                    kvp.instance.MaxDirt = kvp.baseDirt;
+                    conveyor.MaxDirt = VanillaHopperMaxDirt;
                 }
             }
+            Tracked.Clear();
             _lastMultiplier = 1f;
         }
 
         public static void Reset()
         {
             RestoreVanilla();
-            Tracked.Clear();
-            _lastMultiplier = -1f;
         }
     }
 }

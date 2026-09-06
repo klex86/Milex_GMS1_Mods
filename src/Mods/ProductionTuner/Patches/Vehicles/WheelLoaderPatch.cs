@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
 
@@ -12,6 +13,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
     [HarmonyPatch(typeof(Ladowarka), "Update")]
     public static class WheelLoaderPatch
     {
+        private static readonly FieldInfo InvMaxShovelVolumeField = AccessTools.Field(typeof(DiggingController), "_invmaxShovelVolume");
+
         private static readonly Dictionary<int, (Ladowarka instance, float baseVolume)> Tracked =
             new Dictionary<int, (Ladowarka, float)>();
         private static readonly Dictionary<int, (AnimatedJoint joint, float baseTorque)[]> CachedJoints =
@@ -38,7 +41,14 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
             {
                 if (multiplier == _lastMultiplier) return;
 
-                ApplyLoaderState(__instance, digging, data.baseVolume, multiplier);
+                _lastMultiplier = multiplier;
+                foreach (var entry in Tracked.Values)
+                {
+                    if (entry.instance != null && entry.instance.Digging != null)
+                    {
+                        ApplyLoaderState(entry.instance, entry.instance.Digging, entry.baseVolume, multiplier);
+                    }
+                }
                 return;
             }
 
@@ -59,6 +69,10 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
             if (targetVol > 0.0001f)
             {
                 digging.MaxShovelVolumeOffset = 0f;
+                if (InvMaxShovelVolumeField != null)
+                {
+                    InvMaxShovelVolumeField.SetValue(digging, 1f / targetVol);
+                }
             }
 
             int id = loader.GetInstanceID();

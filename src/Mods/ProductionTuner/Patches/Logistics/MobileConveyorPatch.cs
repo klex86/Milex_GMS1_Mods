@@ -5,26 +5,25 @@ using UnityEngine;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 {
     /// <summary>
-    /// Scales buffer capacity (MaxVolume) and transport throughput speed for the large mobile conveyors
-    /// (Frankenstein excavator belt and Cordylus robot carrier belt).
-    /// Dynamically scales chunk discharge size (OneLoadVolume), spawn timer, and compensates
-    /// for the secondary conveyor belt section (MyPathAfterDrop), with clean vanilla state restoration.
+    /// Scales buffer capacity (MaxVolume) and transport throughput speed for large mobile conveyors
+    /// (Frankenstein excavator belt and Cordylus robot carrier belt) using pristine vanilla constants (20.0f MaxVolume, 1.0f Speed, 0.05f OneLoadVolume).
+    /// Dynamically scales chunk discharge size, spawn timer, and compensates for the secondary conveyor belt section.
     /// </summary>
-    [HarmonyPatch(typeof(GoldDigger.FrankensteinBelt), "Update")]
     public static class MobileConveyorPatch
     {
-        private struct ConveyorBase
+        public const float VanillaMaxVolume = 20.0f;
+        public const float VanillaSpeed = 1.0f;
+        public const float VanillaOneLoadVolume = 0.05f;
+        public const float VanillaTextureOffsetSpeed = 0.05f;
+        public static readonly Vector2 VanillaSpawnInterval = new Vector2(0.2f, 0.4f);
+
+        private struct ConveyorInfo
         {
             public GoldDigger.FrankensteinBelt Instance;
-            public float BaseVolume;
-            public float BaseSpeed;
-            public float BaseOneLoad;
-            public float BaseTextureOffsetSpeed;
-            public Vector2 BaseSpawnInterval;
             public bool IsCordylus;
         }
 
-        private static readonly Dictionary<int, ConveyorBase> BaseValues = new Dictionary<int, ConveyorBase>();
+        private static readonly Dictionary<int, ConveyorInfo> Tracked = new Dictionary<int, ConveyorInfo>();
         private static readonly AccessTools.FieldRef<GoldDigger.FrankensteinBelt, float> LastSpawnRef =
             AccessTools.FieldRefAccess<GoldDigger.FrankensteinBelt, float>("lastSpawn");
 
@@ -33,43 +32,90 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
         private static float _lastCordCapMult = -1f;
         private static float _lastCordSpdMult = -1f;
 
-        [HarmonyPostfix]
-        public static void Postfix(GoldDigger.FrankensteinBelt __instance)
+        // -------------------------------------------------------------------------
+        // Start() Postfix — Safe initial scaling on spawn/load
+        // -------------------------------------------------------------------------
+        [HarmonyPatch(typeof(GoldDigger.FrankensteinBelt), "Start")]
+        public static class MobileConveyorStartSafetyPatch
         {
-            if (__instance == null) return;
-
-            var service = ProductionTunerPlugin.Service;
-            float frankCapMult = service != null ? service.FrankensteinCapacityMultiplier : 1f;
-            float frankSpdMult = service != null ? service.FrankensteinSpeedMultiplier : 1f;
-            float cordCapMult = service != null ? service.CordylusCapacityMultiplier : 1f;
-            float cordSpdMult = service != null ? service.CordylusSpeedMultiplier : 1f;
-
-            int id = __instance.GetInstanceID();
-
-            if (BaseValues.TryGetValue(id, out var data))
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.FrankensteinBelt __instance)
             {
-                float curSpdMult = data.IsCordylus ? cordSpdMult : frankSpdMult;
-                float curCapMult = data.IsCordylus ? cordCapMult : frankCapMult;
-                float lastSpdMult = data.IsCordylus ? _lastCordSpdMult : _lastFrankSpdMult;
-                float lastCapMult = data.IsCordylus ? _lastCordCapMult : _lastFrankCapMult;
+                if (__instance == null) return;
+                int id = __instance.GetInstanceID();
 
-                if (curSpdMult != lastSpdMult || curCapMult != lastCapMult)
+                bool isCord = __instance.GetComponentInParent<GoldDigger.MaximusMachineController>() != null;
+                Tracked[id] = new ConveyorInfo { Instance = __instance, IsCordylus = isCord };
+
+                var service = ProductionTunerPlugin.Service;
+                float capMult = isCord
+                    ? (service?.CordylusCapacityMultiplier ?? 1f)
+                    : (service?.FrankensteinCapacityMultiplier ?? 1f);
+                float spdMult = isCord
+                    ? (service?.CordylusSpeedMultiplier ?? 1f)
+                    : (service?.FrankensteinSpeedMultiplier ?? 1f);
+
+                ApplyParameters(__instance, capMult, spdMult);
+            }
+        }
+
+        // -------------------------------------------------------------------------
+        // Update() Postfix — Live multiplier changes and runtime belt speed compensation
+        // -------------------------------------------------------------------------
+        [HarmonyPatch(typeof(GoldDigger.FrankensteinBelt), "Update")]
+        public static class MobileConveyorUpdatePatch
+        {
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.FrankensteinBelt __instance)
+            {
+                if (__instance == null) return;
+                int id = __instance.GetInstanceID();
+
+                if (!Tracked.TryGetValue(id, out var info))
                 {
-                    ApplyStaticParameters(__instance, data, curCapMult, curSpdMult);
+                    bool isCord = __instance.GetComponentInParent<GoldDigger.MaximusMachineController>() != null;
+                    info = new ConveyorInfo { Instance = __instance, IsCordylus = isCord };
+                    Tracked[id] = info;
+                }
+
+                var service = ProductionTunerPlugin.Service;
+                float frankCapMult = service?.FrankensteinCapacityMultiplier ?? 1f;
+                float frankSpdMult = service?.FrankensteinSpeedMultiplier ?? 1f;
+                float cordCapMult  = service?.CordylusCapacityMultiplier ?? 1f;
+                float cordSpdMult  = service?.CordylusSpeedMultiplier ?? 1f;
+
+                if (frankCapMult != _lastFrankCapMult || frankSpdMult != _lastFrankSpdMult ||
+                    cordCapMult != _lastCordCapMult || cordSpdMult != _lastCordSpdMult)
+                {
+                    _lastFrankCapMult = frankCapMult;
+                    _lastFrankSpdMult = frankSpdMult;
+                    _lastCordCapMult  = cordCapMult;
+                    _lastCordSpdMult  = cordSpdMult;
+
+                    foreach (var entry in Tracked.Values)
+                    {
+                        if (entry.Instance != null)
+                        {
+                            float cMult = entry.IsCordylus ? cordCapMult : frankCapMult;
+                            float sMult = entry.IsCordylus ? cordSpdMult : frankSpdMult;
+                            ApplyParameters(entry.Instance, cMult, sMult);
+                        }
+                    }
                 }
 
                 // Runtime compensation: accelerate discharge spawn timer and secondary drop belt proportionally
-                if (curSpdMult > 1f && __instance.IsEnabled)
+                float activeSpdMult = info.IsCordylus ? cordSpdMult : frankSpdMult;
+                if (activeSpdMult > 1f && __instance.IsEnabled)
                 {
                     if (LastSpawnRef != null)
                     {
                         ref float lastSpawn = ref LastSpawnRef(__instance);
-                        lastSpawn -= Time.deltaTime * __instance.SpeedMultiplier * (curSpdMult - 1f);
+                        lastSpawn -= Time.deltaTime * __instance.SpeedMultiplier * (activeSpdMult - 1f);
                     }
 
                     if (__instance.CurrentObjects != null)
                     {
-                        float extraProgress = Time.deltaTime * __instance.SpeedMultiplier * (curSpdMult - 1f);
+                        float extraProgress = Time.deltaTime * __instance.SpeedMultiplier * (activeSpdMult - 1f);
                         var objects = __instance.CurrentObjects;
                         for (int i = 0; i < objects.Count; i++)
                         {
@@ -81,61 +127,32 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                         }
                     }
                 }
-                return;
             }
-
-            // First-time registration
-            bool isCord = __instance.GetComponentInParent<GoldDigger.MaximusMachineController>() != null;
-
-            data = new ConveyorBase
-            {
-                Instance = __instance,
-                BaseVolume = __instance.MaxVolume,
-                BaseSpeed = __instance.Speed,
-                BaseOneLoad = __instance.OneLoadVolume > 0f ? __instance.OneLoadVolume : 0.05f,
-                BaseTextureOffsetSpeed = __instance.TextureOffsetSpeed > 0f ? __instance.TextureOffsetSpeed : 0.05f,
-                BaseSpawnInterval = __instance.SpawnInterval != Vector2.zero ? __instance.SpawnInterval : new Vector2(0.2f, 0.4f),
-                IsCordylus = isCord
-            };
-            BaseValues[id] = data;
-
-            float activeCapMult = isCord ? cordCapMult : frankCapMult;
-            float activeSpdMult = isCord ? cordSpdMult : frankSpdMult;
-
-            ApplyStaticParameters(__instance, data, activeCapMult, activeSpdMult);
-
-            _lastFrankCapMult = frankCapMult;
-            _lastFrankSpdMult = frankSpdMult;
-            _lastCordCapMult = cordCapMult;
-            _lastCordSpdMult = cordSpdMult;
         }
 
-        private static void ApplyStaticParameters(
-            GoldDigger.FrankensteinBelt belt,
-            ConveyorBase data,
-            float capMult,
-            float spdMult)
+        private static void ApplyParameters(GoldDigger.FrankensteinBelt belt, float capMult, float spdMult)
         {
             if (belt == null) return;
-            belt.MaxVolume = data.BaseVolume * capMult;
-            belt.Speed = data.BaseSpeed * spdMult;
-            belt.OneLoadVolume = data.BaseOneLoad * spdMult;
+            belt.MaxVolume = VanillaMaxVolume * capMult;
+            belt.Speed = VanillaSpeed * spdMult;
+            belt.OneLoadVolume = VanillaOneLoadVolume * spdMult;
             if (spdMult > 0.01f)
             {
-                belt.SpawnInterval = data.BaseSpawnInterval / spdMult;
+                belt.SpawnInterval = VanillaSpawnInterval / spdMult;
             }
-            belt.TextureOffsetSpeed = data.BaseTextureOffsetSpeed * spdMult;
+            belt.TextureOffsetSpeed = VanillaTextureOffsetSpeed * spdMult;
         }
 
         public static void RestoreVanilla()
         {
-            foreach (var data in BaseValues.Values)
+            foreach (var entry in Tracked.Values)
             {
-                if (data.Instance != null)
+                if (entry.Instance != null)
                 {
-                    ApplyStaticParameters(data.Instance, data, 1f, 1f);
+                    ApplyParameters(entry.Instance, 1f, 1f);
                 }
             }
+            Tracked.Clear();
             _lastFrankCapMult = 1f;
             _lastFrankSpdMult = 1f;
             _lastCordCapMult = 1f;
@@ -145,11 +162,6 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
         public static void Reset()
         {
             RestoreVanilla();
-            BaseValues.Clear();
-            _lastFrankCapMult = -1f;
-            _lastFrankSpdMult = -1f;
-            _lastCordCapMult = -1f;
-            _lastCordSpdMult = -1f;
         }
     }
 }

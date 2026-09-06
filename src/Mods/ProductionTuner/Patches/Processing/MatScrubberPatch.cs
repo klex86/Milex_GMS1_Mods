@@ -1,82 +1,110 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
 {
     /// <summary>
-    /// Scales Nuggetator (MatScrubber) cleaning throughput speed and bucket mat capacities.
-    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
+    /// Scales Nuggetator (MatScrubber) cleaning throughput speed and bucket mat capacities
+    /// based on verified vanilla baseline values.
+    /// Employs a zero-allocation fast exit path and multi-instance synchronization.
     /// </summary>
-    [HarmonyPatch(typeof(GoldDigger.MatScrubber), "Update")]
+    [HarmonyPatch]
     public static class MatScrubberPatch
     {
-        private struct ScrubberBase
-        {
-            public GoldDigger.MatScrubber Instance;
-            public float CleanSpeed;
-            public int Small;
-            public int Big;
-            public int XL;
-        }
+        public const float VanillaCleanSpeed = 0.01f;
+        public const int VanillaBig = 12;
+        public const int VanillaSmall = 8;
+        public const int VanillaXL = 60;
 
-        private static readonly Dictionary<int, ScrubberBase> BaseValues = new Dictionary<int, ScrubberBase>();
+        private static readonly FieldInfo RatioField = AccessTools.Field(typeof(GoldDigger.MatScrubber), "_ratio");
+        private static readonly FieldInfo MyBucketField = AccessTools.Field(typeof(GoldDigger.MatScrubber), "_myBucket");
+
+        private static readonly Dictionary<int, GoldDigger.MatScrubber> Tracked = new Dictionary<int, GoldDigger.MatScrubber>();
         private static float _lastSpeedMult = -1f;
         private static float _lastBucketMult = -1f;
 
-        [HarmonyPostfix]
-        public static void Postfix(GoldDigger.MatScrubber __instance)
+        [HarmonyPatch(typeof(GoldDigger.MatScrubber), "Start")]
+        [HarmonyPrefix]
+        public static void StartPrefix(GoldDigger.MatScrubber __instance)
         {
             if (__instance == null) return;
 
             float spdMultiplier = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.NuggetatorSpeedMultiplier
                 : 1f;
+            float bucketMult = ProductionTunerPlugin.Service != null
+                ? ProductionTunerPlugin.Service.BucketCapacityMultiplier
+                : 1f;
 
+            ApplyToInstance(__instance, spdMultiplier, bucketMult);
+            Tracked[__instance.GetInstanceID()] = __instance;
+        }
+
+        [HarmonyPatch(typeof(GoldDigger.MatScrubber), "Update")]
+        [HarmonyPostfix]
+        public static void UpdatePostfix(GoldDigger.MatScrubber __instance)
+        {
+            if (__instance == null) return;
+
+            float spdMultiplier = ProductionTunerPlugin.Service != null
+                ? ProductionTunerPlugin.Service.NuggetatorSpeedMultiplier
+                : 1f;
             float bucketMult = ProductionTunerPlugin.Service != null
                 ? ProductionTunerPlugin.Service.BucketCapacityMultiplier
                 : 1f;
 
             int id = __instance.GetInstanceID();
-
-            // Zero-allocation fast-path
-            if (BaseValues.TryGetValue(id, out var baseVal))
+            if (!Tracked.ContainsKey(id))
             {
-                if (spdMultiplier == _lastSpeedMult && bucketMult == _lastBucketMult) return;
-                __instance.CleanigDirtSpeed = baseVal.CleanSpeed * spdMultiplier;
-                __instance.SmallInBucket = (int)Math.Round(baseVal.Small * bucketMult);
-                __instance.BigInBucket = (int)Math.Round(baseVal.Big * bucketMult);
-                __instance.XLInBucket = (int)Math.Round(baseVal.XL * bucketMult);
-                return;
+                Tracked[id] = __instance;
+                ApplyToInstance(__instance, spdMultiplier, bucketMult);
             }
 
-            baseVal = new ScrubberBase
-            {
-                Instance = __instance,
-                CleanSpeed = __instance.CleanigDirtSpeed,
-                Small = __instance.SmallInBucket,
-                Big = __instance.BigInBucket,
-                XL = __instance.XLInBucket
-            };
-            BaseValues[id] = baseVal;
-            __instance.CleanigDirtSpeed = baseVal.CleanSpeed * spdMultiplier;
-            __instance.SmallInBucket = (int)Math.Round(baseVal.Small * bucketMult);
-            __instance.BigInBucket = (int)Math.Round(baseVal.Big * bucketMult);
-            __instance.XLInBucket = (int)Math.Round(baseVal.XL * bucketMult);
+            if (spdMultiplier == _lastSpeedMult && bucketMult == _lastBucketMult)
+                return;
+
             _lastSpeedMult = spdMultiplier;
             _lastBucketMult = bucketMult;
+
+            foreach (var scrubber in Tracked.Values)
+            {
+                if (scrubber != null)
+                {
+                    ApplyToInstance(scrubber, spdMultiplier, bucketMult);
+                }
+            }
+        }
+
+        private static void ApplyToInstance(GoldDigger.MatScrubber scrubber, float spdMultiplier, float bucketMult)
+        {
+            scrubber.CleanigDirtSpeed = VanillaCleanSpeed * spdMultiplier;
+            scrubber.SmallInBucket = (int)Math.Round(VanillaSmall * bucketMult);
+            scrubber.BigInBucket = (int)Math.Round(VanillaBig * bucketMult);
+            scrubber.XLInBucket = (int)Math.Round(VanillaXL * bucketMult);
+
+            if (RatioField != null && scrubber.MinerMosses != null && scrubber.MinerMosses.Length > 6 &&
+                scrubber.MinerMosses[0] != null && scrubber.MinerMosses[6] != null)
+            {
+                float num = scrubber.MinerMosses[0].MaxGroundVolume * scrubber.BigInBucket +
+                            scrubber.MinerMosses[6].MaxGroundVolume * scrubber.SmallInBucket;
+                if (num > 0.0001f)
+                {
+                    var myBucket = MyBucketField?.GetValue(scrubber) as GoldDigger.Bucket;
+                    float bucketVol = myBucket != null ? myBucket.MaxVolume : 0.03f;
+                    RatioField.SetValue(scrubber, bucketVol / num);
+                }
+            }
         }
 
         public static void RestoreVanilla()
         {
-            foreach (var data in BaseValues.Values)
+            foreach (var scrubber in Tracked.Values)
             {
-                if (data.Instance != null)
+                if (scrubber != null)
                 {
-                    data.Instance.CleanigDirtSpeed = data.CleanSpeed;
-                    data.Instance.SmallInBucket = data.Small;
-                    data.Instance.BigInBucket = data.Big;
-                    data.Instance.XLInBucket = data.XL;
+                    ApplyToInstance(scrubber, 1f, 1f);
                 }
             }
             _lastSpeedMult = 1f;
@@ -86,7 +114,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
         public static void Reset()
         {
             RestoreVanilla();
-            BaseValues.Clear();
+            Tracked.Clear();
             _lastSpeedMult = -1f;
             _lastBucketMult = -1f;
         }

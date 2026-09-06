@@ -7,15 +7,31 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [1.8.6] - 2026-09-06
 
-### Production Tuner: Stationary Fuel Tanks, Fuel Hose Length & Save/Load Data Safety
+### Production Tuner: Stationary Fuel Tanks, Fuel Hose Length, Vanilla Baseline Constants & Continuous Slider Support
 
+- **Production Tuner v1.4.0 — Continuous Float Slider Support (`AcceptableValueRange`)**:
+  - Replaced all BepInEx `AcceptableValueList<float>` bindings with continuous `AcceptableValueRange<float>(0.5f, max)`.
+  - Fixes the bug where in-game slider adjustments produced floating-point values (e.g. 5.81x) that were rejected by BepInEx and reset back to 0.5x upon closing the menu.
+- **Production Tuner v1.4.0 — Verified Vanilla Baseline Constants Architecture**:
+  - Replaced fragile live-object dynamic base reading with verified hardcoded vanilla baseline constants across all stationary and hand equipment patches (`VanillaHogPanCapacity = 10f`, `VanillaBucketCapacity = 15f`, `VanillaShovelVolume = 0.1f`, `VanillaTrailerCapacity = 1000f`, `VanillaStationaryTankCapacity = 10000f`, `VanillaMaxFill = 15f`, `VanillaCleanSpeed = 0.01f`, etc.).
+  - Completely eliminates savegame drift and compounding multiplier calculations when loading games with pre-existing modded values.
+- **Production Tuner v1.4.0 — Vehicle Prefab Baseline & Dump Truck Display Fix**:
+  - Vehicle capacities (`DumpTruck`, `WheelLoader`, `Excavator`, `BackhoeLoader`) are stored in `DiggingController._maxShovelVolume` (`[XmlIgnore]`), which is never serialized into savegames and cleanly instantiated from vanilla prefabs.
+  - Dynamically captures pristine prefab baseline upon initial registration in `Update()` Prefix, scales capacity, and synchronizes reciprocal volume `_invmaxShovelVolume = 1f / targetVol` via reflection.
+  - Completely fixes the bug where a bogus hardcoded `6400f` constant caused dump trucks loaded from savegames to jump and lock at 100% capacity.
+- **Production Tuner v1.4.0 — Harmony Startup Lifecycle Safety**:
+  - Removed invalid `[HarmonyPatch(..., "Start")]` hooks from classes lacking a `Start()` method in `Assembly-CSharp` (`HogPanDirtBox`, `Bucket`, `Shovel`, `ConveyorElevator`, `DumpTruck`).
+  - Completely eliminates the fatal `Undefined target method` exception in `Harmony.PatchAll()` that previously caused mod initialization to abort.
+- **Production Tuner v1.4.0 — Mobile Fuel Trailer Detection Fix**:
+  - Replaced brittle GameObject name matching with machine type verification (`Trailer.MyMachineType == MachineType.TrailerFuel` / `TRAILER_FUELTANK_FUELMAXCAPACITY`), preventing mobile fuel trailers from being misclassified as 10,000L stationary tanks.
+- **Production Tuner v1.4.0 — Multi-Instance Synchronization & Loader Fast-Paths**:
+  - Ensured all active instances in `Tracked.Values` update simultaneously before `_lastMultiplier` updates.
+  - Synchronized `_invmaxShovelVolume` via reflection for excavators, wheel loaders, and backhoe loaders.
+  - Synchronized Nuggetator (`MatScrubber`) internal cleaning ratio `_ratio` with scaled bucket capacities.
 - **Production Tuner v1.4.0 — Stationary Fuel Tank Capacity (`FuelTank_Capacity`)**:
   - Extends fuel capacity scaling to all stationary `FuelStationController` objects on the claim (separate from the mobile fuel trailer). Default: `2.0x`.
-- **Production Tuner — Fuel Hose Length Multiplier (`FuelHoseLength`)**:
+- **Production Tuner v1.4.0 — Fuel Hose Length Multiplier (`FuelHoseLength`)**:
   - Scales the physical reach of the refueling pistol/hose via `ConfigurableJoint.linearLimit.limit`. Default: `2.0x`.
-- **Production Tuner — Save/Load Data Safety**:
-  - Added `Start()` Prefix Harmony patches to Fuel Trailer, Stationary Fuel Tanks, Magnetite Trailer, Mobile Wash Plant, Mini Wash Plant, Hog Pan, Wash Plant Shaker, Magnetite Separator, and Wave Table.
-  - Prevents serialized `CurrentCapacity` values from being silently clamped to the lower vanilla maximum on game load when capacity multipliers are active.
 
 ---
 

@@ -206,9 +206,10 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
 
         private ConfigEntry<float> BindStep(string section, string key, float defaultValue, string description, float[] steps = null)
         {
+            float max = (steps != null && steps.Length > 0) ? steps[steps.Length - 1] : 10.0f;
             return _cfg.Bind(section, key, defaultValue,
                 new ConfigDescription(description,
-                    new AcceptableValueList<float>(steps ?? StandardSteps)));
+                    new AcceptableValueRange<float>(0.5f, max)));
         }
 
         /// <summary>
@@ -228,6 +229,10 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
 
         private static float GetEntryMax(ConfigEntry<float> entry)
         {
+            if (entry?.Description?.AcceptableValues is AcceptableValueRange<float> range)
+            {
+                return range.MaxValue;
+            }
             if (entry?.Description?.AcceptableValues is AcceptableValueList<float> list && list.AcceptableValues.Length > 0)
             {
                 return list.AcceptableValues[list.AcceptableValues.Length - 1];
@@ -338,6 +343,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                     case 5:
                         MagnetiteTrailer_Capacity.Value = (float)MagnetiteTrailer_Capacity.DefaultValue;
                         FuelTrailer_Capacity.Value = (float)FuelTrailer_Capacity.DefaultValue;
+                        FuelTank_Capacity.Value = (float)FuelTank_Capacity.DefaultValue;
+                        FuelHoseLength.Value = (float)FuelHoseLength.DefaultValue;
                         break;
                 }
             }

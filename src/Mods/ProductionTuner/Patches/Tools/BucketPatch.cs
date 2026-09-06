@@ -4,57 +4,67 @@ using HarmonyLib;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Tools
 {
     /// <summary>
-    /// Scales hand bucket capacity with a zero-allocation fast exit path and clean vanilla state restoration.
+    /// Scales hand bucket capacity using the genuine vanilla baseline (15.0f)
+    /// from Gold Mining Simulator. Prevents savegame drift and multi-instance desync.
     /// </summary>
-    [HarmonyPatch(typeof(GoldDigger.Bucket), "Update")]
     public static class BucketPatch
     {
-        private static readonly Dictionary<int, (GoldDigger.Bucket instance, float baseVolume)> Tracked =
-            new Dictionary<int, (GoldDigger.Bucket, float)>();
+        public const float VanillaBucketCapacity = 15.0f;
+
+        private static readonly Dictionary<int, GoldDigger.Bucket> Tracked =
+            new Dictionary<int, GoldDigger.Bucket>();
         private static float _lastMultiplier = -1f;
 
-        [HarmonyPostfix]
-        public static void Postfix(GoldDigger.Bucket __instance)
+        // -------------------------------------------------------------------------
+        // Update() Postfix — Safe initial scaling on first sight & live multiplier changes
+        // -------------------------------------------------------------------------
+        [HarmonyPatch(typeof(GoldDigger.Bucket), "Update")]
+        public static class BucketUpdatePatch
         {
-            if (__instance == null) return;
-
-            float multiplier = ProductionTunerPlugin.Service != null
-                ? ProductionTunerPlugin.Service.BucketCapacityMultiplier
-                : 1f;
-
-            int id = __instance.GetInstanceID();
-
-            // Zero-allocation fast-path
-            if (Tracked.TryGetValue(id, out var data))
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.Bucket __instance)
             {
-                if (multiplier == _lastMultiplier) return;
-                __instance.MaxVolume = data.baseVolume * multiplier;
-                return;
-            }
+                if (__instance == null) return;
 
-            float baseVol = __instance.MaxVolume;
-            Tracked[id] = (__instance, baseVol);
-            __instance.MaxVolume = baseVol * multiplier;
-            _lastMultiplier = multiplier;
+                int id = __instance.GetInstanceID();
+                float multiplier = ProductionTunerPlugin.Service?.BucketCapacityMultiplier ?? 1f;
+
+                if (!Tracked.ContainsKey(id))
+                {
+                    Tracked[id] = __instance;
+                    __instance.MaxVolume = VanillaBucketCapacity * multiplier;
+                }
+
+                if (multiplier != _lastMultiplier)
+                {
+                    _lastMultiplier = multiplier;
+                    foreach (var bucket in Tracked.Values)
+                    {
+                        if (bucket != null)
+                        {
+                            bucket.MaxVolume = VanillaBucketCapacity * multiplier;
+                        }
+                    }
+                }
+            }
         }
 
         public static void RestoreVanilla()
         {
-            foreach (var kvp in Tracked.Values)
+            foreach (var bucket in Tracked.Values)
             {
-                if (kvp.instance != null)
+                if (bucket != null)
                 {
-                    kvp.instance.MaxVolume = kvp.baseVolume;
+                    bucket.MaxVolume = VanillaBucketCapacity;
                 }
             }
+            Tracked.Clear();
             _lastMultiplier = 1f;
         }
 
         public static void Reset()
         {
             RestoreVanilla();
-            Tracked.Clear();
-            _lastMultiplier = -1f;
         }
     }
 }

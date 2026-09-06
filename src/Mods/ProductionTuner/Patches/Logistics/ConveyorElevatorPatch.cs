@@ -4,58 +4,67 @@ using HarmonyLib;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 {
     /// <summary>
-    /// Scales bucket elevator conveyor bucket capacity with zero frame rate impact
-    /// and clean vanilla state restoration.
+    /// Scales bucket elevator conveyor bucket capacity using pristine vanilla constant (0.5f) from Assembly-CSharp.
+    /// Prevents savegame drift and multi-instance desynchronization.
     /// </summary>
-    [HarmonyPatch(typeof(GoldDigger.ConveyorElevator), "Update")]
     public static class ConveyorElevatorPatch
     {
-        private static readonly Dictionary<int, (GoldDigger.ConveyorElevator instance, float baseCap)> Tracked =
-            new Dictionary<int, (GoldDigger.ConveyorElevator, float)>();
+        public const float VanillaBucketCapacity = 0.5f;
+
+        private static readonly Dictionary<int, GoldDigger.ConveyorElevator> Tracked =
+            new Dictionary<int, GoldDigger.ConveyorElevator>();
         private static float _lastMultiplier = -1f;
 
-        [HarmonyPostfix]
-        public static void Postfix(GoldDigger.ConveyorElevator __instance)
+        // -------------------------------------------------------------------------
+        // Update() Postfix — Safe initial scaling on first sight & live multiplier changes
+        // -------------------------------------------------------------------------
+        [HarmonyPatch(typeof(GoldDigger.ConveyorElevator), "Update")]
+        public static class ConveyorElevatorUpdatePatch
         {
-            if (__instance == null) return;
-
-            float multiplier = ProductionTunerPlugin.Service != null
-                ? ProductionTunerPlugin.Service.ConveyorBucketCapacityMultiplier
-                : 1f;
-
-            int id = __instance.GetInstanceID();
-
-            // Zero-allocation fast-path
-            if (Tracked.TryGetValue(id, out var data))
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.ConveyorElevator __instance)
             {
-                if (multiplier == _lastMultiplier) return;
-                __instance.BucketCapacity = data.baseCap * multiplier;
-                return;
-            }
+                if (__instance == null) return;
 
-            float baseCap = __instance.BucketCapacity;
-            Tracked[id] = (__instance, baseCap);
-            __instance.BucketCapacity = baseCap * multiplier;
-            _lastMultiplier = multiplier;
+                int id = __instance.GetInstanceID();
+                float multiplier = ProductionTunerPlugin.Service?.ConveyorBucketCapacityMultiplier ?? 1f;
+
+                if (!Tracked.ContainsKey(id))
+                {
+                    Tracked[id] = __instance;
+                    __instance.BucketCapacity = VanillaBucketCapacity * multiplier;
+                }
+
+                if (multiplier != _lastMultiplier)
+                {
+                    _lastMultiplier = multiplier;
+                    foreach (var elevator in Tracked.Values)
+                    {
+                        if (elevator != null)
+                        {
+                            elevator.BucketCapacity = VanillaBucketCapacity * multiplier;
+                        }
+                    }
+                }
+            }
         }
 
         public static void RestoreVanilla()
         {
-            foreach (var kvp in Tracked.Values)
+            foreach (var elevator in Tracked.Values)
             {
-                if (kvp.instance != null)
+                if (elevator != null)
                 {
-                    kvp.instance.BucketCapacity = kvp.baseCap;
+                    elevator.BucketCapacity = VanillaBucketCapacity;
                 }
             }
+            Tracked.Clear();
             _lastMultiplier = 1f;
         }
 
         public static void Reset()
         {
             RestoreVanilla();
-            Tracked.Clear();
-            _lastMultiplier = -1f;
         }
     }
 }

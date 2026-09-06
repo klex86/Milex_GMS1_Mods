@@ -5,60 +5,81 @@ using Milex.GMS1.Mods.ProductionTuner.Helpers;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
     /// <summary>
-    /// Scales dirt and mineral sediment capacity for Miner's Moss mats.
-    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
+    /// Scales dirt and mineral sediment capacity for Miner's Moss mats using pristine vanilla constant (10.0f) from Assembly-CSharp.
+    /// Excludes Orange Beast components and prevents multi-instance desynchronization.
     /// </summary>
-    [HarmonyPatch(typeof(GoldDigger.MinersMoss), "Update")]
     public static class MinersMossPatch
     {
-        private static readonly Dictionary<int, (GoldDigger.MinersMoss instance, float baseVol)> Tracked =
-            new Dictionary<int, (GoldDigger.MinersMoss, float)>();
+        public const float VanillaMaxGroundVolume = 10.0f;
+
+        private static readonly Dictionary<int, GoldDigger.MinersMoss> Tracked =
+            new Dictionary<int, GoldDigger.MinersMoss>();
         private static float _lastMultiplier = -1f;
 
-        [HarmonyPostfix]
-        public static void Postfix(GoldDigger.MinersMoss __instance)
+        // -------------------------------------------------------------------------
+        // Start() Postfix — apply multiplier on spawn/load before vanilla clamping
+        // -------------------------------------------------------------------------
+        [HarmonyPatch(typeof(GoldDigger.MinersMoss), "Start")]
+        public static class MinersMossStartSafetyPatch
         {
-            if (__instance == null) return;
-
-            float multiplier = ProductionTunerPlugin.Service != null
-                ? ProductionTunerPlugin.Service.MinersMossCapacityMultiplier
-                : 1f;
-
-            int id = __instance.GetInstanceID();
-
-            // Zero-allocation fast-path
-            if (Tracked.TryGetValue(id, out var data))
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.MinersMoss __instance)
             {
-                if (multiplier == _lastMultiplier) return;
-                __instance.MaxGroundVolume = data.baseVol * multiplier;
-                return;
+                if (__instance == null || OrangeBeastFilter.IsOrangeBeastPart(__instance)) return;
+
+                int id = __instance.GetInstanceID();
+                Tracked[id] = __instance;
+
+                float multiplier = ProductionTunerPlugin.Service?.MinersMossCapacityMultiplier ?? 1f;
+                __instance.MaxGroundVolume = VanillaMaxGroundVolume * multiplier;
             }
+        }
 
-            if (OrangeBeastFilter.IsOrangeBeastPart(__instance)) return;
+        // -------------------------------------------------------------------------
+        // Update() Postfix — Live multiplier changes in the in-game menu
+        // -------------------------------------------------------------------------
+        [HarmonyPatch(typeof(GoldDigger.MinersMoss), "Update")]
+        public static class MinersMossUpdatePatch
+        {
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.MinersMoss __instance)
+            {
+                if (__instance == null || OrangeBeastFilter.IsOrangeBeastPart(__instance)) return;
 
-            float baseVol = __instance.MaxGroundVolume;
-            Tracked[id] = (__instance, baseVol);
-            __instance.MaxGroundVolume = baseVol * multiplier;
-            _lastMultiplier = multiplier;
+                int id = __instance.GetInstanceID();
+                Tracked[id] = __instance;
+
+                float multiplier = ProductionTunerPlugin.Service?.MinersMossCapacityMultiplier ?? 1f;
+                if (multiplier != _lastMultiplier)
+                {
+                    _lastMultiplier = multiplier;
+                    foreach (var moss in Tracked.Values)
+                    {
+                        if (moss != null)
+                        {
+                            moss.MaxGroundVolume = VanillaMaxGroundVolume * multiplier;
+                        }
+                    }
+                }
+            }
         }
 
         public static void RestoreVanilla()
         {
-            foreach (var kvp in Tracked.Values)
+            foreach (var moss in Tracked.Values)
             {
-                if (kvp.instance != null)
+                if (moss != null)
                 {
-                    kvp.instance.MaxGroundVolume = kvp.baseVol;
+                    moss.MaxGroundVolume = VanillaMaxGroundVolume;
                 }
             }
+            Tracked.Clear();
             _lastMultiplier = 1f;
         }
 
         public static void Reset()
         {
             RestoreVanilla();
-            Tracked.Clear();
-            _lastMultiplier = -1f;
         }
     }
 }

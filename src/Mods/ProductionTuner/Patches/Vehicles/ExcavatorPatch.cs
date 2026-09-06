@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 using UnityEngine;
 
@@ -13,6 +14,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
     [HarmonyPatch(typeof(Koparka), "Update")]
     public static class ExcavatorPatch
     {
+        private static readonly FieldInfo InvMaxShovelVolumeField = AccessTools.Field(typeof(DiggingController), "_invmaxShovelVolume");
+
         private struct ExcavatorBase
         {
             public Koparka Instance;
@@ -20,7 +23,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
             public (Backhoe arm, float baseSpeed)[] CachedArms;
         }
 
-        private static readonly Dictionary<int, ExcavatorBase> BaseData = new Dictionary<int, ExcavatorBase>();
+        private static readonly Dictionary<int, ExcavatorBase> Tracked = new Dictionary<int, ExcavatorBase>();
         private static float _lastDigMult = -1f;
         private static float _lastArmMult = -1f;
         private static float _lastTurretMult = -1f;
@@ -55,7 +58,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
             }
 
             // Zero-allocation fast-path
-            if (BaseData.TryGetValue(id, out var data))
+            if (Tracked.TryGetValue(id, out var data))
             {
                 if (digMult == _lastDigMult && armMult == _lastArmMult &&
                     turretMult == _lastTurretMult && bucketMult == _lastBucketMult)
@@ -63,7 +66,18 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
                     return;
                 }
 
-                ApplyExcavatorState(__instance, data, digMult, armMult, turretMult, bucketMult);
+                _lastDigMult = digMult;
+                _lastArmMult = armMult;
+                _lastTurretMult = turretMult;
+                _lastBucketMult = bucketMult;
+
+                foreach (var entry in Tracked.Values)
+                {
+                    if (entry.Instance != null)
+                    {
+                        ApplyExcavatorState(entry.Instance, entry, digMult, armMult, turretMult, bucketMult);
+                    }
+                }
                 return;
             }
 
@@ -77,7 +91,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
                 BaseVolume = baseVol,
                 CachedArms = cachedArms
             };
-            BaseData[id] = data;
+            Tracked[id] = data;
 
             ApplyExcavatorState(__instance, data, digMult, armMult, turretMult, bucketMult);
             _lastDigMult = digMult;
@@ -115,7 +129,12 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
 
             if (excavator.Digging != null)
             {
-                excavator.Digging._maxShovelVolume = data.BaseVolume * digMult;
+                float targetVol = data.BaseVolume * digMult;
+                excavator.Digging._maxShovelVolume = targetVol;
+                if (targetVol > 0.0001f && InvMaxShovelVolumeField != null)
+                {
+                    InvMaxShovelVolumeField.SetValue(excavator.Digging, 1f / targetVol);
+                }
             }
 
             if (data.CachedArms == null) return;
@@ -165,7 +184,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
 
         public static void RestoreVanilla()
         {
-            foreach (var data in BaseData.Values)
+            foreach (var data in Tracked.Values)
             {
                 if (data.Instance != null)
                 {
@@ -181,7 +200,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
         public static void Reset()
         {
             RestoreVanilla();
-            BaseData.Clear();
+            Tracked.Clear();
             _lastDigMult = -1f;
             _lastArmMult = -1f;
             _lastTurretMult = -1f;

@@ -1,51 +1,30 @@
 using System.Collections.Generic;
+using System.Reflection;
 using HarmonyLib;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
 {
     /// <summary>
-    /// Scales dump truck bed dirt capacity with zero frame rate impact.
-    /// Preserves pristine vanilla baseline values to enable clean runtime disable/enable toggling without drift.
-    /// Save/Load Safety: Start() Postfix captures the vanilla baseline after vanilla Start() runs,
-    /// preventing a previously-serialized modded _maxShovelVolume from being stored as the base.
+    /// Scales dump truck (Moxy 6x6) bed dirt capacity with zero frame rate impact.
+    /// Uses the genuine vehicle prefab baseline and synchronizes reciprocal volume for proper fill physics.
+    /// Also compensates payload mass during driving so high-capacity trucks remain agile.
     /// </summary>
     public static class DumpTruckPatch
     {
+        private static readonly FieldInfo InvMaxShovelVolumeField = AccessTools.Field(typeof(DiggingController), "_invmaxShovelVolume");
+
         private static readonly Dictionary<int, (GoldDigger.DumpTruck instance, float baseVolume)> Tracked =
             new Dictionary<int, (GoldDigger.DumpTruck, float)>();
         private static float _lastMultiplier = -1f;
 
         // -------------------------------------------------------------------------
-        // Start() Postfix — captures vanilla baseline AFTER vanilla Start() runs.
-        // Prevents a serialized modded _maxShovelVolume from being read as base.
-        // -------------------------------------------------------------------------
-        [HarmonyPatch(typeof(GoldDigger.DumpTruck), "Start")]
-        public static class DumpTruckStartSafetyPatch
-        {
-            [HarmonyPostfix]
-            public static void Postfix(GoldDigger.DumpTruck __instance)
-            {
-                if (__instance == null || __instance.GetType().Name != "DumpTruck") return;
-                var digging = __instance.Digging;
-                if (digging == null) return;
-                int id = __instance.GetInstanceID();
-                if (Tracked.ContainsKey(id)) return;
-                float multiplier = ProductionTunerPlugin.Service?.DumpTruckCapacityMultiplier ?? 1f;
-                float baseVol = digging._maxShovelVolume;
-                Tracked[id] = (__instance, baseVol);
-                digging._maxShovelVolume = baseVol * multiplier;
-                _lastMultiplier = multiplier;
-            }
-        }
-
-        // -------------------------------------------------------------------------
-        // Update() Postfix — fast-path for live multiplier changes in the in-game menu
+        // DumpTruck Update() Prefix — Scales capacity before DirtPlane.SetPerc runs
         // -------------------------------------------------------------------------
         [HarmonyPatch(typeof(GoldDigger.DumpTruck), "Update")]
         public static class DumpTruckUpdatePatch
         {
-            [HarmonyPostfix]
-            public static void Postfix(GoldDigger.DumpTruck __instance)
+            [HarmonyPrefix]
+            public static void Prefix(GoldDigger.DumpTruck __instance)
             {
                 if (__instance == null || __instance.GetType().Name != "DumpTruck") return;
 
@@ -59,16 +38,35 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
                 if (Tracked.TryGetValue(id, out var data))
                 {
                     if (multiplier == _lastMultiplier) return;
-                    digging._maxShovelVolume = data.baseVolume * multiplier;
+
                     _lastMultiplier = multiplier;
+                    foreach (var entry in Tracked.Values)
+                    {
+                        if (entry.instance != null && entry.instance.Digging != null)
+                        {
+                            ApplyTruckState(entry.instance, entry.baseVolume, multiplier);
+                        }
+                    }
                     return;
                 }
 
-                // Fallback registration (Start() not caught)
+                // First-time registration: record true vanilla prefab volume
                 float baseVol = digging._maxShovelVolume;
                 Tracked[id] = (__instance, baseVol);
-                digging._maxShovelVolume = baseVol * multiplier;
+                ApplyTruckState(__instance, baseVol, multiplier);
                 _lastMultiplier = multiplier;
+            }
+        }
+
+        private static void ApplyTruckState(GoldDigger.DumpTruck truck, float baseVol, float multiplier)
+        {
+            if (truck == null || truck.Digging == null) return;
+
+            float targetVol = baseVol * multiplier;
+            truck.Digging._maxShovelVolume = targetVol;
+            if (targetVol > 0.0001f && InvMaxShovelVolumeField != null)
+            {
+                InvMaxShovelVolumeField.SetValue(truck.Digging, 1f / targetVol);
             }
         }
 
@@ -77,7 +75,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
             foreach (var kvp in Tracked.Values)
             {
                 if (kvp.instance != null && kvp.instance.Digging != null)
-                    kvp.instance.Digging._maxShovelVolume = kvp.baseVolume;
+                {
+                    ApplyTruckState(kvp.instance, kvp.baseVolume, 1f);
+                }
             }
             _lastMultiplier = 1f;
         }
@@ -89,9 +89,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
             _lastMultiplier = -1f;
         }
 
-        /// <summary>
-        /// Compensates physical payload drag while driving so high-capacity dump trucks remain agile and responsive.
-        /// </summary>
+        // -------------------------------------------------------------------------
+        // MachineMove mass compensation — prevents excessive physical drag
+        // -------------------------------------------------------------------------
         [HarmonyPatch(typeof(GoldDigger.DumpTruck), "MachineMove")]
         public static class DumpTruckMachineMovePatch
         {
@@ -102,12 +102,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
                 if (__instance == null || __instance.Dirt == null) return;
 
                 float multiplier = ProductionTunerPlugin.Service?.DumpTruckCapacityMultiplier ?? 1f;
-
-                // Only compensate if capacity is scaled beyond vanilla
                 if (multiplier > 1.05f)
                 {
                     __state = __instance.Dirt.LoadMass;
-                    // Cap physical simulation mass to baseline vanilla equivalent
                     __instance.Dirt.LoadMass = (int)(__state / multiplier);
                 }
             }
