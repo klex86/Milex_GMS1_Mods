@@ -80,3 +80,26 @@ dotnet build GMSModding.sln
 ```
 
 Build targets automatically deploy compiled assemblies to the `BepInEx/plugins/` directory.
+
+---
+
+## Acknowledgements & Community Credits
+
+A major portion of reverse engineering insights, component mappings, and architectural techniques in this mod suite builds upon pioneering work from the Gold Rush modding community. Sincere thanks and credits go to the following authors and their projects:
+
+- **stregkoden**: *Better_Conveyor*, *Better_FEL*, *Better_FuelTrailer*, *Better_Nuggetator*, *HogPan_Pack*.
+- **DeepCore / Jonathan**: *Bigger Shovel*, *Smart Buckets*, *Gold Bar Totals*.
+- **FedeRama**: *GMS.WaveTableCapacity*.
+- **Mishuuw**: *Allow Debt Smelting*.
+- **DSS**: *DSS PickupSnap* (Trailer snapping, hitch trigger tracking, and quick detaching).
+- **GMS Community Modders**: *Increased Capacity And Speed*, *IncreasedCapacity*, *AE Groundworks*, *Crazy Mods*, *Longer Range Pumps*.
+
+---
+
+## License & Free Use (Open Source / Public Domain)
+
+All code in **Milex GMS1 Mods** is released under an open-source license inspired by MIT and The Unlicense:
+
+> **Free Use Notice:**  
+> Anyone is free to use, copy, modify, merge, publish, distribute, or incorporate this code into other mods and projects, in whole or in part, without restriction or obligation. A brief attribution or mention in your project's credits is appreciated.
+

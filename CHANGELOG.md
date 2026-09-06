@@ -5,6 +5,80 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.8.6] - 2026-09-06
+
+### Production Tuner: Stationary Fuel Tanks, Fuel Hose Length & Save/Load Data Safety
+
+- **Production Tuner v1.4.0 — Stationary Fuel Tank Capacity (`FuelTank_Capacity`)**:
+  - Extends fuel capacity scaling to all stationary `FuelStationController` objects on the claim (separate from the mobile fuel trailer). Default: `2.0x`.
+- **Production Tuner — Fuel Hose Length Multiplier (`FuelHoseLength`)**:
+  - Scales the physical reach of the refueling pistol/hose via `ConfigurableJoint.linearLimit.limit`. Default: `2.0x`.
+- **Production Tuner — Save/Load Data Safety**:
+  - Added `Start()` Prefix Harmony patches to Fuel Trailer, Stationary Fuel Tanks, Magnetite Trailer, Mobile Wash Plant, Mini Wash Plant, Hog Pan, Wash Plant Shaker, Magnetite Separator, and Wave Table.
+  - Prevents serialized `CurrentCapacity` values from being silently clamped to the lower vanilla maximum on game load when capacity multipliers are active.
+
+---
+
+## [1.8.5] - 2026-09-06
+
+### Claim Monitor & CoreMod: Multilingual Localization Architecture, Game Key Resolution & Scrollbar-Free HUD
+
+- **CoreMod Framework Localization Extension**:
+  - Added caller-aware `LocalizationManager.Translate`, `LocalizationManager.TranslateFormat`, and concise aliases `LocalizationManager.T` / `LocalizationManager.Format`.
+  - Added `T` and `Format` directly to `ModBase` for clean, boilerplate-free sub-mod localization.
+  - Implemented `LocalizationManager.ResolveGameText(string textOrKey)`: bridges mod translations with Gold Mining Simulator's native `LocalizationKey.GetLocalized()` and provides clean Title Case fallback formatting for internal shop/part tokens.
+- **Claim Monitor: 100% Multilingual Alert & Status Pipeline**:
+  - Replaced all hardcoded English strings throughout `ClaimScanner` and `ClaimDiagnosticsData` with dynamic calls to the CoreMod localization framework.
+  - Wear parts (e.g. `SHOP_ITEM_PARTS_GLACIER_CREEK_ENGINE_NAME`, `SHOP_ITEM_PARTS_PLANTER_WATERPUMPFUSE_NAME`, `SHOP_ITEM_PARTS_PLANTER_WATERPUMPFILTER_NAME`) are now resolved directly to player language text.
+- **CoreMod: Embedded Default Config Template Engine (`ExtractDefaultConfigFile`)**:
+  - `ModBase.Config` now intercepts missing `%AssemblyName%.cfg` files on disk prior to `ConfigFile` initialization and automatically extracts the embedded `%AssemblyName%.default.cfg` template from DLL resources.
+  - Gives complete authorial control over default settings, section ordering, and descriptions directly from version-controlled repository templates.
+- **Claim Monitor: Intelligent Cable & Hose Connection Detection**:
+  - Implemented deep physical attachment tracking (`IsUtilityConnected`) for electric/mobile water pumps, water towers, and generators.
+  - Detects socket plugins, power cables, water intake/output hoses (`WaterRopeOut`, `_ropeWaterIn`, `_ConnectedRope`, `Holder` components), electric consumers (`_powerConsumer`), and network consumer lists (`_WaterStationConsumerList`, `_PowerStationConsumerList`).
+  - Standalone equipment standing idle or stored on the claim without connected cables or hoses is tagged as unused (`IsConnected = false`). Suppresses all inactive generator warnings, empty reservoir warnings, and component wear alerts (such as pump fuses or filters) in the Warning HUD for disconnected equipment.
+- **Claim Monitor: Big Generator Socket Breaker Button Suppression (`MonitorGeneratorSwitchButtons`)**:
+  - Added new configuration option `MonitorGeneratorSwitchButtons` (default `false`).
+  - Filters out individual socket circuit breaker buttons on the big power generator (`Power_Generator_Switch_Button`), preventing up to 10 duplicate button wear/breakdown notices from spamming the Warning HUD unless explicitly opted in.
+- **Warning HUD Usability & Dimension Overhaul**:
+  - Removed the redundant compact/full toggle button from the window header (`[ - Kompakt ]` / `[ + Voll ]`). HUD mode is controlled directly via mod configuration.
+  - Dynamic vertical auto-sizing in **both** compact and normal modes: the window dynamically calculates needed height based on alert count and text length, completely eliminating inner scrollbars. Clamped only to screen resolution (`Screen.height - 40f`).
+- **HUD and Diagnostic Inspector Localization**:
+  - All labels, badges (`[OK]`, `[CRITICAL]`, `[WARNING]`), buttons (`Force Rescan`, `Dump All to File`), nominal status texts, and summaries in the Warning HUD and Diagnostic Inspector (F3) adapt automatically to the user's selected language.
+- **CoreMod: Centralized Cursor Requester Architecture & Backdrop Decoupling**:
+  - Implemented `CorePlugin.RequestCursorUnlock(id)` and `ReleaseCursorUnlock(id)`: external diagnostic overlays (such as ClaimMonitor's F3 inspector) can unlock the mouse cursor and block game camera input directly without requiring the main Mod Menu to be open.
+  - Removed full-screen backdrop click-to-close behavior in `ModernCanvasMenu`: clicking outside the dashboard panel will no longer accidentally close the Mod Menu.
+- **Claim Monitor: Mobile Wash Plant Overhaul & Water Connection Enforcement**:
+  - Excluded internal drum components (`WashPlantMobileTrommel`) from independent machinery detection, eliminating phantom "Trommel failure (no power)" warnings.
+  - `MobileWashplant` and `MiniWashplant` are only evaluated when their water intake hose (`_WaterConsumer`) is physically connected. Corrected socket detection to check `ObjectInHolder != null` instead of the static prefab GameObject (`RopeObjectConnectedLogic != null`), completely fixing false "turned off" warnings for unhooked parked machines.
+  - Disconnected or parked mobile plants generate zero HUD alerts and skip wear checking completely.
+  - Added diesel fuel monitoring for `MiniWashplant` via `FuelStationController` with early alerting on diesel depletion (`issue.miniwashplant.no_fuel`).
+- **Claim Monitor: Diagnostic Inspector (F3) Realignment & Direct Cursor Access**:
+  - Pressing **`F3`** now directly unlocks the mouse cursor and halts camera rotation via the new CoreMod cursor requester API, enabling effortless inspection.
+  - Fixed category filter comparisons across all setups and split the inspector toolbar into two distinct rows to comfortably fit all 8 category buttons.
+- **Bilingual Dictionary Expansion**:
+  - Added comprehensive translation dictionaries in `Milex_GMS1_ClaimMonitor_en.json` and `Milex_GMS1_ClaimMonitor_de.json` with full key parity and natural German translations.
+
+---
+
+## [1.8.4] - 2026-09-06
+
+### Dynamic Physics Enhancements, Equipment Wear Telemetry & Modern UI Streamlining
+
+- **Production Tuner: Vehicle Physics & Chassis Dynamics**:
+  - **Excavator Handbrake Chassis Stabilization**: Automatically locks horizontal position and tilt rotations via `RigidbodyConstraints` whenever the excavator's handbrake is engaged, preventing tipping, sliding, or track lifting during heavy bucket scooping. Releasing the handbrake restores normal driving immediately.
+  - **Dump Truck Driving Mass Compensation**: When dump truck payload capacity is multiplied above vanilla levels, physical mass drag (`Dirt.LoadMass`) is dynamically balanced during movement (`MachineMove`) using Harmony `__state`. Heavy dump trucks accelerate and climb inclines with agile handling while retaining their full enlarged volume.
+- **Claim Monitor: Comprehensive Component Wear & Breakdown Early-Warning System**:
+  - **Direct `CheckAndRepair` Integration**: Monitors all installed wear components across active wash plants, conveyors, and water pumps (spray nozzles, drive belts, trommel chains/rollers, jig mechanisms, shaker springs, and water filters).
+  - **Strict Setup Association & Stray-Part Isolation**: Only components physically installed on active equipment (`IsInPlace == true`) belonging to enabled setups are scanned. Detached, loose, or scrapped parts lying on the ground are completely ignored.
+  - **Configurable Wear Warning Threshold**: Added `ComponentWearWarningThreshold` (default 20%, range 5%-50%). Emits early yellow warnings before total breakdown and critical red alerts upon component destruction.
+- **UI & HUD Improvements**:
+  - **CoreMod Modern Canvas**: Hidden the legacy "Classic UI" engine switch button to deliver a clean, modern top bar where the search input smoothly stretches up to the close button.
+  - **Diagnostic Inspector (F3)**: Widened window to 1100px and streamlined toolbar layout so all category filter buttons fit side-by-side without clipping.
+  - **Warning HUD**: Auto-adjusts height in compact mode based on text length to guarantee all warnings are readable without cutoff.
+
+---
+
 ## [1.8.3] - 2026-09-05
 
 ### Claim Monitor: Stationary Wash Plant Water Detection Overhaul & Glacier Creek / Derocker Support

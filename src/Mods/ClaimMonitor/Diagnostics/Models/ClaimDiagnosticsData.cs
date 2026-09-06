@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Milex.GMS1.Mods.ClaimMonitor.Config;
+using Milex.GMS1.Core.Localization;
 using UnityEngine;
 
 namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
@@ -91,10 +92,26 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public string Name { get; set; }
         public string UtilityType { get; set; } // "Generator", "WaterPump", "WaterTower", "FuelStation"
         public Vector3 Position { get; set; }
-        public bool IsWorking { get; set; }
         public float CurrentLevel { get; set; }
         public float MaxLevel { get; set; }
+        public bool IsWorking { get; set; }
+        public bool IsConnected { get; set; } = true;
         public string Details { get; set; }
+    }
+
+    public class EquipmentWearStatus
+    {
+        public int InstanceId { get; set; }
+        public string PartName { get; set; }
+        public string ParentMachineName { get; set; }
+        public Vector3 Position { get; set; }
+        public float Durability { get; set; } // 0.0 to 1.0
+        public bool IsDestroyed { get; set; }
+        public bool IsInPlace { get; set; }
+        public bool IsConnected { get; set; } = true;
+        public WashPlantSetupType Setup { get; set; }
+
+        public float DurabilityPercentage => Mathf.Clamp01(Durability) * 100f;
     }
 
     public class RawDebugItem
@@ -105,6 +122,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public int InstanceId { get; set; }
         public Vector3 Position { get; set; }
         public string Details { get; set; }
+        public WashPlantSetupType Setup { get; set; }
     }
 
     public class ClaimDiagnosticsData
@@ -114,6 +132,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public List<ConveyorStatus> Conveyors { get; } = new List<ConveyorStatus>();
         public List<VehicleFuelStatus> Vehicles { get; } = new List<VehicleFuelStatus>();
         public List<UtilityStatus> Utilities { get; } = new List<UtilityStatus>();
+        public List<EquipmentWearStatus> WearParts { get; } = new List<EquipmentWearStatus>();
         public List<RawDebugItem> RawInspectionItems { get; } = new List<RawDebugItem>();
 
         public List<ClaimAlert> ActiveAlerts { get; } = new List<ClaimAlert>();
@@ -125,6 +144,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
             Conveyors.Clear();
             Vehicles.Clear();
             Utilities.Clear();
+            WearParts.Clear();
             RawInspectionItems.Clear();
             ActiveAlerts.Clear();
         }
@@ -136,6 +156,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
 
             float matWarnThreshold = config.MatWarningThreshold?.Value ?? 90f;
             float fuelWarnThreshold = config.VehicleLowFuelThreshold?.Value ?? 15f;
+            float wearWarnThreshold = config.ComponentWearWarningThreshold?.Value ?? 20f;
 
             // 1. Mats Evaluation
             CompileMatAlerts(config, matWarnThreshold);
@@ -143,13 +164,16 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
             // 2. Wash Plant Machinery Evaluation
             CompileMachineryAlerts(config);
 
-            // 3. Feeding Chain Evaluation (Hoppers & Conveyors)
+            // 3. Equipment Parts Wear Evaluation (CheckAndRepair)
+            CompileWearAlerts(config, wearWarnThreshold);
+
+            // 4. Feeding Chain Evaluation (Hoppers & Conveyors)
             CompileConveyorAlerts(config);
 
-            // 4. Vehicle Fuel Evaluation
+            // 5. Vehicle Fuel Evaluation
             CompileVehicleAlerts(fuelWarnThreshold);
 
-            // 5. Utilities Evaluation (Generators, Water Towers, Pumps)
+            // 6. Utilities Evaluation (Generators, Water Towers, Pumps)
             CompileUtilityAlerts();
 
             // Sort alerts: Critical first, then Warning, then Info
@@ -203,8 +227,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     {
                         Severity = AlertSeverity.Critical,
                         Category = "Mats",
-                        Title = $"{setupName}: Sluice Mats Overflowing!",
-                        Description = $"{overflowingCount} mat(s) at 100% capacity! Clean immediately to prevent gold loss."
+                        Title = LocalizationManager.Format("alert.mats.overflow.title", "{0}: Sluice Mats Overflowing!", setupName),
+                        Description = LocalizationManager.Format("alert.mats.overflow.desc", "{0} mat(s) at 100% capacity! Clean immediately to prevent gold loss.", overflowingCount)
                     });
                 }
                 else if (warningCount > 0)
@@ -213,8 +237,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     {
                         Severity = AlertSeverity.Warning,
                         Category = "Mats",
-                        Title = $"{setupName}: Sluice Mats Nearly Full",
-                        Description = $"{warningCount} mat(s) above {threshold:F0}% (Highest: {maxPct:F1}%)."
+                        Title = LocalizationManager.Format("alert.mats.near_full.title", "{0}: Sluice Mats Nearly Full", setupName),
+                        Description = LocalizationManager.Format("alert.mats.near_full.desc", "{0} mat(s) above {1:F0}% (Highest: {2:F1}%).", warningCount, threshold, maxPct)
                     });
                 }
             }
@@ -237,8 +261,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     {
                         Severity = AlertSeverity.Critical,
                         Category = "WashPlant",
-                        Title = $"{setupName}: {name} Failure",
-                        Description = comp.SpecificIssue ?? $"{name} has suffered a critical failure.",
+                        Title = LocalizationManager.Format("alert.machinery.failure.title", "{0}: {1} Failure", setupName, name),
+                        Description = comp.SpecificIssue ?? LocalizationManager.Format("alert.machinery.failure.desc", "{0} has suffered a critical failure.", name),
                         Position = comp.Position,
                         SourceId = comp.InstanceId
                     });
@@ -249,10 +273,57 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     {
                         Severity = AlertSeverity.Warning,
                         Category = "WashPlant",
-                        Title = $"{setupName}: {name} Issue",
-                        Description = comp.SpecificIssue ?? $"{name} is not operational.",
+                        Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", setupName, name),
+                        Description = comp.SpecificIssue ?? LocalizationManager.Format("alert.machinery.issue.desc", "{0} is not operational.", name),
                         Position = comp.Position,
                         SourceId = comp.InstanceId
+                    });
+                }
+            }
+        }
+
+        private void CompileWearAlerts(MonitorConfig config, float wearThreshold)
+        {
+            foreach (var part in WearParts)
+            {
+                // Only alert on installed parts belonging to actively monitored setups
+                if (!part.IsInPlace) continue;
+
+                // Only monitor wear on standalone infrastructure (pumps, towers, generators) if connected to cables/hoses
+                if (part.Setup == WashPlantSetupType.None && !part.IsConnected) continue;
+
+                if (part.Setup == WashPlantSetupType.Setup1_Mobile && !config.MonitorSetup1.Value) continue;
+                if (part.Setup == WashPlantSetupType.Setup2_Stationary && !config.MonitorSetup2.Value) continue;
+                if (part.Setup == WashPlantSetupType.Setup3_OrangeBeast && !config.MonitorSetup3.Value) continue;
+
+                string setupName = part.Setup == WashPlantSetupType.None
+                    ? LocalizationManager.T("setup.name.infrastructure", "Infrastructure")
+                    : GetSetupName(part.Setup);
+                string machine = !string.IsNullOrEmpty(part.ParentMachineName) ? part.ParentMachineName : LocalizationManager.T("equipment.default", "Equipment");
+                string partName = !string.IsNullOrEmpty(part.PartName) ? part.PartName : LocalizationManager.T("equipment.part_default", "Component");
+
+                if (part.IsDestroyed || part.DurabilityPercentage <= 0.5f)
+                {
+                    ActiveAlerts.Add(new ClaimAlert
+                    {
+                        Severity = AlertSeverity.Critical,
+                        Category = "Maintenance",
+                        Title = LocalizationManager.Format("alert.wear.broken.title", "{0}: {1} Broken!", setupName, partName),
+                        Description = LocalizationManager.Format("alert.wear.broken.desc", "{0} {1} is destroyed and must be replaced immediately.", machine, partName),
+                        Position = part.Position,
+                        SourceId = part.InstanceId
+                    });
+                }
+                else if (part.DurabilityPercentage <= wearThreshold)
+                {
+                    ActiveAlerts.Add(new ClaimAlert
+                    {
+                        Severity = AlertSeverity.Warning,
+                        Category = "Maintenance",
+                        Title = LocalizationManager.Format("alert.wear.high.title", "{0}: {1} Wear High", setupName, partName),
+                        Description = LocalizationManager.Format("alert.wear.high.desc", "{0} {1} durability low ({2:F0}% remaining). Prepare replacement.", machine, partName, part.DurabilityPercentage),
+                        Position = part.Position,
+                        SourceId = part.InstanceId
                     });
                 }
             }
@@ -278,8 +349,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     {
                         Severity = AlertSeverity.Warning,
                         Category = "FeedingChain",
-                        Title = $"{setupName}: Conveyor Power Loss",
-                        Description = $"'{conv.Name}' has no electric power supply.",
+                        Title = LocalizationManager.Format("alert.conveyor.power_loss.title", "{0}: Conveyor Power Loss", setupName),
+                        Description = LocalizationManager.Format("alert.conveyor.power_loss.desc", "'{0}' has no electric power supply.", conv.Name),
                         Position = conv.Position,
                         SourceId = conv.InstanceId
                     });
@@ -290,8 +361,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     {
                         Severity = AlertSeverity.Warning,
                         Category = "FeedingChain",
-                        Title = $"{setupName}: Hopper Backlog",
-                        Description = $"'{conv.Name}' is full ({conv.CurrentDirt:F1}/{conv.MaxDirt:F1} m³).",
+                        Title = LocalizationManager.Format("alert.conveyor.backlog.title", "{0}: Hopper Backlog", setupName),
+                        Description = LocalizationManager.Format("alert.conveyor.backlog.desc", "'{0}' is full ({1:F1}/{2:F1} m³).", conv.Name, conv.CurrentDirt, conv.MaxDirt),
                         Position = conv.Position,
                         SourceId = conv.InstanceId
                     });
@@ -311,8 +382,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     {
                         Severity = AlertSeverity.Critical,
                         Category = "Fuel",
-                        Title = $"Vehicle Out of Fuel: {v.VehicleName}",
-                        Description = $"Fuel tank is completely empty. Refueling required.",
+                        Title = LocalizationManager.Format("alert.fuel.empty.title", "Vehicle Out of Fuel: {0}", v.VehicleName),
+                        Description = LocalizationManager.T("alert.fuel.empty.desc", "Fuel tank is completely empty. Refueling required."),
                         Position = v.Position,
                         SourceId = v.InstanceId
                     });
@@ -323,8 +394,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     {
                         Severity = AlertSeverity.Warning,
                         Category = "Fuel",
-                        Title = $"Low Fuel: {v.VehicleName}",
-                        Description = $"Fuel level is at {v.FuelPercentage:F1}% ({v.CurrentFuel:F1} L).",
+                        Title = LocalizationManager.Format("alert.fuel.low.title", "Low Fuel: {0}", v.VehicleName),
+                        Description = LocalizationManager.Format("alert.fuel.low.desc", "Fuel level is at {0:F1}% ({1:F1} L).", v.FuelPercentage, v.CurrentFuel),
                         Position = v.Position,
                         SourceId = v.InstanceId
                     });
@@ -336,14 +407,17 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         {
             foreach (var util in Utilities)
             {
+                // Disconnected or unused utilities parked on the claim are ignored in HUD alerts
+                if (!util.IsConnected) continue;
+
                 if (util.UtilityType == "WaterTower" && util.MaxLevel > 0f && util.CurrentLevel <= 1.0f)
                 {
                     ActiveAlerts.Add(new ClaimAlert
                     {
                         Severity = AlertSeverity.Warning,
                         Category = "Water",
-                        Title = "Water Tower Depleted",
-                        Description = "Water tower reservoir is empty. Pumps or delivery required.",
+                        Title = LocalizationManager.T("alert.utility.water_tower.title", "Water Tower Depleted"),
+                        Description = LocalizationManager.T("alert.utility.water_tower.desc", "Water tower reservoir is empty. Pumps or delivery required."),
                         Position = util.Position,
                         SourceId = util.InstanceId
                     });
@@ -354,8 +428,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     {
                         Severity = AlertSeverity.Warning,
                         Category = "Power",
-                        Title = $"Power Generator Inactive: {util.Name}",
-                        Description = "Generator is stopped or disconnected.",
+                        Title = LocalizationManager.Format("alert.utility.generator.title", "Power Generator Inactive: {0}", util.Name),
+                        Description = LocalizationManager.T("alert.utility.generator.desc", "Generator is stopped or disconnected."),
                         Position = util.Position,
                         SourceId = util.InstanceId
                     });
@@ -367,10 +441,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         {
             switch (type)
             {
-                case WashPlantSetupType.Setup1_Mobile: return "Mobile Plant";
-                case WashPlantSetupType.Setup2_Stationary: return "Setup T3-T5";
-                case WashPlantSetupType.Setup3_OrangeBeast: return "Orange Beast";
-                default: return "Wash Plant";
+                case WashPlantSetupType.Setup1_Mobile: return LocalizationManager.T("setup.name.mobile", "Mobile Plant");
+                case WashPlantSetupType.Setup2_Stationary: return LocalizationManager.T("setup.name.stationary", "Setup T3-T5");
+                case WashPlantSetupType.Setup3_OrangeBeast: return LocalizationManager.T("setup.name.orange_beast", "Orange Beast");
+                default: return LocalizationManager.T("setup.name.default", "Wash Plant");
             }
         }
     }

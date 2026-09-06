@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
 using BepInEx;
@@ -378,6 +379,117 @@ namespace Milex.GMS1.Core.Localization
             }
 
             return defaultValue ?? key;
+        }
+
+        /// <summary>
+        /// Translates a key for the calling assembly's mod.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string Translate(string key, string defaultValue = null)
+        {
+            string modName = Assembly.GetCallingAssembly().GetName().Name;
+            return Translate(modName, key, defaultValue);
+        }
+
+        /// <summary>
+        /// Translates and formats a key with parameters for the calling assembly's mod.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string TranslateFormat(string key, string defaultFormat, params object[] args)
+        {
+            string modName = Assembly.GetCallingAssembly().GetName().Name;
+            return TranslateFormat(modName, key, defaultFormat, args);
+        }
+
+        /// <summary>
+        /// Translates and formats a key with parameters for a specified mod.
+        /// </summary>
+        public static string TranslateFormat(string modName, string key, string defaultFormat, params object[] args)
+        {
+            string template = Translate(modName, key, defaultFormat);
+            if (string.IsNullOrEmpty(template)) return string.Empty;
+            if (args == null || args.Length == 0) return template;
+
+            try
+            {
+                return string.Format(template, args);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogWarning($"[LocalizationManager] Failed to format key '{key}' in '{modName}': {ex.Message}");
+                return string.Format(defaultFormat ?? template, args);
+            }
+        }
+
+        /// <summary>
+        /// Concise alias for Translate(key, defaultValue) for the calling assembly.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string T(string key, string defaultValue = null)
+        {
+            string modName = Assembly.GetCallingAssembly().GetName().Name;
+            return Translate(modName, key, defaultValue);
+        }
+
+        /// <summary>
+        /// Concise alias for TranslateFormat(key, defaultFormat, args) for the calling assembly.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string Format(string key, string defaultFormat, params object[] args)
+        {
+            string modName = Assembly.GetCallingAssembly().GetName().Name;
+            return TranslateFormat(modName, key, defaultFormat, args);
+        }
+
+        /// <summary>
+        /// Resolves game internal localization keys (such as SHOP_ITEM_PARTS_...) to localized, human-readable text.
+        /// Queries mod/core tables first, then the game's native LocalizationKey engine, and applies intelligent cleanup as fallback.
+        /// </summary>
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public static string ResolveGameText(string textOrKey)
+        {
+            if (string.IsNullOrEmpty(textOrKey)) return string.Empty;
+
+            string modName = Assembly.GetCallingAssembly().GetName().Name;
+
+            // 1. Check if mod or core dictionary has a translation for this key
+            string modTranslated = Translate(modName, textOrKey, null);
+            if (!string.IsNullOrEmpty(modTranslated) && !modTranslated.Equals(textOrKey, StringComparison.OrdinalIgnoreCase))
+            {
+                return modTranslated;
+            }
+
+            // 2. Query game's native LocalizationKey engine
+            try
+            {
+                var locKey = new LocalizationKey(textOrKey);
+                string gameLoc = locKey.GetLocalized();
+                if (!string.IsNullOrEmpty(gameLoc) && !gameLoc.Equals(textOrKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    return gameLoc;
+                }
+            }
+            catch { }
+
+            // 3. Fallback: Clean up internal enum/key identifiers (e.g. SHOP_ITEM_PARTS_GLACIER_CREEK_ENGINE_NAME -> Glacier Creek Engine)
+            if (textOrKey.StartsWith("SHOP_ITEM_", StringComparison.OrdinalIgnoreCase) || textOrKey.StartsWith("PARTS_", StringComparison.OrdinalIgnoreCase))
+            {
+                string cleaned = textOrKey;
+                if (cleaned.StartsWith("SHOP_ITEM_PARTS_", StringComparison.OrdinalIgnoreCase))
+                    cleaned = cleaned.Substring("SHOP_ITEM_PARTS_".Length);
+                else if (cleaned.StartsWith("SHOP_ITEM_", StringComparison.OrdinalIgnoreCase))
+                    cleaned = cleaned.Substring("SHOP_ITEM_".Length);
+                else if (cleaned.StartsWith("PARTS_", StringComparison.OrdinalIgnoreCase))
+                    cleaned = cleaned.Substring("PARTS_".Length);
+
+                if (cleaned.EndsWith("_NAME", StringComparison.OrdinalIgnoreCase))
+                    cleaned = cleaned.Substring(0, cleaned.Length - "_NAME".Length);
+
+                cleaned = cleaned.Replace("_", " ").Trim();
+                return System.Globalization.CultureInfo.InvariantCulture.TextInfo.ToTitleCase(cleaned.ToLowerInvariant());
+            }
+
+            return textOrKey;
         }
 
         private static void EnsureDiskTemplate(string modName, string langCode, Assembly assembly)

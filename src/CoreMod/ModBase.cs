@@ -37,6 +37,7 @@ namespace Milex.GMS1.Core
 
         /// <summary>
         /// Gets the config file named exactly after the mod assembly/DLL (e.g. Milex_GMS1_HelloMod.cfg).
+        /// If the config file does not exist on disk, automatically extracts any embedded .default.cfg template.
         /// </summary>
         public new ConfigFile Config
         {
@@ -46,9 +47,84 @@ namespace Milex.GMS1.Core
                 {
                     string assemblyName = GetType().Assembly.GetName().Name;
                     string configPath = System.IO.Path.Combine(Paths.ConfigPath, $"{assemblyName}.cfg");
+                    if (!System.IO.File.Exists(configPath))
+                    {
+                        ExtractDefaultConfigFile(GetType().Assembly, assemblyName, configPath);
+                    }
                     _customConfig = new ConfigFile(configPath, true, Info?.Metadata);
                 }
                 return _customConfig;
+            }
+        }
+
+        private void ExtractDefaultConfigFile(System.Reflection.Assembly assembly, string assemblyName, string targetPath)
+        {
+            try
+            {
+                string[] resources = assembly.GetManifestResourceNames();
+                string resourceName = null;
+
+                // Priority 1: Exact match for AssemblyName.default.cfg
+                for (int i = 0; i < resources.Length; i++)
+                {
+                    if (resources[i].EndsWith($"{assemblyName}.default.cfg", StringComparison.OrdinalIgnoreCase))
+                    {
+                        resourceName = resources[i];
+                        break;
+                    }
+                }
+
+                // Priority 2: Any resource ending with .default.cfg
+                if (resourceName == null)
+                {
+                    for (int i = 0; i < resources.Length; i++)
+                    {
+                        if (resources[i].EndsWith(".default.cfg", StringComparison.OrdinalIgnoreCase))
+                        {
+                            resourceName = resources[i];
+                            break;
+                        }
+                    }
+                }
+
+                // Priority 3: Any resource ending with .cfg
+                if (resourceName == null)
+                {
+                    for (int i = 0; i < resources.Length; i++)
+                    {
+                        if (resources[i].EndsWith(".cfg", StringComparison.OrdinalIgnoreCase))
+                        {
+                            resourceName = resources[i];
+                            break;
+                        }
+                    }
+                }
+
+                if (resourceName != null)
+                {
+                    string dir = System.IO.Path.GetDirectoryName(targetPath);
+                    if (!string.IsNullOrEmpty(dir) && !System.IO.Directory.Exists(dir))
+                    {
+                        System.IO.Directory.CreateDirectory(dir);
+                    }
+
+                    using (var stream = assembly.GetManifestResourceStream(resourceName))
+                    {
+                        if (stream != null)
+                        {
+                            using (var reader = new System.IO.StreamReader(stream))
+                            {
+                                string content = reader.ReadToEnd();
+                                System.IO.File.WriteAllText(targetPath, content, System.Text.Encoding.UTF8);
+                                Logger.LogInfo($"Extracted default config template for {assemblyName} to {targetPath}");
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.LogWarning($"Failed to extract default config template for {assemblyName}: {ex.Message}");
             }
         }
 
@@ -206,13 +282,32 @@ namespace Milex.GMS1.Core
         // ---- Localization ----
 
         /// <summary>
-        /// Translates a key using this mod own localization tables.
+        /// Translates a key using this mod's own localization tables.
         /// </summary>
         public string Translate(string key, string defaultValue = null)
         {
             string assemblyName = GetType().Assembly.GetName().Name;
             return LocalizationManager.Translate(assemblyName, key, defaultValue);
         }
+
+        /// <summary>
+        /// Translates and formats a key with parameters using this mod's own localization tables.
+        /// </summary>
+        public string TranslateFormat(string key, string defaultFormat, params object[] args)
+        {
+            string assemblyName = GetType().Assembly.GetName().Name;
+            return LocalizationManager.TranslateFormat(assemblyName, key, defaultFormat, args);
+        }
+
+        /// <summary>
+        /// Concise alias for Translate(key, defaultValue).
+        /// </summary>
+        public string T(string key, string defaultValue = null) => Translate(key, defaultValue);
+
+        /// <summary>
+        /// Concise alias for TranslateFormat(key, defaultFormat, args).
+        /// </summary>
+        public string Format(string key, string defaultFormat, params object[] args) => TranslateFormat(key, defaultFormat, args);
 
         #region Logging Wrappers
 

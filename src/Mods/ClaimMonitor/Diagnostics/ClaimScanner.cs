@@ -6,6 +6,7 @@ using GoldDigger;
 using Milex.GMS1.Core;
 using Milex.GMS1.Mods.ClaimMonitor.Config;
 using Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models;
+using Milex.GMS1.Core.Localization;
 using UnityEngine;
 
 namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
@@ -182,12 +183,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             string details = $"Setup: {setup}, Volume: {status.CurrentVolume:F3}/{status.Capacity:F3} ({status.FillPercentage:F1}%), Mounted: {inHolder}";
             CurrentData.RawInspectionItems.Add(new RawDebugItem
             {
-                Category = "Mat / Sluice",
+                Category = "Sluice Mats",
                 TypeName = "MinersMoss",
                 GameObjectName = comp.gameObject.name,
                 InstanceId = status.InstanceId,
                 Position = status.Position,
-                Details = details
+                Details = details,
+                Setup = setup
             });
         }
 
@@ -202,10 +204,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
             if (fuelController != null)
             {
-                var fcType = fuelController.GetType();
-                currentFuel = GetFieldValue<float>(fuelController, fcType, "CurrentCapacity")
-                           + GetPropertyValue<float>(fuelController, fcType, "GetCurrentCapacity");
-                maxFuel = GetFieldValue<float>(fuelController, fcType, "MaxCapacity");
+                currentFuel = GetPropertyValue<float>(fuelController, fuelController.GetType(), "GetCurrentCapacity");
+                maxFuel = GetFieldValue<float>(fuelController, fuelController.GetType(), "MaxCapacity");
             }
 
             bool engineRunning = GetPropertyValue<bool>(comp, type, "IsEngineStarted")
@@ -230,12 +230,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             string details = $"Slot: {slotIndex}, Fuel: {status.CurrentFuel:F1}/{status.MaxFuel:F1} L ({status.FuelPercentage:F1}%), Engine: {(engineRunning ? "RUNNING" : "OFF")}";
             CurrentData.RawInspectionItems.Add(new RawDebugItem
             {
-                Category = "Vehicle",
+                Category = "Vehicles",
                 TypeName = type.Name,
                 GameObjectName = go.name,
                 InstanceId = go.GetInstanceID(),
                 Position = go.transform.position,
-                Details = details
+                Details = details,
+                Setup = WashPlantSetupType.None
             });
         }
 
@@ -284,19 +285,19 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             if (isOrangeBeast)
             {
                 setup = WashPlantSetupType.Setup3_OrangeBeast;
-                displayName = "Orange Beast Shaker";
+                displayName = LocalizationManager.T("equipment.orange_beast_shaker", "Orange Beast Shaker");
                 hasPower = CheckPowerState(comp);
                 hasWater = CheckWaterState(comp);
 
                 if (!hasPower)
                 {
                     isWorking = false;
-                    issue = "Orange Beast Shaker has no electric power.";
+                    issue = LocalizationManager.T("issue.shaker.no_power", "Orange Beast Shaker has no electric power.");
                 }
                 else if (!hasWater)
                 {
                     isWorking = false;
-                    issue = "Orange Beast Shaker has no water supply.";
+                    issue = LocalizationManager.T("issue.shaker.no_water", "Orange Beast Shaker has no water supply.");
                 }
             }
             else if (comp is WashplantShakerBase || typeName.Contains("Shaker") || typeName == "GlacierCreek" || typeName == "DeRocker")
@@ -312,12 +313,12 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 if (stopped)
                 {
                     isWorking = false;
-                    issue = $"{displayName} is stopped.";
+                    issue = LocalizationManager.Format("issue.machinery.stopped", "{0} is stopped.", displayName);
                 }
                 else if (!hasPower)
                 {
                     isWorking = false;
-                    issue = $"{displayName} has no electric power.";
+                    issue = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", displayName);
                 }
                 else if (!hasWater)
                 {
@@ -325,27 +326,32 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                     if (comp is WashplantShakerBase shaker && shaker.Water != null)
                     {
                         if (shaker.Water.Producent == null)
-                            issue = $"{displayName} water hose disconnected.";
+                            issue = LocalizationManager.Format("issue.machinery.water_hose_disconnected", "{0} water hose disconnected.", displayName);
                         else if (!shaker.Water.Producent.IsWorking)
-                            issue = $"{displayName} water pump is turned off.";
+                            issue = LocalizationManager.Format("issue.machinery.pump_off", "{0} water pump is turned off.", displayName);
                         else if (!shaker.Water.Producent.HaveWaterIn)
-                            issue = $"{displayName} water pump has no water.";
+                            issue = LocalizationManager.Format("issue.machinery.pump_no_water", "{0} water pump has no water.", displayName);
                         else if (!shaker.Water.Producent.IsEnabled)
-                            issue = $"{displayName} water pump is disabled.";
+                            issue = LocalizationManager.Format("issue.machinery.pump_disabled", "{0} water pump is disabled.", displayName);
                         else if (GetFieldValue<bool>(shaker.Water, typeof(WaterConsumer), "_hasBrokenRopes"))
-                            issue = $"{displayName} water hose is broken / frozen!";
+                            issue = LocalizationManager.Format("issue.machinery.hose_broken_frozen", "{0} water hose is broken / frozen!", displayName);
                         else
-                            issue = $"{displayName} has no water supply.";
+                            issue = LocalizationManager.Format("issue.machinery.no_water", "{0} has no water supply.", displayName);
                     }
                     else
                     {
-                        issue = $"{displayName} has no water supply.";
+                        issue = LocalizationManager.Format("issue.machinery.no_water", "{0} has no water supply.", displayName);
                     }
                 }
             }
             else if (comp is WashplantTrommelBase || typeName.Contains("Trommel"))
             {
-                setup = typeName.Contains("Mobile") ? WashPlantSetupType.Setup1_Mobile : WashPlantSetupType.Setup2_Stationary;
+                if (typeName == "WashPlantMobileTrommel" || comp.name.Contains("Mobile") || goName.Contains("Mobile"))
+                {
+                    // Ignore internal drum of mobile wash plant!
+                    return;
+                }
+                setup = WashPlantSetupType.Setup2_Stationary;
                 bool stopped = false;
                 bool chainBroken = false;
                 if (comp is WashplantTrommelBase tb)
@@ -365,17 +371,17 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 {
                     isWorking = false;
                     isCritical = true;
-                    issue = $"{displayName} drive chain destroyed / broken!";
+                    issue = LocalizationManager.Format("issue.trommel.chain_broken", "{0} drive chain destroyed / broken!", displayName);
                 }
                 else if (stopped)
                 {
                     isWorking = false;
-                    issue = $"{displayName} is stopped.";
+                    issue = LocalizationManager.Format("issue.machinery.stopped", "{0} is stopped.", displayName);
                 }
                 else if (!hasPower)
                 {
                     isWorking = false;
-                    issue = $"{displayName} has no electric power.";
+                    issue = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", displayName);
                 }
             }
             else if (comp is WashplantDuplexJigBase || comp is GravelPump || typeName.Contains("Duplex") || typeName == "GravelPump")
@@ -406,55 +412,117 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 {
                     isWorking = false;
                     isCritical = true;
-                    issue = $"{displayName} mechanism broken!";
+                    issue = LocalizationManager.Format("issue.duplex.mechanism_broken", "{0} mechanism broken!", displayName);
                 }
                 else if (bucketFull)
                 {
-                    issue = $"{displayName} bucket is full (replace bucket).";
+                    issue = LocalizationManager.Format("issue.duplex.bucket_full", "{0} bucket is full (replace bucket).", displayName);
                 }
                 else if (!hasPower)
                 {
                     isWorking = false;
-                    issue = $"{displayName} has no electric power.";
+                    issue = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", displayName);
                 }
             }
             else if (comp is MobileWashplant || comp is MiniWashplant || typeName == "MobileWashplant" || typeName == "MiniWashplant")
             {
                 setup = WashPlantSetupType.Setup1_Mobile;
+
+                // 1. Water connection verification: Both mobile wash plants require a connected water supply to be active
+                WaterConsumer wc = (comp is MobileWashplant m1) ? m1._WaterConsumer
+                                 : (comp is MiniWashplant m2) ? m2._WaterConsumer
+                                 : (comp.GetComponent<WaterConsumer>() ?? comp.GetComponentInChildren<WaterConsumer>());
+
+                if (!IsWaterConsumerConnected(wc, comp))
+                {
+                    // Parked / disconnected on claim -> completely ignore in Warning HUD (no status, no alerts, no wear)
+                    // But record in RawInspectionItems so diagnostic inspector (F3) clearly indicates it is disconnected
+                    CurrentData.RawInspectionItems.Add(new RawDebugItem
+                    {
+                        Category = "Setup 1 (Mobile)",
+                        TypeName = typeName,
+                        GameObjectName = go.name,
+                        InstanceId = goId,
+                        Position = go.transform.position,
+                        Details = $"Setup: Setup1_Mobile, Name: {displayName}, Connected: False (No water hose connected)",
+                        Setup = WashPlantSetupType.Setup1_Mobile
+                    });
+                    return;
+                }
+
                 bool ready = false;
                 if (comp is MobileWashplant mwp)
                 {
                     ready = mwp.CheckIfIsReadyToWork() && (mwp.OnOff?.IsOn() ?? false);
                     hasPower = CheckPowerState(comp);
                     hasWater = CheckWaterState(comp);
+
+                    if (!ready)
+                    {
+                        isWorking = false;
+                        issue = LocalizationManager.Format("issue.machinery.turned_off", "{0} is turned off.", displayName);
+                    }
+                    else if (!hasWater)
+                    {
+                        isWorking = false;
+                        issue = LocalizationManager.Format("issue.machinery.no_water_pressure", "{0} has no water pressure.", displayName);
+                    }
+                    else if (!hasPower)
+                    {
+                        isWorking = false;
+                        issue = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", displayName);
+                    }
                 }
                 else if (comp is MiniWashplant minip)
                 {
                     ready = minip.IsOn;
-                    hasPower = true; // Internal fuel engine
+                    hasPower = true; // Internal diesel engine
                     hasWater = CheckWaterState(comp);
+
+                    bool hasFuel = true;
+                    if (minip._FuelController != null)
+                    {
+                        hasFuel = minip._FuelController.HaveFuel && minip._FuelController.CurrentCapacity > 0.1f;
+                    }
+
+                    if (!ready)
+                    {
+                        isWorking = false;
+                        issue = LocalizationManager.Format("issue.machinery.turned_off", "{0} is turned off.", displayName);
+                    }
+                    else if (!hasFuel)
+                    {
+                        isWorking = false;
+                        isCritical = true;
+                        issue = LocalizationManager.Format("issue.miniwashplant.no_fuel", "{0} is out of fuel.", displayName);
+                    }
+                    else if (!hasWater)
+                    {
+                        isWorking = false;
+                        issue = LocalizationManager.Format("issue.machinery.no_water_pressure", "{0} has no water pressure.", displayName);
+                    }
                 }
                 else
                 {
                     ready = GetFieldValue<bool>(comp, type, "IsReadyToWork") || GetFieldValue<bool>(comp, type, "IsOn");
                     hasPower = typeName == "MiniWashplant" ? true : CheckPowerState(comp);
                     hasWater = CheckWaterState(comp);
-                }
 
-                if (!ready)
-                {
-                    isWorking = false;
-                    issue = $"{displayName} is turned off.";
-                }
-                else if (!hasWater)
-                {
-                    isWorking = false;
-                    issue = $"{displayName} has no water pressure.";
-                }
-                else if (!hasPower)
-                {
-                    isWorking = false;
-                    issue = $"{displayName} has no electric power.";
+                    if (!ready)
+                    {
+                        isWorking = false;
+                        issue = LocalizationManager.Format("issue.machinery.turned_off", "{0} is turned off.", displayName);
+                    }
+                    else if (!hasWater)
+                    {
+                        isWorking = false;
+                        issue = LocalizationManager.Format("issue.machinery.no_water_pressure", "{0} has no water pressure.", displayName);
+                    }
+                    else if (!hasPower)
+                    {
+                        isWorking = false;
+                        issue = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", displayName);
+                    }
                 }
             }
 
@@ -475,15 +543,23 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
             CurrentData.PlantComponents.Add(status);
 
+            // Scan all installed wear-and-tear parts (CheckAndRepair) belonging to this machinery
+            ScanEquipmentWear(go, setup, displayName);
+
             string details = $"Setup: {setup}, Name: {displayName}, Working: {isWorking}, Power: {hasPower}, Water: {hasWater}, Issue: {issue ?? "None"}";
+            string debugCat = "Setup 1 (Mobile)";
+            if (setup == WashPlantSetupType.Setup2_Stationary) debugCat = "Setup 2 (Stationary)";
+            else if (setup == WashPlantSetupType.Setup3_OrangeBeast) debugCat = "Setup 3 (Orange Beast)";
+
             CurrentData.RawInspectionItems.Add(new RawDebugItem
             {
-                Category = GetCategoryForSetup(setup),
+                Category = debugCat,
                 TypeName = typeName,
                 GameObjectName = go.name,
                 InstanceId = goId,
                 Position = go.transform.position,
-                Details = details
+                Details = details,
+                Setup = setup
             });
         }
 
@@ -564,15 +640,24 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
             CurrentData.Conveyors.Add(status);
 
+            // Scan wear parts on conveyors (motor belt, buckets, rollers)
+            bool monitorConveyor = (assigned == WashPlantSetupType.Setup2_Stationary && Config.Setup2IncludeFeedingChain.Value)
+                                || (assigned == WashPlantSetupType.Setup3_OrangeBeast && Config.Setup3IncludeFeedingChain.Value);
+            if (monitorConveyor)
+            {
+                ScanEquipmentWear(go, assigned, go.name.Replace("(Clone)", "").Trim());
+            }
+
             string details = $"Setup: {assigned}, Power: {hasPower}, Working: {isWorking}, Dirt: {currentDirt:F1}/{maxDirt:F1} m³";
             CurrentData.RawInspectionItems.Add(new RawDebugItem
             {
-                Category = "Feeder / Conveyor",
+                Category = "Conveyors & Feeders",
                 TypeName = typeName,
                 GameObjectName = go.name,
                 InstanceId = go.GetInstanceID(),
                 Position = go.transform.position,
-                Details = details
+                Details = details,
+                Setup = assigned
             });
         }
 
@@ -583,9 +668,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             string typeName = type.Name;
 
             string uType = "Utility";
-            bool isWorking = true;
             float current = 0f;
             float max = 0f;
+            bool isWorking = true;
             string details = "";
 
             if (typeName == "WaterTowerController")
@@ -617,13 +702,22 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 details = isInfinity ? "Fuel: Infinite Source" : $"Fuel: {current:F1}/{max:F1} L";
             }
 
+            bool isConnected = IsUtilityConnected(comp, uType);
+            string connTag = isConnected ? " [Connected]" : " [Unused/Disconnected]";
+            details += connTag;
+
+            string uName = GetMachineryDisplayName(comp, typeName);
+            if (string.IsNullOrEmpty(uName) || uName == typeName)
+                uName = go.name.Replace("(Clone)", "").Trim();
+
             var status = new UtilityStatus
             {
                 InstanceId = go.GetInstanceID(),
-                Name = go.name.Replace("(Clone)", "").Trim(),
+                Name = uName,
                 UtilityType = uType,
                 Position = go.transform.position,
                 IsWorking = isWorking,
+                IsConnected = isConnected,
                 CurrentLevel = current,
                 MaxLevel = max,
                 Details = details
@@ -631,15 +725,218 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
             CurrentData.Utilities.Add(status);
 
+            // Scan filters and wear parts on water pumps, towers, and generators ONLY IF CONNECTED!
+            if (isConnected && (uType == "WaterPump" || uType == "WaterTower" || uType == "Generator"))
+            {
+                ScanEquipmentWear(go, WashPlantSetupType.None, status.Name, true);
+            }
+
             CurrentData.RawInspectionItems.Add(new RawDebugItem
             {
-                Category = "Fuel",
+                Category = "Utilities",
                 TypeName = typeName,
                 GameObjectName = go.name,
                 InstanceId = go.GetInstanceID(),
                 Position = go.transform.position,
-                Details = details
+                Details = details,
+                Setup = WashPlantSetupType.None
             });
+        }
+
+        private bool IsUtilityConnected(MonoBehaviour comp, string uType)
+        {
+            if (comp == null) return false;
+
+            // 1. Water Pump or Water Tower
+            if (uType == "WaterPump" || uType == "WaterTower" || comp is WaterStationController)
+            {
+                // Specialized check for WaterTowerController (DLC / Tier 4-5)
+                if (comp is WaterTowerController wtc)
+                {
+                    if (wtc.WaterRopeOut != null && !wtc.WaterRopeOut.IsEmpty() && wtc.WaterRopeOut.ObjectInHolder != null)
+                        return true;
+                    if (wtc.WaterRopeOut2 != null && !wtc.WaterRopeOut2.IsEmpty() && wtc.WaterRopeOut2.ObjectInHolder != null)
+                        return true;
+                    if (wtc.WaterRopeOut3 != null && !wtc.WaterRopeOut3.IsEmpty() && wtc.WaterRopeOut3.ObjectInHolder != null)
+                        return true;
+
+                    var towerConsumers = GetFieldValue<System.Collections.IList>(wtc, typeof(WaterStationController), "_WaterStationConsumerList");
+                    if (towerConsumers != null && towerConsumers.Count > 0)
+                        return true;
+
+                    return false;
+                }
+
+                // Standard WaterStationController (WaterPumpElectric, WaterPumpMobile, etc.)
+                if (comp is WaterStationController wsc)
+                {
+                    // Strict output hose connection check: ONLY in use if an output hose is plugged in
+                    if (wsc.WaterRopeOut != null && !wsc.WaterRopeOut.IsEmpty() && wsc.WaterRopeOut.ObjectInHolder != null)
+                        return true;
+
+                    // Registered water consumers attached to this water station
+                    var consumers = GetFieldValue<System.Collections.IList>(wsc, typeof(WaterStationController), "_WaterStationConsumerList");
+                    if (consumers != null && consumers.Count > 0)
+                        return true;
+
+                    return false;
+                }
+
+                return false;
+            }
+
+            // 2. Power Generator / Power Station
+            if (uType == "Generator" || comp is PowerGenerator || comp is PowerStationController)
+            {
+                PowerGenerator pg = comp as PowerGenerator ?? comp.GetComponent<PowerGenerator>() ?? comp.GetComponentInChildren<PowerGenerator>();
+                if (pg != null)
+                {
+                    // Check socket plugins
+                    if (pg.MySockets != null && pg.MySockets.Count > 0)
+                    {
+                        for (int i = 0; i < pg.MySockets.Count; i++)
+                        {
+                            var sock = pg.MySockets[i];
+                            if (sock == null) continue;
+                            if (sock.PluginHolder != null && !sock.PluginHolder.IsEmpty() && sock.PluginHolder.ObjectInHolder != null)
+                                return true;
+                            if (sock.MyConsumer != null)
+                                return true;
+                        }
+                    }
+
+                    // Check power station consumers
+                    if (pg.MyPower != null)
+                    {
+                        var consumers = GetFieldValue<System.Collections.IList>(pg.MyPower, typeof(PowerStationController), "_PowerStationConsumerList");
+                        if (consumers != null && consumers.Count > 0)
+                            return true;
+                    }
+                }
+
+                PowerStationController psc = comp as PowerStationController ?? comp.GetComponent<PowerStationController>() ?? comp.GetComponentInChildren<PowerStationController>();
+                if (psc != null)
+                {
+                    var consumers = GetFieldValue<System.Collections.IList>(psc, typeof(PowerStationController), "_PowerStationConsumerList");
+                    if (consumers != null && consumers.Count > 0)
+                        return true;
+
+                    if (psc.MyPowerGenerator != null && psc.MyPowerGenerator.MySockets != null)
+                    {
+                        for (int i = 0; i < psc.MyPowerGenerator.MySockets.Count; i++)
+                        {
+                            var sock = psc.MyPowerGenerator.MySockets[i];
+                            if (sock == null) continue;
+                            if (sock.PluginHolder != null && !sock.PluginHolder.IsEmpty() && sock.PluginHolder.ObjectInHolder != null)
+                                return true;
+                            if (sock.MyConsumer != null)
+                                return true;
+                        }
+                    }
+                }
+
+                return false;
+            }
+
+            // Default for other utilities (e.g. FuelStation)
+            return true;
+        }
+
+        private void ScanEquipmentWear(GameObject rootGo, WashPlantSetupType setup, string equipmentDisplayName, bool isConnected = true)
+        {
+            if (rootGo == null) return;
+
+            var wearComponents = rootGo.GetComponentsInChildren<CheckAndRepair>(true);
+            if (wearComponents == null || wearComponents.Length == 0) return;
+
+            for (int i = 0; i < wearComponents.Length; i++)
+            {
+                var cr = wearComponents[i];
+                if (cr == null) continue;
+
+                // CRITICAL REQUIREMENT: Only consider parts that are physically installed on the machine!
+                // Disassembled/abandoned parts lying loose in the claim world must be completely ignored.
+                if (!cr.IsInPlace) continue;
+
+                // Generator breaker/switch buttons: ignored by default to prevent HUD spam unless enabled in config
+                bool isGenSwitchButton = cr.gameObject.name.Contains("Switch_Button")
+                                      || cr.gameObject.name.Contains("Power_Generator_Switch")
+                                      || (!string.IsNullOrEmpty(cr.Name) && cr.Name.Contains("SWITCH_BUTTON"));
+                if (isGenSwitchButton && (Config == null || !Config.MonitorGeneratorSwitchButtons.Value))
+                {
+                    continue;
+                }
+
+                string rawPartName = !string.IsNullOrEmpty(cr.Name) ? cr.Name : cr.gameObject.name.Replace("(Clone)", "").Trim();
+                string partName = LocalizationManager.ResolveGameText(rawPartName);
+
+                string internalMachineName = GetFieldValue<string>(cr, typeof(CheckAndRepair), "MyMachineName");
+                string rawMachine = !string.IsNullOrEmpty(equipmentDisplayName) ? equipmentDisplayName : internalMachineName;
+                string machine = LocalizationManager.ResolveGameText(rawMachine);
+
+                var wearStatus = new EquipmentWearStatus
+                {
+                    InstanceId = cr.GetInstanceID(),
+                    PartName = partName,
+                    ParentMachineName = machine,
+                    Position = cr.transform.position,
+                    Durability = cr.Durability,
+                    IsDestroyed = cr.IsDestroyed,
+                    IsInPlace = cr.IsInPlace,
+                    IsConnected = isConnected,
+                    Setup = setup
+                };
+
+                CurrentData.WearParts.Add(wearStatus);
+
+                string wearCat = "Utilities";
+                if (setup == WashPlantSetupType.Setup1_Mobile) wearCat = "Setup 1 (Mobile)";
+                else if (setup == WashPlantSetupType.Setup2_Stationary) wearCat = "Setup 2 (Stationary)";
+                else if (setup == WashPlantSetupType.Setup3_OrangeBeast) wearCat = "Setup 3 (Orange Beast)";
+
+                CurrentData.RawInspectionItems.Add(new RawDebugItem
+                {
+                    Category = wearCat,
+                    TypeName = "CheckAndRepair",
+                    GameObjectName = cr.gameObject.name,
+                    InstanceId = cr.GetInstanceID(),
+                    Position = cr.transform.position,
+                    Details = $"{machine} -> {partName}: Durability={cr.Durability * 100f:F0}%, Destroyed={cr.IsDestroyed}, InPlace={cr.IsInPlace}, Connected={isConnected}",
+                    Setup = setup
+                });
+            }
+        }
+
+        private bool IsWaterConsumerConnected(WaterConsumer wc, MonoBehaviour comp = null)
+        {
+            if (wc != null)
+            {
+                if (wc.Producent != null) return true;
+                if (wc.MyRopes != null && wc.MyRopes.Count > 0) return true;
+                if (wc.MyRopeHolder != null && !wc.MyRopeHolder.IsEmpty() && wc.MyRopeHolder.ObjectInHolder != null)
+                    return true;
+                var otherRh = GetFieldValue<RopeHolder>(wc, typeof(WaterConsumer), "otherrh");
+                if (otherRh != null && !otherRh.IsEmpty() && otherRh.ObjectInHolder != null)
+                    return true;
+            }
+
+            if (comp != null)
+            {
+                var holders = comp.GetComponentsInChildren<RopeHolder>(true);
+                if (holders != null)
+                {
+                    for (int i = 0; i < holders.Length; i++)
+                    {
+                        var rh = holders[i];
+                        if (rh == null) continue;
+                        bool isWaterSocket = rh.Type.ToString().StartsWith("WaterRope");
+                        if (isWaterSocket && rh.In && !rh.IsEmpty() && rh.ObjectInHolder != null)
+                            return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private bool IsVehicleType(MonoBehaviour comp)
@@ -659,10 +956,14 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             string name = comp.GetType().Name;
             string goName = comp.gameObject.name;
 
+            // Ignore internal drum of mobile wash plant
+            if (name == "WashPlantMobileTrommel" || comp is WashPlantMobileTrommel || goName.Contains("MobileTrommel"))
+                return false;
+
             if (comp is WashplantShakerBase || name == "WashPlantShaker" || name == "WashplantShakerBase"
                 || comp is GlacierCreek || name == "GlacierCreek"
                 || comp is DeRocker || name == "DeRocker"
-                || comp is WashplantTrommelBase || name == "WashPlantTrommel" || name == "WashplantTrommelBase" || name == "WashPlantMobileTrommel"
+                || comp is WashplantTrommelBase || name == "WashPlantTrommel" || name == "WashplantTrommelBase"
                 || comp is WashplantDuplexJigBase || name == "WashPlantDuplex" || name == "WashplantDuplexJigBase"
                 || comp is GravelPump || name == "GravelPump"
                 || comp is MobileWashplant || name == "MobileWashplant"
@@ -913,30 +1214,38 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             string goName = comp?.gameObject?.name ?? "";
             
             if (comp is GravelPump || typeName == "GravelPump" || goName.Contains("GravelPump"))
-                return "Gravel Pump";
+                return LocalizationManager.T("equipment.gravel_pump", "Gravel Pump");
             if (comp is WashplantDuplexJigBase || typeName == "WashPlantDuplex" || typeName == "WashplantDuplexJigBase" || goName.Contains("Duplex"))
-                return "Duplex Jig";
+                return LocalizationManager.T("equipment.duplex_jig", "Duplex Jig");
             if (comp is GlacierCreek || typeName == "GlacierCreek" || goName.Contains("Glacier"))
-                return "Glacier Creek";
+                return LocalizationManager.T("equipment.glacier_creek", "Glacier Creek");
             if (comp is DeRocker || typeName == "DeRocker" || goName.Contains("DeRocker") || goName.Contains("Rocker"))
-                return "Derocker";
+                return LocalizationManager.T("equipment.derocker", "Derocker");
             if (comp is WashplantShakerBase || typeName.Contains("Shaker"))
             {
-                if (goName.Contains("Orange") || goName.Contains("OB")) return "Orange Beast Shaker";
-                return "Shaker";
+                if (goName.Contains("Orange") || goName.Contains("OB")) return LocalizationManager.T("equipment.orange_beast_shaker", "Orange Beast Shaker");
+                return LocalizationManager.T("equipment.shaker", "Shaker");
             }
             if (comp is WashplantTrommelBase || typeName.Contains("Trommel"))
             {
-                if (goName.Contains("Reinforced")) return "Reinforced Trommel";
-                if (goName.Contains("Arnold")) return "Old Arnold's Trommel";
-                return "Trommel";
+                if (goName.Contains("Reinforced")) return LocalizationManager.T("equipment.reinforced_trommel", "Reinforced Trommel");
+                if (goName.Contains("Arnold")) return LocalizationManager.T("equipment.arnold_trommel", "Old Arnold's Trommel");
+                return LocalizationManager.T("equipment.trommel", "Trommel");
             }
             if (comp is MobileWashplant || typeName == "MobileWashplant")
-                return "Mobile Wash Plant";
+                return LocalizationManager.T("equipment.mobile_plant", "Mobile Wash Plant");
             if (comp is MiniWashplant || typeName == "MiniWashplant")
-                return "Mini Wash Plant";
+                return LocalizationManager.T("equipment.mini_plant", "Mini Wash Plant");
             if (typeName == "OrangeBeastWashPlantGoldCounter")
-                return "Orange Beast";
+                return LocalizationManager.T("equipment.orange_beast", "Orange Beast");
+            if (typeName == "WaterPumpElectric" || goName.Contains("WaterPumpElectric"))
+                return LocalizationManager.T("equipment.water_pump_electric", "Electric Water Pump");
+            if (typeName == "WaterPumpMobile" || typeName == "WaterPumpElectricMobile" || goName.Contains("WaterPumpMobile"))
+                return LocalizationManager.T("equipment.water_pump_mobile", "Mobile Water Pump");
+            if (typeName == "WaterTowerController" || goName.Contains("WaterTower"))
+                return LocalizationManager.T("equipment.water_tower", "Water Tower");
+            if (typeName == "PowerGenerator" || goName.Contains("PowerGenerator") || typeName == "PowerStationController")
+                return LocalizationManager.T("equipment.generator", "Power Generator");
 
             return typeName;
         }
@@ -945,17 +1254,17 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
         {
             string clean = goName.Replace("(Clone)", "").Trim();
             if (clean.Contains("Koparka") || typeName == "Koparka")
-                return clean.Contains("Small") ? "Small Excavator" : "Large Excavator";
+                return clean.Contains("Small") ? LocalizationManager.T("vehicle.small_excavator", "Small Excavator") : LocalizationManager.T("vehicle.large_excavator", "Large Excavator");
             if (clean.Contains("Ladowarka") || typeName == "Ladowarka")
-                return "Wheel Loader";
+                return LocalizationManager.T("vehicle.wheel_loader", "Wheel Loader");
             if (clean.Contains("KoparkoLadowarka") || typeName == "KoparkoLadowarka")
-                return "Backhoe Loader";
+                return LocalizationManager.T("vehicle.backhoe_loader", "Backhoe Loader");
             if (clean.Contains("DumpTruck") || typeName == "DumpTruck")
-                return "Dump Truck";
+                return LocalizationManager.T("vehicle.dump_truck", "Dump Truck");
             if (clean.Contains("Doozer") || typeName.Contains("Doozer"))
-                return "Bulldozer";
+                return LocalizationManager.T("vehicle.bulldozer", "Bulldozer");
             if (clean.Contains("Drill") || typeName.Contains("Drill"))
-                return "Drill Rig";
+                return LocalizationManager.T("vehicle.drill_rig", "Drill Rig");
 
             return clean;
         }
@@ -964,10 +1273,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
         {
             switch (setup)
             {
-                case WashPlantSetupType.Setup1_Mobile: return "Setup 1 (Mobile)";
-                case WashPlantSetupType.Setup2_Stationary: return "Setup 2 (Stationary)";
-                case WashPlantSetupType.Setup3_OrangeBeast: return "Setup 3 (Beast)";
-                default: return "Wash Plant";
+                case WashPlantSetupType.Setup1_Mobile: return LocalizationManager.T("setup.name.mobile", "Mobile Plant");
+                case WashPlantSetupType.Setup2_Stationary: return LocalizationManager.T("setup.name.stationary", "Setup T3-T5");
+                case WashPlantSetupType.Setup3_OrangeBeast: return LocalizationManager.T("setup.name.orange_beast", "Orange Beast");
+                default: return LocalizationManager.T("setup.name.default", "Wash Plant");
             }
         }
 

@@ -18,7 +18,7 @@ namespace Milex.GMS1.Core.Patches
         [HarmonyPrefix]
         public static bool Prefix_set_lockState(ref CursorLockMode value)
         {
-            if (CorePlugin.IsMenuOpen)
+            if (CorePlugin.IsCursorUnlocked)
             {
                 // Only remember if the game requested a non-None state (e.g. Locked)
                 // so our own unlock calls don't overwrite the game's actual intent
@@ -36,7 +36,7 @@ namespace Milex.GMS1.Core.Patches
         [HarmonyPrefix]
         public static bool Prefix_set_visible(ref bool value)
         {
-            if (CorePlugin.IsMenuOpen)
+            if (CorePlugin.IsCursorUnlocked)
             {
                 // Only remember if the game requested to hide the cursor
                 if (!value)
@@ -52,7 +52,7 @@ namespace Milex.GMS1.Core.Patches
         [HarmonyPrefix]
         public static bool Prefix_get_lockState(ref CursorLockMode __result)
         {
-            if (CorePlugin.IsMenuOpen)
+            if (CorePlugin.IsCursorUnlocked)
             {
                 __result = CursorLockMode.None; // Tell the game the cursor is unlocked
                 return false;
@@ -64,7 +64,7 @@ namespace Milex.GMS1.Core.Patches
         [HarmonyPrefix]
         public static bool Prefix_get_visible(ref bool __result)
         {
-            if (CorePlugin.IsMenuOpen)
+            if (CorePlugin.IsCursorUnlocked)
             {
                 __result = true; // Tell the game the cursor is visible
                 return false;

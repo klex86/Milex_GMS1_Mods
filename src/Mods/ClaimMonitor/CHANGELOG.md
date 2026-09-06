@@ -5,6 +5,62 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.0.7] - 2026-09-06
+
+### Multilingual Localization Architecture Overhaul, Native Game Key Resolution & Scrollbar-Free Warning HUD
+
+- **100% Multilingual Alert & Status Pipeline via CoreMod Framework**:
+  - Eliminated all hardcoded English equipment issue strings, alert titles, alert descriptions, and setup labels across the entire diagnostic engine (`ClaimScanner`, `ClaimDiagnosticsData`).
+  - Powered directly by CoreMod framework helpers (`LocalizationManager.T`, `LocalizationManager.Format`, `ModBase.T`, and `ModBase.Format`), eliminating redundant sub-mod wrapper code.
+- **Native Game Localization Key Bridge Integration**:
+  - Intercepted and translated all internal game wear part keys (e.g. `SHOP_ITEM_PARTS_GLACIER_CREEK_ENGINE_NAME`, `SHOP_ITEM_PARTS_PLANTER_WATERPUMPFUSE_NAME`, `SHOP_ITEM_PARTS_PLANTER_WATERPUMPFILTER_NAME`) using `LocalizationManager.ResolveGameText`.
+  - Seamlessly queries the game's native engine (`global::LocalizationKey.GetLocalized()`) with fallback cleanup, ensuring no raw internal tokens ever leak into HUD warning displays.
+  - Added proper `setup.name.infrastructure` category and localized equipment names for standalone water pumps and water towers.
+- **Intelligent Cable & Hose Connection Detection for Infrastructure (Pumps & Generators)**:
+  - Added deep physical connection tracking (`IsUtilityConnected`) for electric/mobile water pumps, water towers, and power generators.
+  - Actively inspects socket plugins, connected cables, water intake and output hoses (`WaterRopeOut`, `_ropeWaterIn`, `_ConnectedRope`, `Holder` components), electric consumers (`_powerConsumer`), and registered network consumers (`_WaterStationConsumerList`, `_PowerStationConsumerList`).
+  - Standalone equipment parked or stored on the claim without any connected cables or hoses is automatically identified as unused (`IsConnected = false`). Suppresses all inactive generator warnings, empty water tower alerts, and wear alerts (such as water pump fuses, filters, or generator buttons) in the Warning HUD for disconnected equipment.
+- **Big Generator Socket Breaker Button Suppression (`MonitorGeneratorSwitchButtons`)**:
+  - Added new configuration option `MonitorGeneratorSwitchButtons` (default `false`).
+  - Filters out individual socket circuit breaker buttons on the big power generator (`Power_Generator_Switch_Button`), preventing up to 10 duplicate button wear/breakdown notices from spamming the Warning HUD unless explicitly opted in.
+- **Embedded Default Configuration Template (`Milex_GMS1_ClaimMonitor.default.cfg`)**:
+  - Pre-seeded full `.default.cfg` template directly inside the DLL assembly resources for pristine first-run deployment with recommended defaults.
+- **Warning HUD Usability & Dimension Overhaul**:
+  - Removed the unnecessary header compact/full button (`[ - Kompakt ]` / `[ + Voll ]`).
+  - Implemented dynamic auto-height in **both** compact and normal modes: HUD height dynamically expands based on the number and line length of active alerts, completely eliminating inner scrollbars and text cutoff. Clamped only to screen bounds (`Screen.height - 40f`).
+- **HUD & Diagnostic Inspector Localization**:
+  - Localized Warning HUD window titles, status badges (`[OK]`, `[CRITICAL]`, `[WARNINGS]`), nominal system text, and equipment summary counters.
+  - Localized Diagnostic Inspector (F3) window title, action buttons (`Force Rescan`, `Dump All to File`), filter labels, status notices, and object counters.
+- **Mobile Wash Plant Overhaul & Water Connection Requirement**:
+  - Eliminated phantom "Trommel failure (no power)" warnings by excluding internal drum components (`WashPlantMobileTrommel`) from separate machinery evaluation.
+  - Enforced water connection requirement for `MobileWashplant` and `MiniWashplant`: corrected connection check to strictly require attached hoses (`ObjectInHolder != null`, `Producent != null`, or active `MyRopes`). Removed faulty static prefab check (`RopeObjectConnectedLogic != null`) which previously registered parked, unhooked mobile wash plants as connected and falsely triggered "turned off" alerts.
+  - Parked or unconnected mobile plants generate zero HUD alerts and skip wear scanning completely, while remaining visible as disconnected in the F3 Diagnostic Inspector.
+  - Added diesel fuel monitoring for `MiniWashplant` via `FuelStationController` with early warning for empty diesel (`issue.miniwashplant.no_fuel`).
+- **Diagnostic Inspector (F3) Polish & Direct Mouse Cursor Unlock**:
+  - Toggling **`F3`** now directly unlocks the mouse cursor and halts camera rotation via `CorePlugin.RequestCursorUnlock("ClaimMonitor_DebugOverlay")`, enabling seamless interaction without opening the Mod Menu.
+  - Fixed broken category filters (`Setup 1 (Mobile)`, `Setup 2 (Stationary)`, `Setup 3 (Orange Beast)`, `Conveyors & Feeders`, `Vehicles`, `Sluice Mats`, `Utilities`) by utilizing unified language-agnostic category keys and `RawDebugItem.Setup` matching.
+  - Split the top toolbar into two distinct rows to comfortably fit all 8 category buttons without window overflow or button clipping.
+- **Bilingual Dictionary Parity**:
+  - Complete English (`_en.json`) and German (`_de.json`) language files updated with matching keys and natural phrasing.
+
+---
+
+## [1.0.6] - 2026-09-06
+
+### Comprehensive Component Wear Early-Warning System & UI Window Layout Polish
+
+- **Universal Component Wear & Breakdown Early-Warning System**:
+  - Integrated full telemetry for all physical wear parts via `CheckAndRepair` across mobile wash plants, stationary setups, Orange Beast, conveyors, and water pumps.
+  - Monitors spray nozzles, conveyor motor drive belts, elevator buckets, trommel drive chains and rollers, duplex jig mechanisms, and water filters.
+  - **Strict Setup Association**: Only scans parts physically attached to machines (`IsInPlace == true`) that belong to currently enabled setups. Scrapped or loose parts dropped on the ground are completely ignored.
+  - **Configurable Alert Threshold**: Added `ComponentWearWarningThreshold` (default 20%, range 5%-50%). Produces yellow warnings prior to breakdown and red critical alerts upon total component failure.
+- **Diagnostic Inspector Window Polish (F3)**:
+  - Enlarged window width to 1100px and restructured filter buttons so all category tabs fit cleanly on screen without clipping or wrapping.
+- **Warning HUD Window Auto-Height**:
+  - Compact mode now dynamically scales its vertical dimensions based on active warning text length to eliminate label cutoff.
+
+---
+
 ## [1.0.5] - 2026-09-05
 
 ### Tier 3–5 Stationary Wash Plant Water Detection Overhaul & Glacier Creek / Derocker Support

@@ -16,9 +16,12 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Config
         public ConfigEntry<bool> MonitorSetup3 { get; private set; }
         public ConfigEntry<bool> Setup3IncludeFeedingChain { get; private set; }
 
+        public ConfigEntry<bool> MonitorGeneratorSwitchButtons { get; private set; }
+
         // Thresholds
         public ConfigEntry<float> MatWarningThreshold { get; private set; }
         public ConfigEntry<float> VehicleLowFuelThreshold { get; private set; }
+        public ConfigEntry<float> ComponentWearWarningThreshold { get; private set; }
 
         // Warning HUD
         public ConfigEntry<bool> HudEnabled { get; private set; }
@@ -79,6 +82,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Config
                 "Setup T6: Include feeding chain (hoppers and conveyors) in health evaluation."
             );
 
+            MonitorGeneratorSwitchButtons = config.Bind(
+                "Setups",
+                "MonitorGeneratorSwitchButtons",
+                false,
+                "Include big generator socket switch buttons in wear and breakdown monitoring. Default is false (ignored) to prevent HUD clutter."
+            );
+
             // Thresholds
             MatWarningThreshold = config.Bind(
                 "Thresholds",
@@ -92,6 +102,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Config
                 "VehicleLowFuelThreshold",
                 15.0f,
                 new ConfigDescription("Vehicle fuel percentage threshold to trigger low fuel warning.", new AcceptableValueRange<float>(5.0f, 30.0f))
+            );
+
+            ComponentWearWarningThreshold = config.Bind(
+                "Thresholds",
+                "ComponentWearWarningThreshold",
+                20.0f,
+                new ConfigDescription("Equipment part durability percentage threshold (1%-50%) to trigger an early wear warning before total breakdown.", new AcceptableValueRange<float>(5.0f, 50.0f))
             );
 
             // Warning HUD

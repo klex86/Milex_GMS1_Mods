@@ -5,6 +5,31 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.3.2] - 2026-09-06
+
+### Framework-Level Localization Extension, Caller Resolution & Native Game Key Bridge
+
+- **Caller-Aware Framework Localization in `LocalizationManager`**:
+  - Added caller-aware overloads `Translate(key, defaultValue)` and `TranslateFormat(key, defaultFormat, args)` using `Assembly.GetCallingAssembly()` and `[MethodImpl(MethodImplOptions.NoInlining)]`.
+  - Added concise static aliases `LocalizationManager.T` and `LocalizationManager.Format`.
+  - Sub-mods can now resolve localized strings directly through the CoreMod framework without writing custom boilerplate wrappers or maintaining local translation helpers.
+- **Native Game Localization Key Bridge (`ResolveGameText`)**:
+  - Added `LocalizationManager.ResolveGameText(string textOrKey)` to resolve internal Gold Mining Simulator strings (such as `SHOP_ITEM_PARTS_...`).
+  - Seamlessly prioritizes mod/core dictionaries, queries the game's native engine (`global::LocalizationKey.GetLocalized()`), and gracefully formats unknown keys into readable Title Case if unmapped.
+- **`ModBase` Formatting & Alias Extensions**:
+  - Added `TranslateFormat(key, defaultFormat, args)`, `T(key, defaultValue)`, and `Format(key, defaultFormat, args)` directly to `ModBase` for strongly-typed sub-mod instance access.
+- **Embedded Default Config Template Engine (`ExtractDefaultConfigFile`)**:
+  - `ModBase.Config` now checks if the target `%AssemblyName%.cfg` file exists on disk prior to initializing `ConfigFile`.
+  - If no config file exists yet (first launch or after manual reset), `ModBase` automatically extracts the embedded `%AssemblyName%.default.cfg` template from the DLL resources into `BepInEx/config/%AssemblyName%.cfg`.
+  - Allows full authorial control over default settings, section ordering, and comments directly from source repository template files without requiring runtime creation from scratch.
+- **Centralized Cursor Requester Architecture (`CorePlugin.RequestCursorUnlock` / `ReleaseCursorUnlock`)**:
+  - Provides a centralized cursor registry enabling external overlays and sub-mods (e.g. Diagnostic Inspectors) to unlock the mouse cursor and block game input without forcing the main Mod Menu to open.
+  - Ensures clean 1:1 restoration of first-person mouse locking and camera control only after all requesters have released their hold.
+- **Modern Canvas Menu Backdrop Decoupling**:
+  - Removed click-to-close behavior from the semi-transparent canvas backdrop. Clicks outside the dashboard container or into other active mod overlays will no longer unintentionally dismiss the Mod Menu.
+
+---
+
 ## [1.3.1] - 2026-09-04
 
 ### Bug Fixes & Stability

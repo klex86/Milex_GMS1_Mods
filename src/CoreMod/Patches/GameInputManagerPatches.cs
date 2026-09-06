@@ -17,7 +17,7 @@ namespace Milex.GMS1.Core.Patches
         [HarmonyPrefix]
         public static bool Prefix_GetAxis(ref float __result)
         {
-            if (CorePlugin.IsMenuOpen)
+            if (CorePlugin.IsCursorUnlocked)
             {
                 __result = 0.0f;
                 return false; // Silence all game camera and mouse wheel inputs
@@ -39,7 +39,7 @@ namespace Milex.GMS1.Core.Patches
         [HarmonyPrefix]
         public static bool Prefix_GetButton(ref bool __result)
         {
-            if (CorePlugin.IsMenuOpen)
+            if (CorePlugin.IsCursorUnlocked)
             {
                 __result = false;
                 return false; // Silence all game button presses

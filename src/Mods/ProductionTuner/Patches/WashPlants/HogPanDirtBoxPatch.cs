@@ -6,38 +6,65 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
     /// <summary>
     /// Scales Hog Pan dirt capacity while protecting water consumption rate from accelerating.
-    /// Employs a zero-allocation fast exit path and clean vanilla state restoration.
+    /// Save/load safe: Start() prefix ensures the multiplier is applied before vanilla code can
+    /// clamp the serialized PlaneVolume against the unmodified vanilla PlaneVolumeMax on load.
     /// </summary>
-    [HarmonyPatch(typeof(GoldDigger.HogPanDirtBox), "Update")]
     public static class HogPanDirtBoxPatch
     {
         private static readonly Dictionary<int, (GoldDigger.HogPanDirtBox instance, float baseCap)> Tracked =
             new Dictionary<int, (GoldDigger.HogPanDirtBox, float)>();
         private static float _lastMultiplier = -1f;
 
-        [HarmonyPostfix]
-        public static void UpdatePostfix(GoldDigger.HogPanDirtBox __instance)
+        // -------------------------------------------------------------------------
+        // Start() Prefix — apply multiplier before vanilla code runs to prevent
+        // PlaneVolume being clamped against vanilla PlaneVolumeMax on load.
+        // -------------------------------------------------------------------------
+        [HarmonyPatch(typeof(GoldDigger.HogPanDirtBox), "Start")]
+        public static class HogPanStartSafetyPatch
         {
-            if (__instance == null) return;
-
-            float multiplier = ProductionTunerPlugin.Service != null
-                ? ProductionTunerPlugin.Service.HogPanCapacityMultiplier
-                : 1f;
-
-            int id = __instance.GetInstanceID();
-
-            // Zero-allocation fast-path
-            if (Tracked.TryGetValue(id, out var data))
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.HogPanDirtBox __instance)
             {
-                if (multiplier == _lastMultiplier) return;
-                __instance.PlaneVolumeMax = data.baseCap * multiplier;
-                return;
+                if (__instance == null) return;
+                int id = __instance.GetInstanceID();
+                if (Tracked.ContainsKey(id)) return;
+                float baseCap = __instance.PlaneVolumeMax;
+                float multiplier = ProductionTunerPlugin.Service?.HogPanCapacityMultiplier ?? 1f;
+                Tracked[id] = (__instance, baseCap);
+                __instance.PlaneVolumeMax = baseCap * multiplier;
+                _lastMultiplier = multiplier;
             }
+        }
 
-            float baseCap = __instance.PlaneVolumeMax;
-            Tracked[id] = (__instance, baseCap);
-            __instance.PlaneVolumeMax = baseCap * multiplier;
-            _lastMultiplier = multiplier;
+        // -------------------------------------------------------------------------
+        // Update() Postfix — fast-path for live multiplier changes in the in-game menu
+        // -------------------------------------------------------------------------
+        [HarmonyPatch(typeof(GoldDigger.HogPanDirtBox), "Update")]
+        public static class HogPanUpdatePatch
+        {
+            [HarmonyPostfix]
+            public static void UpdatePostfix(GoldDigger.HogPanDirtBox __instance)
+            {
+                if (__instance == null) return;
+
+                float multiplier = ProductionTunerPlugin.Service?.HogPanCapacityMultiplier ?? 1f;
+                int id = __instance.GetInstanceID();
+
+                // Zero-allocation fast-path
+                if (Tracked.TryGetValue(id, out var data))
+                {
+                    if (multiplier == _lastMultiplier) return;
+                    __instance.PlaneVolumeMax = data.baseCap * multiplier;
+                    _lastMultiplier = multiplier;
+                    return;
+                }
+
+                // Fallback registration
+                float baseCap = __instance.PlaneVolumeMax;
+                Tracked[id] = (__instance, baseCap);
+                __instance.PlaneVolumeMax = baseCap * multiplier;
+                _lastMultiplier = multiplier;
+            }
         }
 
         public static float GetBaseCap(int id, float fallback)
@@ -50,9 +77,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             foreach (var kvp in Tracked.Values)
             {
                 if (kvp.instance != null)
-                {
                     kvp.instance.PlaneVolumeMax = kvp.baseCap;
-                }
             }
             _lastMultiplier = 1f;
         }

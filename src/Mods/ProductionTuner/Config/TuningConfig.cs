@@ -94,12 +94,14 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         public ConfigEntry<float> WaveTable_Capacity { get; private set; }
 
         // ===========================================================
-        // GROUP 5 – Trailers
-        // Magnetite trailer, fuel trailer
+        // GROUP 5 – Trailers & Fuel Infrastructure
+        // Magnetite trailer, fuel trailer, stationary fuel tanks, hose length
         // ===========================================================
 
         public ConfigEntry<float> MagnetiteTrailer_Capacity { get; private set; }
         public ConfigEntry<float> FuelTrailer_Capacity { get; private set; }
+        public ConfigEntry<float> FuelTank_Capacity { get; private set; }
+        public ConfigEntry<float> FuelHoseLength { get; private set; }
 
         // ===========================================================
         // CONSTRUCTOR
@@ -185,7 +187,11 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
             MagnetiteTrailer_Capacity = BindStep("Group5_Trailers", "MagnetiteTrailer_Capacity", 2.0f,
                 "Load capacity of the magnetite trailer.", DependentCapacitySteps);
             FuelTrailer_Capacity = BindStep("Group5_Trailers", "FuelTrailer_Capacity", 3.0f,
-                "Load capacity of the fuel trailer.");
+                "Load capacity of the mobile fuel trailer.");
+            FuelTank_Capacity = BindStep("Group5_Trailers", "FuelTank_Capacity", 2.0f,
+                "Capacity of stationary fuel tanks placed on the claim (not the mobile trailer).");
+            FuelHoseLength = BindStep("Group5_Trailers", "FuelHoseLength", 2.0f,
+                "Physical reach of the fuel hose / refueling pistol (scales the joint limit).");
 
             // Event listeners: reactive cascade protection
             AutoScaleDependentInputs.SettingChanged += (s, e) => ApplyCascadeProtection();

@@ -4,6 +4,7 @@ using Milex.GMS1.Core;
 using Milex.GMS1.Mods.ClaimMonitor.Config;
 using Milex.GMS1.Mods.ClaimMonitor.Diagnostics;
 using Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models;
+using Milex.GMS1.Core.Localization;
 using UnityEngine;
 
 namespace Milex.GMS1.Mods.ClaimMonitor.UI
@@ -14,7 +15,6 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
 
         private Rect _windowRect;
         private Vector2 _scrollPos = Vector2.zero;
-        private bool _isMinimized = false;
         private float _lastSaveTime = 0f;
 
         // Custom GUIStyles
@@ -135,7 +135,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             if (Config.HudOnlyShowWarnings.Value && !hasAlerts)
                 return;
 
-            bool isCompact = _isMinimized || Config.HudCompactMode.Value;
+            bool isCompact = Config?.HudCompactMode?.Value ?? false;
 
             // Apply configured sizes and screen boundaries
             float currentWidth = isCompact
@@ -145,12 +145,52 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             float currentHeight;
             if (isCompact)
             {
-                int alertCount = hasAlerts ? alerts.Count : 1;
-                currentHeight = Mathf.Min(24f + (alertCount * 22f) + 8f, Screen.height - 40f);
+                if (!hasAlerts)
+                {
+                    currentHeight = 54f;
+                }
+                else
+                {
+                    // Calculate dynamic height based on text content length to avoid any truncation
+                    float estimatedTotalTextHeight = 28f; // Window Header
+                    float contentWidth = Mathf.Max(200f, currentWidth - 30f);
+                    float charsPerLine = contentWidth / 7.2f;
+
+                    for (int i = 0; i < alerts.Count; i++)
+                    {
+                        string line = $"• [WARN] {alerts[i].Title}: {alerts[i].Description}";
+                        int estimatedLines = Mathf.Max(1, Mathf.CeilToInt(line.Length / charsPerLine));
+                        estimatedTotalTextHeight += (estimatedLines * 16f) + 6f;
+                    }
+                    currentHeight = Mathf.Clamp(estimatedTotalTextHeight + 14f, 54f, Screen.height - 40f);
+                }
             }
             else
             {
-                currentHeight = Mathf.Min(Config.HudMaxHeight.Value, Screen.height - 40f);
+                if (!hasAlerts)
+                {
+                    currentHeight = 120f;
+                }
+                else
+                {
+                    // Full window mode: window title (28) + equipment summary header (28) + padding (16)
+                    float estimatedTotalTextHeight = 72f;
+                    float contentWidth = Mathf.Max(250f, currentWidth - 40f);
+                    float charsPerLine = contentWidth / 7.5f;
+
+                    for (int i = 0; i < alerts.Count; i++)
+                    {
+                        // Card header: ~20px + Box padding/margins: ~16px
+                        float cardHeight = 36f;
+                        string desc = alerts[i].Description ?? "";
+                        int descLines = Mathf.Max(1, Mathf.CeilToInt(desc.Length / charsPerLine));
+                        cardHeight += (descLines * 16f);
+                        estimatedTotalTextHeight += cardHeight;
+                    }
+
+                    // Dynamically fit all content without scrolling, constrained only by the screen itself
+                    currentHeight = Mathf.Clamp(estimatedTotalTextHeight, 120f, Screen.height - 40f);
+                }
             }
 
             _windowRect.width = currentWidth;
@@ -170,15 +210,15 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                 }
             }
 
-            string headerBadge = "[OK]";
+            string headerBadge = LocalizationManager.T("hud.badge.ok", "[OK]");
             if (criticalCount > 0)
-                headerBadge = $"[! {criticalCount} CRITICAL]";
+                headerBadge = LocalizationManager.Format("hud.badge.critical", "[! {0} CRITICAL]", criticalCount);
             else if (warningCount > 0)
-                headerBadge = $"[^ {warningCount} WARNINGS]";
+                headerBadge = LocalizationManager.Format("hud.badge.warning", "[^ {0} WARNINGS]", warningCount);
 
             string title = isCompact
-                ? $"Claim Warnings  {headerBadge}"
-                : $"Claim Monitor  {headerBadge}";
+                ? LocalizationManager.Format("hud.header.warnings", "Claim Warnings {0}", headerBadge)
+                : LocalizationManager.Format("hud.header.monitor", "Claim Monitor {0}", headerBadge);
 
             GUI.depth = -500;
             var activeStyle = isCompact ? _compactWindowStyle : _windowStyle;
@@ -204,25 +244,14 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             var data = ClaimScanner.Instance?.CurrentData;
             var alerts = data?.ActiveAlerts;
             bool hasAlerts = alerts != null && alerts.Count > 0;
-            bool isCompact = _isMinimized || Config.HudCompactMode.Value;
-
-            // Header Bar Minimize / Expand button
-            GUILayout.BeginHorizontal();
-            GUILayout.FlexibleSpace();
-
-            string toggleLabel = _isMinimized ? "[ + Full ]" : "[ - Compact ]";
-            if (GUILayout.Button(toggleLabel, GUILayout.Height(16), GUILayout.Width(75)))
-            {
-                _isMinimized = !_isMinimized;
-            }
-            GUILayout.EndHorizontal();
+            bool isCompact = Config?.HudCompactMode?.Value ?? false;
 
             // Compact View: Compact list of active warnings
             if (isCompact)
             {
                 if (!hasAlerts)
                 {
-                    GUILayout.Label("<color=#7CFC00>[OK]</color> All Systems Operational", _compactItemStyle);
+                    GUILayout.Label(string.Format("<color=#7CFC00>[OK]</color> {0}", LocalizationManager.T("hud.compact.all_operational", "All Systems Operational")), _compactItemStyle);
                 }
                 else
                 {
@@ -230,7 +259,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                     {
                         var alert = alerts[i];
                         string bulletColor = alert.Severity == AlertSeverity.Critical ? "#FF4500" : "#FFD700";
-                        string tag = alert.Severity == AlertSeverity.Critical ? "CRITICAL" : "WARN";
+                        string tag = alert.Severity == AlertSeverity.Critical ? LocalizationManager.T("hud.tag.critical", "CRITICAL") : LocalizationManager.T("hud.tag.warn", "WARN");
                         GUILayout.Label($"<color={bulletColor}><b>• [{tag}]</b></color> <b>{alert.Title}:</b> {alert.Description}", _compactItemStyle);
                     }
                 }
@@ -245,7 +274,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             int vehicleCount = data?.Vehicles.Count ?? 0;
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label($"<color=#D4AF37>Equipment:</color> {plantCount} Plants | {matCount} Mats | {vehicleCount} Vehicles", _descStyle);
+            GUILayout.Label(LocalizationManager.Format("hud.equipment_summary", "<color=#D4AF37>Equipment:</color> {0} Plants | {1} Mats | {2} Vehicles", plantCount, matCount, vehicleCount), _descStyle);
             GUILayout.EndHorizontal();
             GUILayout.Space(2);
 
@@ -253,8 +282,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             if (!hasAlerts)
             {
                 GUILayout.BeginVertical(_nominalBoxStyle);
-                GUILayout.Label("<color=#7CFC00><b>ALL SYSTEMS NOMINAL</b></color>", _titleStyle);
-                GUILayout.Label("No component failures, low fuel, or mat overfills detected across active claims.", _descStyle);
+                GUILayout.Label($"<color=#7CFC00><b>{LocalizationManager.T("hud.all_nominal", "ALL SYSTEMS NOMINAL")}</b></color>", _titleStyle);
+                GUILayout.Label(LocalizationManager.T("hud.nominal_desc", "No component failures, low fuel, or mat overfills detected across active claims."), _descStyle);
                 GUILayout.EndVertical();
             }
             else
@@ -266,7 +295,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                     var alert = alerts[i];
                     GUIStyle boxStyle = alert.Severity == AlertSeverity.Critical ? _criticalBoxStyle : _warningBoxStyle;
                     string badgeColor = alert.Severity == AlertSeverity.Critical ? "#FF4500" : "#FFD700";
-                    string badgeText = alert.Severity == AlertSeverity.Critical ? "[CRITICAL]" : "[WARNING]";
+                    string badgeText = alert.Severity == AlertSeverity.Critical ? $"[{LocalizationManager.T("hud.critical", "CRITICAL")}]" : $"[{LocalizationManager.T("hud.warning", "WARNING")}]";
 
                     GUILayout.BeginVertical(boxStyle);
                     GUILayout.Label($"<color={badgeColor}><b>{badgeText}</b></color> <b>{alert.Title}</b>", _titleStyle);

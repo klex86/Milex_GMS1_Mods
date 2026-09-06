@@ -70,7 +70,12 @@ namespace Milex.GMS1.Mods.ClaimMonitor
                     LogInfo($"Diagnostic Inspector toggle pressed: Debug is now {MonitorConfig.EnableDebugGroup.Value}");
                     if (MonitorConfig.EnableDebugGroup.Value)
                     {
+                        Core.CorePlugin.RequestCursorUnlock("ClaimMonitor_DebugOverlay");
                         Scanner?.ForceScan();
+                    }
+                    else
+                    {
+                        Core.CorePlugin.ReleaseCursorUnlock("ClaimMonitor_DebugOverlay");
                     }
                 }
             }
@@ -85,6 +90,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor
 
         protected override void OnModDisabled()
         {
+            Core.CorePlugin.ReleaseCursorUnlock("ClaimMonitor_DebugOverlay");
             Scanner?.StopScanning();
             if (Hud != null) Hud.enabled = false;
             LogInfo(Translate("log.disabled", "Claim Monitor disabled."));

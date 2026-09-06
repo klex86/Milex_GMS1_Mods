@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using BepInEx;
 using BepInEx.Configuration;
 using Milex.GMS1.Core.Localization;
@@ -94,6 +95,77 @@ namespace Milex.GMS1.Core
         private static float _previousTimeScale = 1.0f;
         private static bool _isGamePausedByMenu = false;
 
+        private static readonly HashSet<string> _cursorRequesters = new HashSet<string>();
+
+        public static bool IsCursorUnlocked => IsMenuOpen || _cursorRequesters.Count > 0;
+
+        public static void RequestCursorUnlock(string requesterId)
+        {
+            if (string.IsNullOrEmpty(requesterId)) return;
+            bool wasActive = IsCursorUnlocked;
+            _cursorRequesters.Add(requesterId);
+            if (!wasActive && IsCursorUnlocked)
+            {
+                OnCursorFreed();
+            }
+        }
+
+        public static void ReleaseCursorUnlock(string requesterId)
+        {
+            if (string.IsNullOrEmpty(requesterId)) return;
+            bool wasActive = IsCursorUnlocked;
+            _cursorRequesters.Remove(requesterId);
+            if (wasActive && !IsCursorUnlocked)
+            {
+                OnCursorRestored();
+            }
+        }
+
+        private static void OnCursorFreed()
+        {
+            _previousLockMode = Cursor.lockState;
+            _previousCursorVisible = Cursor.visible;
+            Patches.CursorControlPatches.GameLockState = _previousLockMode;
+            Patches.CursorControlPatches.GameCursorVisible = _previousCursorVisible;
+
+            SetNativeInputBlocked(true);
+
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
+
+        private static void OnCursorRestored()
+        {
+            SetNativeInputBlocked(false);
+
+            CursorLockMode targetLock = Patches.CursorControlPatches.GameLockState != CursorLockMode.None
+                ? Patches.CursorControlPatches.GameLockState
+                : _previousLockMode;
+            bool targetVisible = !Patches.CursorControlPatches.GameCursorVisible 
+                ? false 
+                : _previousCursorVisible;
+
+            Cursor.lockState = targetLock;
+            Cursor.visible = targetVisible;
+        }
+
+        private static void SetNativeInputBlocked(bool blocked)
+        {
+            try
+            {
+                var inputManagerType = Type.GetType("InputManager, Assembly-CSharp");
+                if (inputManagerType != null)
+                {
+                    var setPauseMethod = inputManagerType.GetMethod("SetPauseMenuBlocked", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+                    if (setPauseMethod != null)
+                    {
+                        setPauseMethod.Invoke(null, new object[] { blocked });
+                    }
+                }
+            }
+            catch { }
+        }
+
         private void Update()
         {
             if (Input.GetKeyDown(MenuToggleKey.Value))
@@ -101,8 +173,8 @@ namespace Milex.GMS1.Core
                 ToggleMenu();
             }
 
-            // Continuously ensure cursor is freed while menu is open
-            if (IsMenuOpen)
+            // Continuously ensure cursor is freed while menu or external overlay is active
+            if (IsCursorUnlocked)
             {
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
@@ -112,7 +184,7 @@ namespace Milex.GMS1.Core
         private void LateUpdate()
         {
             // Some games force cursor lock in LateUpdate; enforce unlock
-            if (IsMenuOpen)
+            if (IsCursorUnlocked)
             {
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
@@ -142,36 +214,15 @@ namespace Milex.GMS1.Core
 
         public static void ToggleMenu()
         {
-            if (!IsMenuOpen)
-            {
-                // Capture actual game cursor state BEFORE opening the menu
-                _previousLockMode = Cursor.lockState;
-                _previousCursorVisible = Cursor.visible;
-                Patches.CursorControlPatches.GameLockState = _previousLockMode;
-                Patches.CursorControlPatches.GameCursorVisible = _previousCursorVisible;
-            }
-
+            bool wasUnlocked = IsCursorUnlocked;
             IsMenuOpen = !IsMenuOpen;
-
-            try
-            {
-                // Call the game's native input blocker!
-                var inputManagerType = Type.GetType("InputManager, Assembly-CSharp");
-                if (inputManagerType != null)
-                {
-                    var setPauseMethod = inputManagerType.GetMethod("SetPauseMenuBlocked", System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
-                    if (setPauseMethod != null)
-                    {
-                        setPauseMethod.Invoke(null, new object[] { IsMenuOpen });
-                    }
-                }
-            }
-            catch { }
 
             if (IsMenuOpen)
             {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
+                if (!wasUnlocked)
+                {
+                    OnCursorFreed();
+                }
 
                 if (PauseGameOnMenu != null && PauseGameOnMenu.Value)
                 {
@@ -204,16 +255,10 @@ namespace Milex.GMS1.Core
                 Instance?._classicMenu?.Hide();
                 Instance?._modernMenu?.Hide();
 
-                // Restore game cursor state accurately
-                CursorLockMode targetLock = Patches.CursorControlPatches.GameLockState != CursorLockMode.None
-                    ? Patches.CursorControlPatches.GameLockState
-                    : _previousLockMode;
-                bool targetVisible = !Patches.CursorControlPatches.GameCursorVisible 
-                    ? false 
-                    : _previousCursorVisible;
-
-                Cursor.lockState = targetLock;
-                Cursor.visible = targetVisible;
+                if (!IsCursorUnlocked)
+                {
+                    OnCursorRestored();
+                }
             }
         }
 

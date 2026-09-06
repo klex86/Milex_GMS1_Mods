@@ -94,18 +94,13 @@ namespace Milex.GMS1.Core.UI.Modern
             _raycaster.blockingObjects = GraphicRaycaster.BlockingObjects.None;
             _raycaster.ignoreReversedGraphics = true;
 
-            // Modal Dim Backdrop (semi-transparent)
+            // Modal Dim Backdrop (semi-transparent, visual only)
             var backdrop = UIFactory.CreatePanel(_canvasRoot.transform, "Backdrop", new Color(0.04f, 0.05f, 0.08f, 0.55f));
             var bdRt = backdrop.GetComponent<RectTransform>();
             bdRt.anchorMin = Vector2.zero;
             bdRt.anchorMax = Vector2.one;
             bdRt.offsetMin = Vector2.zero;
             bdRt.offsetMax = Vector2.zero;
-
-            // Clicking backdrop outside closes menu
-            var bdBtn = backdrop.AddComponent<Button>();
-            bdBtn.transition = Selectable.Transition.None;
-            bdBtn.onClick.AddListener(() => CorePlugin.ToggleMenu());
 
             // Main Window Panel (Dark Slate Container)
             var window = UIFactory.CreatePanel(_canvasRoot.transform, "WindowPanel", new Color(0.10f, 0.12f, 0.16f, 0.98f), UIFactory.RoundedBoxSprite);
@@ -213,15 +208,16 @@ namespace Milex.GMS1.Core.UI.Modern
             });
             var searchRt = _searchInput.GetComponent<RectTransform>();
             searchRt.anchorMin = new Vector2(0.42f, 0.2f);
-            searchRt.anchorMax = new Vector2(0.78f, 0.8f);
+            searchRt.anchorMax = new Vector2(0.92f, 0.8f);
             searchRt.offsetMin = Vector2.zero;
             searchRt.offsetMax = Vector2.zero;
 
-            // Engine Switch Button
+            // Engine Switch Button (hidden by default to streamline modern interface; switch logic preserved)
             var engineBtn = UIFactory.CreateButton(header.transform, "EngineButton", "Classic UI", new Color(0.20f, 0.23f, 0.30f, 1f), new Color(0.28f, 0.32f, 0.42f, 1f), new Color(0.15f, 0.17f, 0.22f, 1f), Color.white, () =>
             {
                 CorePlugin.SwitchMenuEngine(MenuEngineType.Classic);
             }, 12);
+            engineBtn.gameObject.SetActive(false);
             var engineRt = engineBtn.GetComponent<RectTransform>();
             engineRt.anchorMin = new Vector2(0.80f, 0.2f);
             engineRt.anchorMax = new Vector2(0.92f, 0.8f);

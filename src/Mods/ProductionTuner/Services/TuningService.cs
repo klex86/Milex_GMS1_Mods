@@ -99,6 +99,10 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
 
         public float GetFuelTrailerCapacity() => _cfg.FuelTrailer_Capacity.Value;
 
+        public float GetFuelTankCapacity() => _cfg.FuelTank_Capacity.Value;
+
+        public float GetFuelHoseLength() => _cfg.FuelHoseLength.Value;
+
         // ===========================================================
         // Property Accessors for Harmony Patches
         // ===========================================================
@@ -132,5 +136,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         public float WaveTableCapacityMultiplier => GetWaveTableCapacity();
         public float MagnetiteTrailerCapacityMultiplier => GetMagnetiteTrailerCapacity();
         public float FuelTrailerCapacityMultiplier => GetFuelTrailerCapacity();
+        public float FuelTankCapacityMultiplier => GetFuelTankCapacity();
+        public float FuelHoseLengthMultiplier => GetFuelHoseLength();
     }
 }

@@ -114,6 +114,8 @@ A major portion of reverse engineering insights, component mappings, and archite
   - *Smart Buckets*: In-depth analysis of `Bucket` internals (`UpdatePlaneAndMass`, `MudVolume`, material tints).
 - **FedeRama**:
   - *GMS.WaveTableCapacity*: Identification of `WaveTable.MaxGroundVolume`.
+- **DSS**:
+  - *DSS PickupSnap*: Discovery of `TrailerHook.Instances`, native trigger coupling state (`PickupCanConnect`), hitch position alignment (`HookPosition`), and dual-purpose trailer coupling toggle (`trailer.ConnectToPickup()`).
 - **GMS Community Modders**:
   - *Increased Capacity And Speed* & *IncreasedCapacity*: Foundational work on `MagnetiteSeparator`, `DumpTruck`, `OrangeBeastFilter`, and reciprocal volume conservation (`_invmaxShovelVolume`).
 

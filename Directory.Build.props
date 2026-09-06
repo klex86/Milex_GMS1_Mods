@@ -66,6 +66,11 @@
     </Reference>
   </ItemGroup>
 
+  <!-- Embed default config templates into mod DLLs -->
+  <ItemGroup>
+    <EmbeddedResource Include="Config\*.default.cfg" Condition="Exists('Config')" />
+  </ItemGroup>
+
   <!-- Automatisches Kopieren aller fertigen Mod-DLLs in den BepInEx-Plugins-Ordner -->
   <Target Name="PostBuildDeploy" AfterTargets="PostBuildEvent">
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExPluginsPath)\" ContinueOnError="true" />

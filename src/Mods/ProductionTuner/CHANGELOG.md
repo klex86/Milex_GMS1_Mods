@@ -5,6 +5,40 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
 ---
 
+## [1.4.0] – 2026-09-06
+
+### Added: Stationary Fuel Tanks, Fuel Hose Length & Save/Load Data Safety
+
+- **Stationary Fuel Tank Capacity (`FuelTank_Capacity`)**:
+  - Extends fuel capacity scaling to all stationary `FuelStationController` objects placed on the claim.
+  - Detected automatically: any fuel station that is **not** the mobile fuel trailer (name `End_Bottom`, 1000 L baseline, child of `Trailer`) is treated as a stationary tank.
+  - Separate config key and tracking dictionary — fully independent from the mobile trailer multiplier.
+  - Default: `2.0x`.
+- **Fuel Hose Length (`FuelHoseLength`)**:
+  - Scales the physical reach of the fuel hose / refueling pistol via `ConfigurableJoint.linearLimit.limit`.
+  - Applied to both the `FuelPistolHoldable` component joint and `MyConfigurableJ` in the `Attach()` callback.
+  - Default: `2.0x` (doubles the hose reach).
+- **Save/Load Data Safety (All Capacity Patches)**:
+  - Added `Start()` Prefix Harmony patches to 7 components: Fuel Trailer, Stationary Fuel Tanks, Magnetite Trailer, Mobile Wash Plant, Mini Wash Plant, Hog Pan, Wash Plant Shaker, Magnetite Separator, Wave Table.
+  - Guarantees that all capacity multipliers are applied **before** vanilla `Start()`/`Update()` code runs, preventing serialized `CurrentCapacity` values from being silently clamped to the lower vanilla maximum on game load.
+  - Example: Setting `FuelTrailer_Capacity = 3.0x`, filling to 3000 L, saving and reloading will now correctly restore the full 3000 L instead of clamping to 1000 L.
+
+---
+
+## [1.3.1] – 2026-09-06
+ 
+
+### Excavator Handbrake Stabilization & Dump Truck Driving Mass Balancing
+
+- **Excavator Chassis Stabilization with Handbrake**:
+  - Automatically freezes chassis slide and tilt via `RigidbodyConstraints` whenever the excavator's handbrake is engaged (`HandbrakeOn == true`).
+  - Eliminates unwanted vehicle tilting, tipping, or slipping on steep claim terrain during aggressive scooping. Releasing the handbrake restores complete track movement instantly.
+- **Dump Truck Driving Mass Compensation**:
+  - Implemented dynamic mass balancing in `GoldDigger.DumpTruck.MachineMove` using Harmony `__state`.
+  - When bed capacity is multiplied above vanilla levels, physical mass drag (`Dirt.LoadMass`) is dampened proportionally while driving, allowing fully loaded trucks to navigate mud and inclines with agile, responsive acceleration. Full capacity and volume display remain untouched.
+
+---
+
 ## [1.3.0] – 2026-09-02
 
 ### Added: Mobile Conveyor Belts & Excavator Hydraulics
