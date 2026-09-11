@@ -70,6 +70,25 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                 return true;
             if (trailer != null && fsc.gameObject.name == "End_Bottom")
                 return true;
+
+            // Robust fallback via Fuel_Rope link when nozzle is unholstered/detached
+            var pistol = fsc.GetComponent<GoldDigger.FuelPistolHoldable>() ?? fsc.GetComponentInChildren<GoldDigger.FuelPistolHoldable>();
+            if (pistol != null && pistol.MyFuelRope != null)
+            {
+                var ropeTrailer = pistol.MyFuelRope.GetComponentInParent<GoldDigger.Trailer>();
+                if (ropeTrailer != null && ropeTrailer.MyMachineType == MachineType.TrailerFuel)
+                    return true;
+            }
+
+            // Characteristic fallback: mobile trailer has 3.0 L/s tanking speed vs stationary tank's 20.0 L/s
+            if (fsc.gameObject.name == "End_Bottom" && fsc.MaxCapacityPropertyDrawerKey != "FUELTANK_STATIONARY_FUELMAXCAPACITY")
+            {
+                if (pistol != null && pistol.TankingSpeed <= 10f)
+                    return true;
+                if (fsc.MaxCapacity <= 3000f && fsc.MaxCapacity > 50f)
+                    return true;
+            }
+
             return false;
         }
 
