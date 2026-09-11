@@ -3,6 +3,22 @@
 All notable changes to this mod are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.10] – 2026-09-12
+
+### Fixed: Fuel Station Save/Load Clamping Protection & Mobile Trailer Baseline Calibration
+
+- **Save/Load Fuel Clamping Protection (`FuelTrailerPatch`)**:
+  - Fixed a critical bug where reloading a saved game with a refueled fuel trailer or stationary tank truncated its fuel volume down to the raw prefab capacity.
+  - *Root cause*: `FuelStationController.Serialize()` stores fuel as an absolute liter value (`CurrentCapacity`). When loading a save, Unity instantiates the trailer prefab with its raw vanilla capacity ($1,000\text{L}$). In the very first frame of native `FuelStationController.Update()`, the game executes `CurrentCapacity = Mathf.Clamp(CurrentCapacity, 0f, MaxCapacity)`. Because the patch was previously a `[HarmonyPostfix]`, line 145 executed *before* the patch could update `MaxCapacity`, immediately clamping any fuel above $1,000\text{L}$ down to $1,000\text{L}$ (e.g. 77% of $7,500\text{L} = 5,775\text{L}$ clamped to $1,000\text{L} = 13.3\%$).
+  - *Fix*:
+    - Switched `FuelStationUpdatePatch` to `[HarmonyPrefix]` so `MaxCapacity` is guaranteed to be scaled before `Mathf.Clamp` is evaluated.
+    - Added `FuelStationDeserializePatch` (`[HarmonyPostfix]` on `FuelStationController.Deserialize`) to immediately restore scaled capacity the instant save data is read.
+- **Mobile Trailer Authentic Prefab Baseline Calibration (`VanillaTrailerCapacity = 1000f`)**:
+  - Aligned mobile fuel trailer baseline capacity to authentic Unity prefab runtime dump value ($1,000\text{L}$, `TRAILER_FUELTANK_FUELMAXCAPACITY`).
+  - Clarified that the runtime object with $2,500\text{L}$ is the commercial gas station dispenser in town (`IsInfinitySource = true`), not the player trailer.
+
+---
+
 ## [1.4.9] – 2026-09-11
 
 ### Fixed: Fuel Infrastructure Isolation & 6.6 HogPan Default Ratio

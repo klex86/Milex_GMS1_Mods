@@ -12,8 +12,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
     /// </summary>
     public static class FuelTrailerPatch
     {
-        /// <summary>Genuine vanilla capacity of the mobile fuel trailer in liters.</summary>
-        public const float VanillaTrailerCapacity = 2500f;
+        /// <summary>Genuine vanilla capacity of the mobile fuel trailer in liters (authentic Unity prefab baseline).</summary>
+        public const float VanillaTrailerCapacity = 1000f;
 
         /// <summary>Genuine vanilla capacity of stationary fuel stations/tanks on the claim in liters.</summary>
         public const float VanillaStationaryTankCapacity = 10000f;
@@ -224,6 +224,33 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
         }
 
         // -------------------------------------------------------------------------
+        // Deserialize() Postfix — Immediately scales MaxCapacity upon loading savegame
+        // -------------------------------------------------------------------------
+        [HarmonyPatch(typeof(GoldDigger.FuelStationController), "Deserialize")]
+        public static class FuelStationDeserializePatch
+        {
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.FuelStationController __instance)
+            {
+                if (__instance == null) return;
+                int id = __instance.GetInstanceID();
+
+                if (IsMobileTrailer(__instance))
+                {
+                    TrackedTrailers[id] = __instance;
+                    float multiplier = ProductionTunerPlugin.Service?.FuelTrailerCapacityMultiplier ?? 1f;
+                    __instance.MaxCapacity = VanillaTrailerCapacity * multiplier;
+                }
+                else if (IsStationaryClaimTank(__instance))
+                {
+                    TrackedStationary[id] = __instance;
+                    float multiplier = ProductionTunerPlugin.Service?.FuelTankCapacityMultiplier ?? 1f;
+                    __instance.MaxCapacity = VanillaStationaryTankCapacity * multiplier;
+                }
+            }
+        }
+
+        // -------------------------------------------------------------------------
         // Start() Postfix — Safe initial scaling on spawn/load
         // -------------------------------------------------------------------------
         [HarmonyPatch(typeof(GoldDigger.FuelStationController), "Start")]
@@ -295,13 +322,15 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
         }
 
         // -------------------------------------------------------------------------
-        // Update() Postfix — Live multiplier changes in the in-game menu
+        // Update() Prefix — Ensures MaxCapacity is scaled BEFORE native line:
+        // CurrentCapacity = Mathf.Clamp(CurrentCapacity, 0f, MaxCapacity);
+        // Also applies live multiplier changes from the in-game menu.
         // -------------------------------------------------------------------------
         [HarmonyPatch(typeof(GoldDigger.FuelStationController), "Update")]
         public static class FuelStationUpdatePatch
         {
-            [HarmonyPostfix]
-            public static void Postfix(GoldDigger.FuelStationController __instance)
+            [HarmonyPrefix]
+            public static void Prefix(GoldDigger.FuelStationController __instance)
             {
                 if (__instance == null) return;
                 int id = __instance.GetInstanceID();
@@ -315,16 +344,17 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                     if (!TrackedTrailers.ContainsKey(id))
                     {
                         TrackedTrailers[id] = __instance;
-                        __instance.MaxCapacity = VanillaTrailerCapacity * trailerMult;
                     }
+                    // Always guarantee MaxCapacity matches the configured multiplier before native Update() clamps CurrentCapacity
+                    __instance.MaxCapacity = VanillaTrailerCapacity * trailerMult;
                 }
                 else if (IsStationaryClaimTank(__instance))
                 {
                     if (!TrackedStationary.ContainsKey(id))
                     {
                         TrackedStationary[id] = __instance;
-                        __instance.MaxCapacity = VanillaStationaryTankCapacity * tankMult;
                     }
+                    __instance.MaxCapacity = VanillaStationaryTankCapacity * tankMult;
                 }
                 else
                 {

@@ -3,6 +3,19 @@
 All notable changes and releases for this mod collection are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.8.17] - 2026-09-12
+
+### Production Tuner: Fuel Station Save/Load Clamping Protection & Prefab Baseline Calibration
+
+- **Production Tuner v1.4.10 — Fuel Station Save/Load Clamping Immunity (`FuelTrailerPatch`)**:
+  - Solved fuel truncation on save/load where refueled trailers dropped from 77% to 13%.
+  - Fuel volume is serialized as an absolute float in liters (`CurrentCapacity`). In vanilla Unity, newly spawned trailer prefabs initialize with `MaxCapacity = 1000L`. Native `FuelStationController.Update()` evaluates `CurrentCapacity = Mathf.Clamp(CurrentCapacity, 0f, MaxCapacity)` on frame 1.
+  - Converted `FuelStationUpdatePatch` to `[HarmonyPrefix]` so that `MaxCapacity` is scaled before native clamp evaluation, and added a `[HarmonyPostfix]` on `FuelStationController.Deserialize` to guarantee instant capacity scaling during load deserialization.
+- **Production Tuner v1.4.10 — Mobile Trailer Baseline Calibration (`VanillaTrailerCapacity = 1000f`)**:
+  - Calibrated mobile fuel trailer baseline to authentic Unity prefab value ($1,000\text{L}$, `TRAILER_FUELTANK_FUELMAXCAPACITY`). Runtime object with $2,500\text{L}$ was identified as the town gas station pump (`IsInfinitySource = true`).
+
+---
+
 ## [1.8.16] - 2026-09-11
 
 ### Production Tuner: Fuel Infrastructure Isolation & 6.6 HogPan Default Ratio
