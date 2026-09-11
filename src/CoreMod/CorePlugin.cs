@@ -285,12 +285,17 @@ namespace Milex.GMS1.Core
                         LogWarning($"[PauseDiagnostics] Scene: '{sceneName}', TimeScale: {Time.timeScale:F2}, Active PauseReasons ({count}): [{reasonList}], AllInputBlocked: {allInputBlocked}");
 
                         // Automatic recovery: Check if loading has finished and the player is stranded in a leaked pause
-                        // Wait at least 4.0 seconds after scene loading to respect AreaStreamer 30-frame collider initialization
+                        // FastTravel ForceLoad waits up to 7.5 seconds in realtime with scene name pause reason.
+                        // We must wait at least 15.0 seconds after scene loading and verify MenuLoading is not active to avoid interrupting AreaStreamer and FastTravel.
                         float elapsedSinceLoad = Time.realtimeSinceStartup - _sceneLoadTimestamp;
                         bool isLoading = Singleton<GoldDigger.LevelLoadingManager>.IsInstanced() && Singleton<GoldDigger.LevelLoadingManager>.Instance.IsLoading();
                         bool isVanillaMenuOpen = Singleton<GoldDigger.MenuManager>.IsInstanced() && Singleton<GoldDigger.MenuManager>.Instance.InGameMenu;
+                        bool isMenuLoading = Singleton<GoldDigger.MenuManager>.IsInstanced() &&
+                                             Singleton<GoldDigger.MenuManager>.Instance.MyMenuLoading != null &&
+                                             (Singleton<GoldDigger.MenuManager>.Instance.MyMenuLoading.gameObject.activeInHierarchy ||
+                                              Singleton<GoldDigger.MenuManager>.Instance.MyMenuLoading.isFastTravel);
 
-                        if (elapsedSinceLoad > 4.0f && !isLoading && !isVanillaMenuOpen && !IsMenuOpen)
+                        if (elapsedSinceLoad > 15.0f && !isLoading && !isVanillaMenuOpen && !isMenuLoading && !IsMenuOpen)
                         {
                             // Check if any pause reason is an intentional interactive player UI
                             bool isLegitimateUIPause = false;

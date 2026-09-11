@@ -11,8 +11,11 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
   - Solved fuel truncation on save/load where refueled trailers dropped from 77% to 13%.
   - Fuel volume is serialized as an absolute float in liters (`CurrentCapacity`). In vanilla Unity, newly spawned trailer prefabs initialize with `MaxCapacity = 1000L`. Native `FuelStationController.Update()` evaluates `CurrentCapacity = Mathf.Clamp(CurrentCapacity, 0f, MaxCapacity)` on frame 1.
   - Converted `FuelStationUpdatePatch` to `[HarmonyPrefix]` so that `MaxCapacity` is scaled before native clamp evaluation, and added a `[HarmonyPostfix]` on `FuelStationController.Deserialize` to guarantee instant capacity scaling during load deserialization.
-- **Production Tuner v1.4.10 — Mobile Trailer Authentic Prefab Baseline Calibration (`VanillaTrailerCapacity = 1000f`)**:
-  - Calibrated mobile fuel trailer baseline capacity strictly to authentic Unity prefab runtime dump value ($1,000\text{L}$, `TRAILER_FUELTANK_FUELMAXCAPACITY`). Runtime object with $2,500\text{L}$ was confirmed as the commercial town gas station dispenser (`IsInfinitySource = true`), not the trailer. Default 3.0x multiplier yields $3,000\text{L}$.
+- **CoreMod v1.8.17 — Fast Travel & Streaming Engine Immunity (`CorePlugin`)**:
+  - Fixed an issue where the leaked pause auto-recovery triggered prematurely after 4.0 seconds during Fast Travel (`MapMenu.ForceLoad`), which intentionally holds the engine paused for 6.5–7.5 seconds while terrain mesh colliders initialize.
+  - Increased recovery grace period to 15.0 seconds and added active checks for `MenuLoading.gameObject.activeInHierarchy` / `isFastTravel`, preventing trailers from falling through the uncollided terrain and respawning at neutral points.
+- **Production Tuner v1.4.10 — Fast Travel Trailer Auto-Reconnection (`TrailerFastTravelPatch`)**:
+  - Overcame vanilla limitation where fast traveling in a pickup forcibly disconnects any hitched trailer and leaves it uncoupled 4 meters behind the vehicle. Automatically detects and re-couples hitched trailers upon destination arrival.
 
 ---
 

@@ -13,8 +13,9 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
   - *Fix*:
     - Switched `FuelStationUpdatePatch` to `[HarmonyPrefix]` so `MaxCapacity` is guaranteed to be scaled before `Mathf.Clamp` is evaluated.
     - Added `FuelStationDeserializePatch` (`[HarmonyPostfix]` on `FuelStationController.Deserialize`) to immediately restore scaled capacity the instant save data is read.
-- **Mobile Trailer Authentic Prefab Baseline Calibration (`VanillaTrailerCapacity = 1000f`)**:
-  - Calibrated mobile fuel trailer baseline capacity strictly to authentic Unity prefab runtime dump value ($1,000\text{L}$, `TRAILER_FUELTANK_FUELMAXCAPACITY`). Runtime object with $2,500\text{L}$ was confirmed as the commercial town gas station dispenser (`IsInfinitySource = true`), not the trailer. Default 3.0x multiplier yields $3,000\text{L}$.
+- **Fast Travel Trailer Auto-Reconnection (`TrailerFastTravelPatch`)**:
+  - Solved the persistent vanilla annoyance where fast-traveling in a pickup forcibly disconnects any hitched trailer (`MapMenu.FastTravel` calls `DisconnectInstantly()` and leaves the trailer 4 meters behind the vehicle).
+  - Automatically captures the connected trailer before fast travel and re-hitches it to the pickup hitch after destination streaming and physics settle.
 
 ---
 
