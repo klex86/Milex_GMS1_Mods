@@ -11,8 +11,8 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
   - Solved fuel truncation on save/load where refueled trailers dropped from 77% to 13%.
   - Fuel volume is serialized as an absolute float in liters (`CurrentCapacity`). In vanilla Unity, newly spawned trailer prefabs initialize with `MaxCapacity = 1000L`. Native `FuelStationController.Update()` evaluates `CurrentCapacity = Mathf.Clamp(CurrentCapacity, 0f, MaxCapacity)` on frame 1.
   - Converted `FuelStationUpdatePatch` to `[HarmonyPrefix]` so that `MaxCapacity` is scaled before native clamp evaluation, and added a `[HarmonyPostfix]` on `FuelStationController.Deserialize` to guarantee instant capacity scaling during load deserialization.
-- **Production Tuner v1.4.10 — Mobile Trailer Baseline Capacity (`VanillaTrailerCapacity = 2500f`)**:
-  - Maintained mobile fuel trailer capacity baseline of $2,500\text{L}$ ($7,500\text{L}$ at default 3.0x multiplier) ensuring full continuity with refueled trailer saves.
+- **Production Tuner v1.4.10 — Mobile Trailer Authentic Prefab Baseline Calibration (`VanillaTrailerCapacity = 1000f`)**:
+  - Calibrated mobile fuel trailer baseline capacity strictly to authentic Unity prefab runtime dump value ($1,000\text{L}$, `TRAILER_FUELTANK_FUELMAXCAPACITY`). Runtime object with $2,500\text{L}$ was confirmed as the commercial town gas station dispenser (`IsInfinitySource = true`), not the trailer. Default 3.0x multiplier yields $3,000\text{L}$.
 
 ---
 

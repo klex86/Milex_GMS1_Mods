@@ -13,8 +13,8 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
   - *Fix*:
     - Switched `FuelStationUpdatePatch` to `[HarmonyPrefix]` so `MaxCapacity` is guaranteed to be scaled before `Mathf.Clamp` is evaluated.
     - Added `FuelStationDeserializePatch` (`[HarmonyPostfix]` on `FuelStationController.Deserialize`) to immediately restore scaled capacity the instant save data is read.
-- **Mobile Trailer Baseline Capacity (`VanillaTrailerCapacity = 2500f`)**:
-  - Maintained mobile fuel trailer capacity baseline of $2,500\text{L}$ ($7,500\text{L}$ at default 3.0x multiplier) ensuring full continuity with refueled trailer saves.
+- **Mobile Trailer Authentic Prefab Baseline Calibration (`VanillaTrailerCapacity = 1000f`)**:
+  - Calibrated mobile fuel trailer baseline capacity strictly to authentic Unity prefab runtime dump value ($1,000\text{L}$, `TRAILER_FUELTANK_FUELMAXCAPACITY`). Runtime object with $2,500\text{L}$ was confirmed as the commercial town gas station dispenser (`IsInfinitySource = true`), not the trailer. Default 3.0x multiplier yields $3,000\text{L}$.
 
 ---
 

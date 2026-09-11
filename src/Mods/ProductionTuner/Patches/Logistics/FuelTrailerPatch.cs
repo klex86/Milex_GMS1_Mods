@@ -12,8 +12,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
     /// </summary>
     public static class FuelTrailerPatch
     {
-        /// <summary>Baseline capacity of the mobile fuel trailer in liters (2,500L base -> 7,500L at 3.0x).</summary>
-        public const float VanillaTrailerCapacity = 2500f;
+        /// <summary>Genuine vanilla capacity of the mobile fuel trailer in liters from the Unity prefab (TRAILER_FUELTANK_FUELMAXCAPACITY).</summary>
+        public const float VanillaTrailerCapacity = 1000f;
 
         /// <summary>Genuine vanilla capacity of stationary fuel stations/tanks on the claim in liters.</summary>
         public const float VanillaStationaryTankCapacity = 10000f;
