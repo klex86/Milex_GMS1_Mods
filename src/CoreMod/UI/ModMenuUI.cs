@@ -634,6 +634,11 @@ namespace Milex.GMS1.Core.UI
             // === SECTION: GENERAL BEHAVIOR ===
             GUILayout.Label(L("core.section.general", "Allgemeines Verhalten"), _sectionHeaderStyle);
             DrawConfigEntryCard(CorePlugin.PauseGameOnMenu, CoreAssemblyName);
+            GUILayout.Space(4);
+            if (GUILayout.Button(L("btn.force_resume", "Spiel fortsetzen (Notfall-Unpause)"), _buttonStyle, GUILayout.Height(28)))
+            {
+                CorePlugin.ForceResumeGame();
+            }
             GUILayout.Space(6);
             DrawConfigEntryCard(CorePlugin.IgnoreExternalTranslations, CoreAssemblyName);
             GUILayout.Space(6);

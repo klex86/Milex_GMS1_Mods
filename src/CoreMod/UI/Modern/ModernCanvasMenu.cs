@@ -1251,7 +1251,15 @@ namespace Milex.GMS1.Core.UI.Modern
                     CreateToggleCard(rawSec, label, desc, boolEntry.Value, (val) =>
                     {
                         boolEntry.Value = val;
-                    });
+                    }, boolEntry);
+
+                    if (mod.Guid == CorePlugin.PluginGuid && rawKey == "PauseGameOnMenu")
+                    {
+                        CreateActionCard(rawSec, L("core.force_resume.name", "Spiel fortsetzen (Notfall-Unpause)"), L("core.force_resume.desc", "Hebt eventuelle hängengebliebene Lade-Pausen sofort auf und startet die Engine."), L("btn.force_resume", "Fortsetzen"), () =>
+                        {
+                            CorePlugin.ForceResumeGame();
+                        }, new Color(0.18f, 0.45f, 0.25f, 0.95f));
+                    }
                 }
                 else if (entry.SettingType == typeof(int))
                 {
@@ -1398,7 +1406,7 @@ namespace Milex.GMS1.Core.UI.Modern
             _createdSettingCards.Add(card);
         }
 
-        private void CreateToggleCard(string section, string label, string desc, bool currentValue, Action<bool> onValueChanged)
+        private void CreateToggleCard(string section, string label, string desc, bool currentValue, Action<bool> onValueChanged, ConfigEntry<bool> liveEntry = null)
         {
             var card = UIFactory.CreatePanel(_settingsContentRt, $"ToggleCard_{label}", new Color(0.13f, 0.15f, 0.20f, 1f), UIFactory.CardBoxSprite);
             var cardRt = card.GetComponent<RectTransform>();
@@ -1434,6 +1442,69 @@ namespace Milex.GMS1.Core.UI.Modern
             tRt.anchorMin = new Vector2(1, 0.5f);
             tRt.anchorMax = new Vector2(1, 0.5f);
             tRt.anchoredPosition = new Vector2(-36, 0);
+
+            if (liveEntry != null)
+            {
+                EventHandler handler = null;
+                handler = (s, e) =>
+                {
+                    if (toggle == null)
+                    {
+                        liveEntry.SettingChanged -= handler;
+                        return;
+                    }
+                    if (toggle.isOn != liveEntry.Value)
+                    {
+                        toggle.isOn = liveEntry.Value;
+                    }
+                };
+                liveEntry.SettingChanged += handler;
+            }
+
+            _createdSettingCards.Add(card);
+        }
+
+        private void CreateActionCard(string section, string label, string desc, string buttonText, Action onClick, Color? btnColor = null)
+        {
+            var card = UIFactory.CreatePanel(_settingsContentRt, $"ActionCard_{label}", new Color(0.13f, 0.15f, 0.20f, 1f), UIFactory.CardBoxSprite);
+            var cardRt = card.GetComponent<RectTransform>();
+            cardRt.sizeDelta = new Vector2(0, 44);
+
+            var le = card.AddComponent<LayoutElement>();
+            le.minHeight = 44;
+            le.preferredHeight = 44;
+            le.flexibleWidth = 1;
+
+            var meta = card.AddComponent<SettingCardMeta>();
+            meta.Section = section;
+            meta.SearchText = $"{label} {desc} {buttonText}".ToLowerInvariant();
+
+            // Label & Description
+            var lbl = UIFactory.CreateText(card.transform, "Label", label, 13, Color.white, TextAnchor.MiddleLeft, FontStyle.Bold);
+            var lRt = lbl.GetComponent<RectTransform>();
+            lRt.anchorMin = new Vector2(0, 0.48f);
+            lRt.anchorMax = new Vector2(0.72f, 1f);
+            lRt.offsetMin = new Vector2(12, 0);
+            lRt.offsetMax = new Vector2(0, -3);
+
+            var dsc = UIFactory.CreateText(card.transform, "Desc", desc, 10, new Color(0.6f, 0.65f, 0.75f, 0.9f), TextAnchor.MiddleLeft);
+            var dRt = dsc.GetComponent<RectTransform>();
+            dRt.anchorMin = new Vector2(0, 0);
+            dRt.anchorMax = new Vector2(0.72f, 0.48f);
+            dRt.offsetMin = new Vector2(12, 3);
+            dRt.offsetMax = Vector2.zero;
+
+            // Action Button
+            Color normal = btnColor ?? new Color(0.20f, 0.24f, 0.32f, 0.95f);
+            Color hover = new Color(0.88f, 0.65f, 0.18f, 1f);
+            Color pressed = new Color(0.70f, 0.50f, 0.12f, 1f);
+
+            var btn = UIFactory.CreateButton(card.transform, "ActionButton", buttonText, normal, hover, pressed, Color.white, () => onClick?.Invoke(), 11);
+            var bRt = btn.GetComponent<RectTransform>();
+            bRt.anchorMin = new Vector2(0.74f, 0.15f);
+            bRt.anchorMax = new Vector2(0.98f, 0.85f);
+            bRt.offsetMin = Vector2.zero;
+            bRt.offsetMax = Vector2.zero;
 
             _createdSettingCards.Add(card);
         }

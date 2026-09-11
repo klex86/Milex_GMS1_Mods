@@ -11,8 +11,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
     /// </summary>
     public static class WashPlantShakerPatch
     {
-        public const float VanillaMaxFill = 15.0f;
-        public const float VanillaFillSpeed = 1.0f;
+        /// Authentic vanilla baselines from Unity prefab dump: MaxFill = 40.0 m3, FillSpeed = 0.55 m3/s
+        public const float VanillaMaxFill = 40.0f;
+        public const float VanillaFillSpeed = 0.55f;
 
         private static readonly Dictionary<int, GoldDigger.WashplantShakerBase> Tracked =
             new Dictionary<int, GoldDigger.WashplantShakerBase>();

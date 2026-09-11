@@ -122,15 +122,15 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                 "to at least the bucket multiplier to prevent material loss.");
 
             // Group 1
-            Shovel_FillSpeed = BindStep("Group1_HandTools", "Shovel_FillSpeed", 2.0f,
+            Shovel_FillSpeed = BindStep("Group1_HandTools", "Shovel_FillSpeed", 6.0f,
                 "How fast the shovel picks up material.");
             Bucket_Capacity = BindStep("Group1_HandTools", "Bucket_Capacity", 2.0f,
                 "Maximum fill volume of the bucket.");
-            HogPan_Capacity = BindStep("Group1_HandTools", "HogPan_Capacity", 2.0f,
+            HogPan_Capacity = BindStep("Group1_HandTools", "HogPan_Capacity", 6.6f,
                 "Maximum fill volume of the hog pan.", DependentCapacitySteps);
             MobileWashPlant_Speed = BindStep("Group1_HandTools", "MobileWashPlant_Speed", 3.0f,
                 "Processing speed of the mobile wash plant.");
-            MobileWashPlant_Capacity = BindStep("Group1_HandTools", "MobileWashPlant_Capacity", 2.0f,
+            MobileWashPlant_Capacity = BindStep("Group1_HandTools", "MobileWashPlant_Capacity", 3.0f,
                 "Maximum material capacity of the mobile wash plant.");
 
             // Group 2
@@ -148,49 +148,49 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                 "How fast the backhoe loader picks up material.");
             DumpTruck_Capacity = BindStep("Group2_Vehicles", "DumpTruck_Capacity", 3.0f,
                 "Maximum load capacity of the dump truck.");
-            Frankenstein_Capacity = BindStep("Group2_Vehicles", "Frankenstein_Capacity", 2.0f,
+            Frankenstein_Capacity = BindStep("Group2_Vehicles", "Frankenstein_Capacity", 3.0f,
                 "Material buffer capacity of the Frankenstein conveyor belt.");
-            Frankenstein_Speed = BindStep("Group2_Vehicles", "Frankenstein_Speed", 2.0f,
+            Frankenstein_Speed = BindStep("Group2_Vehicles", "Frankenstein_Speed", 3.0f,
                 "Transport speed of the Frankenstein conveyor belt.");
-            Cordylus_Capacity = BindStep("Group2_Vehicles", "Cordylus_Capacity", 2.0f,
+            Cordylus_Capacity = BindStep("Group2_Vehicles", "Cordylus_Capacity", 3.0f,
                 "Material buffer capacity of the Cordylus conveyor belt.");
-            Cordylus_Speed = BindStep("Group2_Vehicles", "Cordylus_Speed", 2.0f,
+            Cordylus_Speed = BindStep("Group2_Vehicles", "Cordylus_Speed", 3.0f,
                 "Transport speed of the Cordylus conveyor belt.");
 
             // Group 3
-            Hopper_Capacity = BindStep("Group3_WashPlantModules", "Hopper_Capacity", 2.0f,
+            Hopper_Capacity = BindStep("Group3_WashPlantModules", "Hopper_Capacity", 3.0f,
                 "Fill capacity of the feed hopper.");
-            ConveyorBucket_Capacity = BindStep("Group3_WashPlantModules", "ConveyorBucket_Capacity", 2.0f,
+            ConveyorBucket_Capacity = BindStep("Group3_WashPlantModules", "ConveyorBucket_Capacity", 3.0f,
                 "Material capacity of the conveyor buckets.");
-            Washplant_Capacity = BindStep("Group3_WashPlantModules", "Washplant_Capacity", 2.0f,
+            Washplant_Capacity = BindStep("Group3_WashPlantModules", "Washplant_Capacity", 3.0f,
                 "Maximum material capacity of all wash plants.");
-            Washplant_Speed = BindStep("Group3_WashPlantModules", "Washplant_Speed", 2.0f,
+            Washplant_Speed = BindStep("Group3_WashPlantModules", "Washplant_Speed", 3.0f,
                 "Processing speed of all wash plants.");
-            Sluicebox_Capacity = BindStep("Group3_WashPlantModules", "Sluicebox_Capacity", 2.0f,
+            Sluicebox_Capacity = BindStep("Group3_WashPlantModules", "Sluicebox_Capacity", 3.0f,
                 "Maximum material capacity of all sluice boxes.");
-            MinersMoss_Capacity = BindStep("Group3_WashPlantModules", "MinersMoss_Capacity", 2.0f,
+            MinersMoss_Capacity = BindStep("Group3_WashPlantModules", "MinersMoss_Capacity", 3.0f,
                 "Gold retention capacity of the miner's moss mats.");
 
             // Group 4
-            Nuggetator_Speed = BindStep("Group4_FineProcessing", "Nuggetator_Speed", 2.0f,
+            Nuggetator_Speed = BindStep("Group4_FineProcessing", "Nuggetator_Speed", 3.0f,
                 "Processing speed of the nuggetator.");
-            MagnetiteSeparator_Speed = BindStep("Group4_FineProcessing", "MagnetiteSeparator_Speed", 2.0f,
+            MagnetiteSeparator_Speed = BindStep("Group4_FineProcessing", "MagnetiteSeparator_Speed", 3.0f,
                 "Separation speed of the magnetite separator.");
-            MagnetiteSeparator_Capacity = BindStep("Group4_FineProcessing", "MagnetiteSeparator_Capacity", 2.0f,
+            MagnetiteSeparator_Capacity = BindStep("Group4_FineProcessing", "MagnetiteSeparator_Capacity", 4.9f,
                 "Maximum input capacity of the magnetite separator.", DependentCapacitySteps);
             WaveTable_Speed = BindStep("Group4_FineProcessing", "WaveTable_Speed", 3.0f,
                 "Vibration speed of the wave table.");
-            WaveTable_Capacity = BindStep("Group4_FineProcessing", "WaveTable_Capacity", 3.0f,
+            WaveTable_Capacity = BindStep("Group4_FineProcessing", "WaveTable_Capacity", 4.9f,
                 "Maximum material volume on the wave table.", DependentCapacitySteps);
 
             // Group 5
-            MagnetiteTrailer_Capacity = BindStep("Group5_Trailers", "MagnetiteTrailer_Capacity", 2.0f,
+            MagnetiteTrailer_Capacity = BindStep("Group5_Trailers", "MagnetiteTrailer_Capacity", 3.0f,
                 "Load capacity of the magnetite trailer.", DependentCapacitySteps);
             FuelTrailer_Capacity = BindStep("Group5_Trailers", "FuelTrailer_Capacity", 3.0f,
                 "Load capacity of the mobile fuel trailer.");
-            FuelTank_Capacity = BindStep("Group5_Trailers", "FuelTank_Capacity", 2.0f,
+            FuelTank_Capacity = BindStep("Group5_Trailers", "FuelTank_Capacity", 3.0f,
                 "Capacity of stationary claim fuel tanks, diesel generators, and claim infrastructure (not the mobile trailer).");
-            FuelHose_Length = BindStep("Group5_Trailers", "FuelHose_Length", 2.0f,
+            FuelHose_Length = BindStep("Group5_Trailers", "FuelHose_Length", 5.0f,
                 "Physical reach and length multiplier of the fuel dispenser hose on mobile fuel trailers and stationary claim tanks.");
 
             // Event listeners: reactive cascade protection
@@ -216,12 +216,12 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         /// Determines the maximum allowed capacity for the bucket,
         /// based on the maximum acceptable capacity of all dependent equipment.
         /// </summary>
-        public float GetMaxAllowedBucketCapacity()
+        private float GetMaxAllowedBucketCapacity()
         {
-            float maxHogPan = GetEntryMax(HogPan_Capacity);
-            float maxSeparator = GetEntryMax(MagnetiteSeparator_Capacity);
-            float maxWaveTable = GetEntryMax(WaveTable_Capacity);
-            float maxTrailer = GetEntryMax(MagnetiteTrailer_Capacity);
+            float maxHogPan = GetEntryMax(HogPan_Capacity) * 3.0f;
+            float maxWaveTable = GetEntryMax(WaveTable_Capacity) * 2.0f;
+            float maxSeparator = GetEntryMax(MagnetiteSeparator_Capacity) * 4.0f;
+            float maxTrailer = GetEntryMax(MagnetiteTrailer_Capacity) * 10.0f;
 
             float maxAllowed = Mathf.Min(maxHogPan, Mathf.Min(maxSeparator, Mathf.Min(maxWaveTable, maxTrailer)));
             return maxAllowed;
@@ -259,15 +259,25 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                     Bucket_Capacity.Value = maxBucket;
                 }
 
-                // 2. Cascade protection: dependent inputs must at least match bucket
+                // 2. Cascade protection: dependent inputs must hold at least 1 full bucket
                 if (AutoScaleDependentInputs.Value)
                 {
                     float bucketVal = Bucket_Capacity.Value;
 
-                    if (HogPan_Capacity.Value < bucketVal) HogPan_Capacity.Value = bucketVal;
-                    if (MagnetiteSeparator_Capacity.Value < bucketVal) MagnetiteSeparator_Capacity.Value = bucketVal;
-                    if (WaveTable_Capacity.Value < bucketVal) WaveTable_Capacity.Value = bucketVal;
-                    if (MagnetiteTrailer_Capacity.Value < bucketVal) MagnetiteTrailer_Capacity.Value = bucketVal;
+                    // Authentic capacity ratios from Unity dump (Bucket = 0.03 m3):
+                    // HogPan (0.09 m3) holds 3 buckets
+                    // WaveTable (0.06 m3) holds 2 buckets
+                    // MagnetiteSeparator (0.12 m3) holds 4 buckets
+                    // MagnetiteTrailer (0.30 m3) holds 10 buckets
+                    float minHogPan = bucketVal / 3.0f;
+                    float minWaveTable = bucketVal / 2.0f;
+                    float minSeparator = bucketVal / 4.0f;
+                    float minTrailer = bucketVal / 10.0f;
+
+                    if (HogPan_Capacity.Value < minHogPan) HogPan_Capacity.Value = minHogPan;
+                    if (WaveTable_Capacity.Value < minWaveTable) WaveTable_Capacity.Value = minWaveTable;
+                    if (MagnetiteSeparator_Capacity.Value < minSeparator) MagnetiteSeparator_Capacity.Value = minSeparator;
+                    if (MagnetiteTrailer_Capacity.Value < minTrailer) MagnetiteTrailer_Capacity.Value = minTrailer;
                 }
             }
             finally
@@ -280,6 +290,55 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         {
             if (_isSyncing || !AutoScaleDependentInputs.Value) return;
             float bucketVal = Bucket_Capacity.Value;
+
+            if (entry == HogPan_Capacity)
+            {
+                float minHogPan = bucketVal / 3.0f;
+                if (entry.Value < minHogPan)
+                {
+                    _isSyncing = true;
+                    try { entry.Value = minHogPan; }
+                    finally { _isSyncing = false; }
+                }
+                return;
+            }
+
+            if (entry == WaveTable_Capacity)
+            {
+                float minWaveTable = bucketVal / 2.0f;
+                if (entry.Value < minWaveTable)
+                {
+                    _isSyncing = true;
+                    try { entry.Value = minWaveTable; }
+                    finally { _isSyncing = false; }
+                }
+                return;
+            }
+
+            if (entry == MagnetiteSeparator_Capacity)
+            {
+                float minSeparator = bucketVal / 4.0f;
+                if (entry.Value < minSeparator)
+                {
+                    _isSyncing = true;
+                    try { entry.Value = minSeparator; }
+                    finally { _isSyncing = false; }
+                }
+                return;
+            }
+
+            if (entry == MagnetiteTrailer_Capacity)
+            {
+                float minTrailer = bucketVal / 10.0f;
+                if (entry.Value < minTrailer)
+                {
+                    _isSyncing = true;
+                    try { entry.Value = minTrailer; }
+                    finally { _isSyncing = false; }
+                }
+                return;
+            }
+
             if (entry.Value < bucketVal)
             {
                 _isSyncing = true;

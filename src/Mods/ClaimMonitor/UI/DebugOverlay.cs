@@ -62,6 +62,20 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                 }
             }
 
+            if (GUILayout.Button(LocalizationManager.T("debug.button.dump_baseline", "Dump Baseline (JSON)"), GUILayout.Width(160), GUILayout.Height(24)))
+            {
+                try
+                {
+                    string path = EquipmentBaselineDumper.DumpBaselineToJson();
+                    _lastDumpStatus = LocalizationManager.Format("debug.dump.saved", "Dump saved to: {0}", System.IO.Path.GetFileName(path));
+                    ClaimMonitorPlugin.Instance?.LogInfo($"Equipment baseline dump written to: {path}");
+                }
+                catch (System.Exception ex)
+                {
+                    _lastDumpStatus = LocalizationManager.Format("debug.dump.failed", "Dump failed: {0}", ex.Message);
+                }
+            }
+
             if (!string.IsNullOrEmpty(_lastDumpStatus))
             {
                 GUILayout.Space(10);

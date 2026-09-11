@@ -164,6 +164,7 @@
   "debug.window.title": "Claim Monitor - Diagnose-Inspektor (Umschalten: F3)",
   "debug.button.rescan": "Neu scannen",
   "debug.button.dump": "Alles in Datei exportieren",
+  "debug.button.dump_baseline": "Basisdaten exportieren (JSON)",
   "debug.dump.saved": "Export gespeichert unter: {0}",
   "debug.dump.failed": "Export fehlgeschlagen: {0}",
   "debug.label.filter": "Filter:",

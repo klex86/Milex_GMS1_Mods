@@ -3,6 +3,46 @@
 All notable changes to the `Milex GMS1 Claim Monitor` mod are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.10] - 2026-09-11
+
+### Added: Equipment Baseline Dumper (JSON) in Diagnostic Inspector (F3)
+
+- **Dedicated JSON Baseline Dumper (`EquipmentBaselineDumper`)**:
+  - Added a dedicated button **"Dump Baseline (JSON)"** in the Diagnostic Inspector window (`F3`), positioned alongside "Dump All to File".
+  - Queries Unity's live memory (`Resources.FindObjectsOfTypeAll`) to inspect both scene instances and prefabs across all tool, vehicle, washplant, conveyor, and infrastructure classes.
+  - Automatically captures all `[BalanceSheet]` attributes, capacity metrics, speeds, flow rates, volumes, and physical joint limits.
+  - Generates formatted, structured JSON files (`Equipment_Baseline_YYYYMMdd_HHmmss.json` and `Equipment_Baseline_Latest.json`) saved in `BepInEx/plugins/Milex_ClaimMonitor_Dumps/`.
+
+---
+
+## [1.0.9] - 2026-09-11
+
+### Fixed: Main Menu & Level Loading Suppression
+
+- **Warning HUD Scene Filtering**:
+  - `WarningHUD.OnGUI` now verifies the active scene name and suppresses HUD rendering completely in the Main Menu (`MainMenu`, scenes containing `menu` or `buffor`) and while level loading is active (`LevelLoadingManager.IsLoading()`).
+- **Claim Scanner Idle on Loading**:
+  - `ClaimScanner.PeriodicScan` and `ForceScan` now idle during Main Menu and level loading, preventing needless `FindObjectsOfType<MonoBehaviour>` overhead during scene streaming.
+
+---
+
+## [1.0.8] - 2026-09-11
+
+### Fixed: Conveyor Connection Validation, F3 Toggle Sync, HUD Max Height Clamp & Dumper Expansion
+
+- **Conveyor Connection Tracking & False Alert Elimination**:
+  - Fixed false "no power" alerts triggered on freshly started games or claims where conveyors are not yet in use.
+  - `ScanConveyor` now verifies whether a stationary wash plant setup (`WashPlantGoldCounter` or `OrangeBeastWashPlantGoldCounter`) actually exists on the claim before issuing missing-power alerts.
+  - Checks physical cable connections (`PowerIndicator`, `Producent`, `MyRopes`) and marks disconnected conveyors as inactive (`IsConnected = false`), suppressing power-loss warnings and wear evaluation on disconnected conveyors.
+- **Diagnostic Inspector (F3) & Mod Menu Synchronization**:
+  - Connected `MonitorConfig.EnableDebugGroup.SettingChanged` to hardware cursor release/request and scanning triggers.
+  - Toggling `F3` or flipping the toggle card inside the Modern Canvas Menu now stays in 100% synchronization live.
+- **Warning HUD Max Height Clamping (`HudMaxHeight`)**:
+  - Constrained dynamic auto-height calculation in both compact and full modes using `Config.HudMaxHeight` as an upper clamp bound.
+  - Enabled scrollview inside compact mode when active alerts exceed configured max height, completely preventing window overflow off-screen.
+- **ClaimDumper Candidate Type Expansion**:
+  - Added `HogPan`, `Bucket`, `GoldPan`, and `Shovel` to `ClaimDumper.IsCandidateComponent`, ensuring complete field and state dumps for hand tools and panning equipment.
+
 ---
 
 ## [1.0.7] - 2026-09-06

@@ -66,5 +66,8 @@
   "UI_UseGameLanguage_Desc": "Matches the language selected in the main game.",
   "UI_ResetGroup": "Reset Group",
   "UI_SelectLanguage": "Select Language (Manual)",
-  "UI_SelectLanguage_Desc": "Choose your preferred language for menus and tooltips."
+  "UI_SelectLanguage_Desc": "Choose your preferred language for menus and tooltips.",
+  "core.force_resume.name": "Resume Game (Emergency Unpause)",
+  "core.force_resume.desc": "Immediately clears any stuck loading pause reasons, unblocks input, and restores game time scale.",
+  "btn.force_resume": "Resume"
 }

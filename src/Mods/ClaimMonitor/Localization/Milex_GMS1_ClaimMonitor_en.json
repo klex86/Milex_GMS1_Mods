@@ -164,6 +164,7 @@
   "debug.window.title": "Claim Monitor - Diagnostic Inspector (Toggle: F3)",
   "debug.button.rescan": "Force Rescan",
   "debug.button.dump": "Dump All to File",
+  "debug.button.dump_baseline": "Dump Baseline (JSON)",
   "debug.dump.saved": "Dump saved to: {0}",
   "debug.dump.failed": "Dump failed: {0}",
   "debug.label.filter": "Filter:",

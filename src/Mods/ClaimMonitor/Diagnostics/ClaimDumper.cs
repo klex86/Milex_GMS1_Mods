@@ -68,7 +68,11 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                    name.Contains("DumpTruck") ||
                    name.Contains("Doozer") ||
                    name.Contains("Drill") ||
-                   name.Contains("Pump");
+                   name.Contains("Pump") ||
+                   name.Contains("HogPan") ||
+                   name.Contains("Bucket") ||
+                   name.Contains("GoldPan") ||
+                   name.Contains("Shovel");
         }
 
         private static void DumpComponentHierarchy(StringBuilder sb, MonoBehaviour comp, Type initialType)

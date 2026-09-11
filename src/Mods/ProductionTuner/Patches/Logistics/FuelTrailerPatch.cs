@@ -13,7 +13,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
     public static class FuelTrailerPatch
     {
         /// <summary>Genuine vanilla capacity of the mobile fuel trailer in liters.</summary>
-        public const float VanillaTrailerCapacity = 1000f;
+        public const float VanillaTrailerCapacity = 2500f;
 
         /// <summary>Genuine vanilla capacity of stationary fuel stations/tanks on the claim in liters.</summary>
         public const float VanillaStationaryTankCapacity = 10000f;
@@ -58,15 +58,46 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
         private static float _lastHoseMult = -1f;
 
         /// <summary>
-        /// Detects mobile fuel trailer by machine type and balance sheet key.
+        /// Detects mobile fuel trailer by machine type, balance sheet key, or trailer hierarchy.
         /// </summary>
-        private static bool IsMobileTrailer(GoldDigger.FuelStationController fsc)
+        public static bool IsMobileTrailer(GoldDigger.FuelStationController fsc)
         {
             if (fsc == null) return false;
             var trailer = fsc.GetComponentInParent<GoldDigger.Trailer>();
             if (trailer != null && trailer.MyMachineType == MachineType.TrailerFuel)
                 return true;
-            return fsc.MaxCapacityPropertyDrawerKey == "TRAILER_FUELTANK_FUELMAXCAPACITY";
+            if (fsc.MaxCapacityPropertyDrawerKey == "TRAILER_FUELTANK_FUELMAXCAPACITY")
+                return true;
+            if (trailer != null && fsc.gameObject.name == "End_Bottom")
+                return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Detects the large stationary claim fuel tank (10,000L base).
+        /// Explicitly excludes generators, water pumps, light trailers, Jerry cans, and vehicle tanks.
+        /// </summary>
+        public static bool IsStationaryClaimTank(GoldDigger.FuelStationController fsc)
+        {
+            if (fsc == null) return false;
+            if (fsc.MaxCapacityPropertyDrawerKey == "FUELTANK_STATIONARY_FUELMAXCAPACITY")
+                return true;
+
+            // Exclusion guards: do NOT treat generators, pumps, trailers or jerry cans as stationary fuel tank
+            if (IsMobileTrailer(fsc)) return false;
+            if (fsc.GetComponent<GoldDigger.PowerStationController>() != null || fsc.GetComponent<GoldDigger.WaterStationController>() != null)
+                return false;
+            if (fsc.GetComponentInParent<GoldDigger.Trailer>() != null)
+                return false;
+
+            // Fallback for stationary claim tank in scene (named End_Bottom with fuel hose)
+            if (fsc.gameObject.name == "End_Bottom" && fsc.MaxCapacity >= 5000f)
+            {
+                var srd = fsc.GetComponentInChildren<GoldDigger.ShovelRopeDestruction>(true);
+                if (srd != null) return true;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -191,11 +222,16 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                     float multiplier = ProductionTunerPlugin.Service?.FuelTrailerCapacityMultiplier ?? 1f;
                     __instance.MaxCapacity = VanillaTrailerCapacity * multiplier;
                 }
-                else
+                else if (IsStationaryClaimTank(__instance))
                 {
                     TrackedStationary[id] = __instance;
                     float multiplier = ProductionTunerPlugin.Service?.FuelTankCapacityMultiplier ?? 1f;
                     __instance.MaxCapacity = VanillaStationaryTankCapacity * multiplier;
+                }
+                else
+                {
+                    // Strictly do NOT modify capacities of portable generators, water pumps, light trailers, Jerry cans, etc.!
+                    return;
                 }
 
                 // Discover fuel hose on the fuel station or trailer
@@ -263,13 +299,18 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                         __instance.MaxCapacity = VanillaTrailerCapacity * trailerMult;
                     }
                 }
-                else
+                else if (IsStationaryClaimTank(__instance))
                 {
                     if (!TrackedStationary.ContainsKey(id))
                     {
                         TrackedStationary[id] = __instance;
                         __instance.MaxCapacity = VanillaStationaryTankCapacity * tankMult;
                     }
+                }
+                else
+                {
+                    // Not a fuel trailer or stationary claim tank - ignore completely!
+                    return;
                 }
 
                 // Fallback check for fuel hose discovery

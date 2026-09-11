@@ -10,7 +10,21 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
     /// </summary>
     public static class MinersMossPatch
     {
-        public const float VanillaMaxGroundVolume = 10.0f;
+        /// Authentic vanilla baselines from Unity prefab dump:
+        /// HogPan MinersMoss: 0.2488 m3
+        /// Stationary WashPlant MinersMoss: 0.90 m3
+        public const float VanillaHogPanMossVolume = 0.2488f;
+        public const float VanillaWashPlantMossVolume = 0.90f;
+
+        public static float GetBaseMossVolume(GoldDigger.MinersMoss moss)
+        {
+            if (moss == null) return VanillaWashPlantMossVolume;
+            if (moss.MaxGroundVolumePropertyDrawerKey == "HOGPAN_MATS_MAX_CAPACITY")
+            {
+                return VanillaHogPanMossVolume;
+            }
+            return VanillaWashPlantMossVolume;
+        }
 
         private static readonly Dictionary<int, GoldDigger.MinersMoss> Tracked =
             new Dictionary<int, GoldDigger.MinersMoss>();
@@ -31,7 +45,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
                 Tracked[id] = __instance;
 
                 float multiplier = ProductionTunerPlugin.Service?.MinersMossCapacityMultiplier ?? 1f;
-                __instance.MaxGroundVolume = VanillaMaxGroundVolume * multiplier;
+                __instance.MaxGroundVolume = GetBaseMossVolume(__instance) * multiplier;
             }
         }
 
@@ -57,7 +71,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
                     {
                         if (moss != null)
                         {
-                            moss.MaxGroundVolume = VanillaMaxGroundVolume * multiplier;
+                            moss.MaxGroundVolume = GetBaseMossVolume(moss) * multiplier;
                         }
                     }
                 }
@@ -70,7 +84,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             {
                 if (moss != null)
                 {
-                    moss.MaxGroundVolume = VanillaMaxGroundVolume;
+                    moss.MaxGroundVolume = GetBaseMossVolume(moss);
                 }
             }
             Tracked.Clear();

@@ -48,6 +48,22 @@ namespace Milex.GMS1.Mods.ClaimMonitor
             DebugOverlay = gameObject.AddComponent<DebugOverlay>();
             DebugOverlay.Config = MonitorConfig;
 
+            if (MonitorConfig?.EnableDebugGroup != null)
+            {
+                MonitorConfig.EnableDebugGroup.SettingChanged += (s, e) =>
+                {
+                    if (MonitorConfig.EnableDebugGroup.Value)
+                    {
+                        Core.CorePlugin.RequestCursorUnlock("ClaimMonitor_DebugOverlay");
+                        Scanner?.ForceScan();
+                    }
+                    else
+                    {
+                        Core.CorePlugin.ReleaseCursorUnlock("ClaimMonitor_DebugOverlay");
+                    }
+                };
+            }
+
             LogInfo(Translate("log.ready", "Claim Monitor initialized and active."));
         }
 
@@ -67,16 +83,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor
                 if (MonitorConfig != null)
                 {
                     MonitorConfig.EnableDebugGroup.Value = !MonitorConfig.EnableDebugGroup.Value;
+                    MonitorConfig.EnableDebugGroup.ConfigFile?.Save();
                     LogInfo($"Diagnostic Inspector toggle pressed: Debug is now {MonitorConfig.EnableDebugGroup.Value}");
-                    if (MonitorConfig.EnableDebugGroup.Value)
-                    {
-                        Core.CorePlugin.RequestCursorUnlock("ClaimMonitor_DebugOverlay");
-                        Scanner?.ForceScan();
-                    }
-                    else
-                    {
-                        Core.CorePlugin.ReleaseCursorUnlock("ClaimMonitor_DebugOverlay");
-                    }
                 }
             }
         }

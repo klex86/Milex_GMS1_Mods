@@ -11,7 +11,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
     /// </summary>
     public static class WaveTablePatch
     {
-        public const float VanillaMaxGroundVolume = 0.6f;
+        /// Authentic vanilla baseline from Unity prefab dump: 0.06 m3 (exactly 2 standard 0.03 m3 buckets).
+        public const float VanillaMaxGroundVolume = 0.06f;
 
         private static readonly Dictionary<int, GoldDigger.WaveTable> Tracked =
             new Dictionary<int, GoldDigger.WaveTable>();

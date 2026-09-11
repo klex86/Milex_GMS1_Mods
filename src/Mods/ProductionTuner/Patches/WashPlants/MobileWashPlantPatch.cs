@@ -10,8 +10,14 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
     /// </summary>
     public static class MobileWashPlantPatch
     {
-        public const float VanillaMaxFill = 15.0f;
-        public const float VanillaFillSpeed = 1.0f;
+        /// Authentic vanilla baselines from Unity prefab dump:
+        /// MobileWashplant: MaxFill = 10.0 m3, FillSpeed = 0.225 m3/s
+        /// MiniWashplant: MaxFill = 3.0 m3, FillSpeed = 0.05 m3/s
+        public const float VanillaMobileMaxFill = 10.0f;
+        public const float VanillaMobileFillSpeed = 0.225f;
+
+        public const float VanillaMiniMaxFill = 3.0f;
+        public const float VanillaMiniFillSpeed = 0.05f;
 
         private static readonly Dictionary<int, GoldDigger.MobileWashplant> TrackedMobile =
             new Dictionary<int, GoldDigger.MobileWashplant>();
@@ -37,8 +43,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
                 float capMult = ProductionTunerPlugin.Service?.MobileWashPlantCapacityMultiplier ?? 1f;
                 float spdMult = ProductionTunerPlugin.Service?.MobileWashPlantSpeedMultiplier ?? 1f;
 
-                __instance.MaxFill = VanillaMaxFill * capMult;
-                __instance.FillSpeed = VanillaFillSpeed * spdMult;
+                __instance.MaxFill = VanillaMobileMaxFill * capMult;
+                __instance.FillSpeed = VanillaMobileFillSpeed * spdMult;
             }
         }
 
@@ -55,8 +61,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
                 float capMult = ProductionTunerPlugin.Service?.MobileWashPlantCapacityMultiplier ?? 1f;
                 float spdMult = ProductionTunerPlugin.Service?.MobileWashPlantSpeedMultiplier ?? 1f;
 
-                __instance.MaxFill = VanillaMaxFill * capMult;
-                __instance.FillSpeed = VanillaFillSpeed * spdMult;
+                __instance.MaxFill = VanillaMiniMaxFill * capMult;
+                __instance.FillSpeed = VanillaMiniFillSpeed * spdMult;
             }
         }
 
@@ -105,8 +111,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             {
                 if (m != null)
                 {
-                    m.MaxFill = VanillaMaxFill * capMultiplier;
-                    m.FillSpeed = VanillaFillSpeed * spdMultiplier;
+                    m.MaxFill = VanillaMobileMaxFill * capMultiplier;
+                    m.FillSpeed = VanillaMobileFillSpeed * spdMultiplier;
                 }
             }
 
@@ -114,8 +120,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             {
                 if (mini != null)
                 {
-                    mini.MaxFill = VanillaMaxFill * capMultiplier;
-                    mini.FillSpeed = VanillaFillSpeed * spdMultiplier;
+                    mini.MaxFill = VanillaMiniMaxFill * capMultiplier;
+                    mini.FillSpeed = VanillaMiniFillSpeed * spdMultiplier;
                 }
             }
         }
@@ -126,8 +132,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             {
                 if (m != null)
                 {
-                    m.MaxFill = VanillaMaxFill;
-                    m.FillSpeed = VanillaFillSpeed;
+                    m.MaxFill = VanillaMobileMaxFill;
+                    m.FillSpeed = VanillaMobileFillSpeed;
                 }
             }
 
@@ -135,8 +141,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             {
                 if (mini != null)
                 {
-                    mini.MaxFill = VanillaMaxFill;
-                    mini.FillSpeed = VanillaFillSpeed;
+                    mini.MaxFill = VanillaMiniMaxFill;
+                    mini.FillSpeed = VanillaMiniFillSpeed;
                 }
             }
 

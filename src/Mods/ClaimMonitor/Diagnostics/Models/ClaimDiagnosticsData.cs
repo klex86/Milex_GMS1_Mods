@@ -70,6 +70,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public float MaxDirt { get; set; }
         public bool HasPower { get; set; }
         public bool IsWorking { get; set; }
+        public bool IsConnected { get; set; } = true;
         public WashPlantSetupType AssignedSetup { get; set; }
     }
 
@@ -343,7 +344,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
 
                 string setupName = GetSetupName(conv.AssignedSetup);
 
-                if (!conv.HasPower)
+                if (!conv.HasPower && conv.IsConnected)
                 {
                     ActiveAlerts.Add(new ClaimAlert
                     {

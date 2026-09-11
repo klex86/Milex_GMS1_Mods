@@ -46,7 +46,15 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
         {
             while (true)
             {
-                ForceScan();
+                string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+                bool isMainMenu = string.IsNullOrEmpty(sceneName) || sceneName.ToLower().Contains("menu") || sceneName.ToLower().Contains("buffor");
+                bool isLoading = Singleton<LevelLoadingManager>.IsInstanced() && Singleton<LevelLoadingManager>.Instance.IsLoading();
+
+                if (!isMainMenu && !isLoading)
+                {
+                    ForceScan();
+                }
+
                 float interval = Config?.ScanIntervalSeconds?.Value ?? 3.0f;
                 yield return new WaitForSeconds(Mathf.Max(1.0f, interval));
             }
@@ -54,6 +62,18 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
         public void ForceScan()
         {
+            string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            if (string.IsNullOrEmpty(sceneName) || sceneName.ToLower().Contains("menu") || sceneName.ToLower().Contains("buffor"))
+            {
+                CurrentData.Reset();
+                return;
+            }
+
+            if (Singleton<LevelLoadingManager>.IsInstanced() && Singleton<LevelLoadingManager>.Instance.IsLoading())
+            {
+                return;
+            }
+
             CurrentData.Reset();
             var allComponents = FindObjectsOfType<MonoBehaviour>();
             int matchedCount = 0;
@@ -574,6 +594,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             bool hasPower = true;
             bool isWorking = true;
 
+            bool isConnected = false;
+
             // Check PowerConsumer
             object powerConsumer = GetFieldValue<object>(comp, type, "MyPower")
                                 ?? comp.GetComponent("PowerConsumer");
@@ -584,12 +606,23 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                         || GetFieldValue<bool>(powerConsumer, pcType, "_hasPower");
 
                 object ind = GetFieldValue<object>(powerConsumer, pcType, "PowerIndicator");
-                if (CheckIndicatorActive(ind)) hasPower = true;
-                else if (CheckIndicatorInactive(ind)) hasPower = false;
+                if (CheckIndicatorActive(ind))
+                {
+                    hasPower = true;
+                    isConnected = true;
+                }
+                else if (CheckIndicatorInactive(ind))
+                {
+                    hasPower = false;
+                }
                 else
                 {
                     object prod = GetFieldValue<object>(powerConsumer, pcType, "Producent");
                     bool brokenRopes = GetFieldValue<bool>(powerConsumer, pcType, "_hasBrokenRopes");
+                    if (prod != null)
+                    {
+                        isConnected = true;
+                    }
                     if (prod == null || brokenRopes)
                     {
                         hasPower = false;
@@ -602,6 +635,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                         bool prodOverload = GetFieldValue<bool>(prod, prod.GetType(), "IsOverLoaded");
                         hasPower = prodWorking && prodEnabled && !prodOverload;
                     }
+                }
+
+                // Check physical ropes/holders
+                var ropes = GetFieldValue<System.Collections.IList>(powerConsumer, pcType, "MyRopes");
+                if (ropes != null && ropes.Count > 0)
+                {
+                    isConnected = true;
                 }
             }
 
@@ -619,11 +659,24 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 isWorking = hasPower && speed > 0.01f;
             }
 
-            // Associate with nearest setup
+            // Associate with nearest setup ONLY if that setup actually exists on the claim!
             WashPlantSetupType assigned = WashPlantSetupType.Setup2_Stationary;
+            bool setupExists = false;
             if (hasOb && (!hasStat || Vector3.Distance(go.transform.position, obPos) < Vector3.Distance(go.transform.position, statPos)))
             {
                 assigned = WashPlantSetupType.Setup3_OrangeBeast;
+                setupExists = true;
+            }
+            else if (hasStat)
+            {
+                assigned = WashPlantSetupType.Setup2_Stationary;
+                setupExists = true;
+            }
+
+            // If neither stationary nor orange beast exists on claim, or unplaced world conveyor, do not treat as connected/monitored
+            if (!setupExists)
+            {
+                isConnected = false;
             }
 
             var status = new ConveyorStatus
@@ -635,17 +688,18 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 MaxDirt = maxDirt,
                 HasPower = hasPower,
                 IsWorking = isWorking,
+                IsConnected = isConnected,
                 AssignedSetup = assigned
             };
 
             CurrentData.Conveyors.Add(status);
 
             // Scan wear parts on conveyors (motor belt, buckets, rollers)
-            bool monitorConveyor = (assigned == WashPlantSetupType.Setup2_Stationary && Config.Setup2IncludeFeedingChain.Value)
-                                || (assigned == WashPlantSetupType.Setup3_OrangeBeast && Config.Setup3IncludeFeedingChain.Value);
+            bool monitorConveyor = setupExists && isConnected && ((assigned == WashPlantSetupType.Setup2_Stationary && Config.Setup2IncludeFeedingChain.Value)
+                                || (assigned == WashPlantSetupType.Setup3_OrangeBeast && Config.Setup3IncludeFeedingChain.Value));
             if (monitorConveyor)
             {
-                ScanEquipmentWear(go, assigned, go.name.Replace("(Clone)", "").Trim());
+                ScanEquipmentWear(go, assigned, go.name.Replace("(Clone)", "").Trim(), isConnected);
             }
 
             string details = $"Setup: {assigned}, Power: {hasPower}, Working: {isWorking}, Dirt: {currentDirt:F1}/{maxDirt:F1} m³";

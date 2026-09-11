@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using Milex.GMS1.Core.Localization;
 using Milex.GMS1.Core.UI;
 using Milex.GMS1.Core.UI.Modern;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace Milex.GMS1.Core
 {
@@ -29,6 +31,7 @@ namespace Milex.GMS1.Core
 
         public static CorePlugin Instance { get; private set; }
 
+        // Core Configuration Entries
         public static ConfigEntry<KeyCode> MenuToggleKey { get; private set; }
         public static ConfigEntry<bool> PauseGameOnMenu { get; private set; }
         public static ConfigEntry<bool> IgnoreExternalTranslations { get; private set; }
@@ -64,17 +67,16 @@ namespace Milex.GMS1.Core
                 {
                     if (PauseGameOnMenu.Value && !_isGamePausedByMenu)
                     {
-                        _previousTimeScale = Time.timeScale > 0.001f ? Time.timeScale : 1.0f;
-                        Time.timeScale = 0.0f;
-                        _isGamePausedByMenu = true;
+                        ApplyGamePause(true);
                     }
                     else if (!PauseGameOnMenu.Value && _isGamePausedByMenu)
                     {
-                        Time.timeScale = _previousTimeScale > 0.001f ? _previousTimeScale : 1.0f;
-                        _isGamePausedByMenu = false;
+                        ApplyGamePause(false);
                     }
                 }
             };
+
+            SceneManager.sceneLoaded += OnSceneLoaded;
 
             base.Awake();
 
@@ -201,6 +203,9 @@ namespace Milex.GMS1.Core
             }
         }
 
+        private static float _sceneLoadTimestamp = 0f;
+        private static float _nextPauseDiagTimestamp = 0f;
+
         private void Update()
         {
             if (Input.GetKeyDown(MenuToggleKey.Value))
@@ -214,6 +219,8 @@ namespace Milex.GMS1.Core
                 Cursor.lockState = CursorLockMode.None;
                 Cursor.visible = true;
             }
+
+            UpdatePauseDiagnosticsAndRecovery();
         }
 
         private void LateUpdate()
@@ -247,6 +254,194 @@ namespace Milex.GMS1.Core
             }
         }
 
+        private void UpdatePauseDiagnosticsAndRecovery()
+        {
+            string sceneName = SceneManager.GetActiveScene().name;
+            if (string.IsNullOrEmpty(sceneName) || sceneName.ToLower().Contains("menu"))
+            {
+                return;
+            }
+
+            if (Time.realtimeSinceStartup < _nextPauseDiagTimestamp)
+            {
+                return;
+            }
+            _nextPauseDiagTimestamp = Time.realtimeSinceStartup + 3.0f;
+
+            try
+            {
+                if (PauseManager.Instance != null)
+                {
+                    var field = typeof(PauseManager).GetField("PauseReasons", BindingFlags.NonPublic | BindingFlags.Instance);
+                    var reasons = field?.GetValue(PauseManager.Instance) as List<string>;
+
+                    bool isTimePaused = Time.timeScale < 0.001f;
+                    int count = reasons != null ? reasons.Count : 0;
+
+                    if (isTimePaused || count > 0)
+                    {
+                        string reasonList = reasons != null ? string.Join(", ", reasons.ToArray()) : "none";
+                        bool allInputBlocked = Singleton<InputManager>.IsInstanced() && Singleton<InputManager>.Instance.AllInputBlocked;
+                        LogWarning($"[PauseDiagnostics] Scene: '{sceneName}', TimeScale: {Time.timeScale:F2}, Active PauseReasons ({count}): [{reasonList}], AllInputBlocked: {allInputBlocked}");
+
+                        // Automatic recovery: Check if loading has finished and the player is stranded in a leaked pause
+                        // Wait at least 4.0 seconds after scene loading to respect AreaStreamer 30-frame collider initialization
+                        float elapsedSinceLoad = Time.realtimeSinceStartup - _sceneLoadTimestamp;
+                        bool isLoading = Singleton<GoldDigger.LevelLoadingManager>.IsInstanced() && Singleton<GoldDigger.LevelLoadingManager>.Instance.IsLoading();
+                        bool isVanillaMenuOpen = Singleton<GoldDigger.MenuManager>.IsInstanced() && Singleton<GoldDigger.MenuManager>.Instance.InGameMenu;
+
+                        if (elapsedSinceLoad > 4.0f && !isLoading && !isVanillaMenuOpen && !IsMenuOpen)
+                        {
+                            // Check if any pause reason is an intentional interactive player UI
+                            bool isLegitimateUIPause = false;
+                            if (reasons != null && reasons.Count > 0)
+                            {
+                                foreach (var r in reasons)
+                                {
+                                    if (r == "ShopGUI" || r == "LaptopUse" || r == "MenuManager" || r == "FastTravel" || r == "FreeCam")
+                                    {
+                                        isLegitimateUIPause = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (!isLegitimateUIPause)
+                            {
+                                LogWarning($"[PauseDiagnostics] Leaked pause detected ({elapsedSinceLoad:F1}s after load). Auto-recovering game state...");
+                                ForceResumeGame();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                LogWarning($"Pause recovery check error: {ex.Message}");
+            }
+        }
+
+        public static void ForceResumeGame()
+        {
+            try
+            {
+                if (PauseManager.Instance != null)
+                {
+                    var field = typeof(PauseManager).GetField("PauseReasons", BindingFlags.NonPublic | BindingFlags.Instance);
+                    var reasons = field?.GetValue(PauseManager.Instance) as List<string>;
+                    if (reasons != null && reasons.Count > 0)
+                    {
+                        Instance?.LogInfo($"Clearing {reasons.Count} stuck PauseReasons: [{string.Join(", ", reasons.ToArray())}]");
+                        reasons.Clear();
+                    }
+                    PauseManager.Instance.SetGamePaused(false, "MilexModMenu", -1f);
+                }
+
+                Time.timeScale = 1.0f;
+                _isGamePausedByMenu = false;
+
+                if (Singleton<InputManager>.IsInstanced())
+                {
+                    InputManager.SetAllInputBlocked(false);
+                    InputManager.SetPauseMenuBlocked(false, "MilexModMenu");
+                }
+
+                if (Singleton<CursorManager>.IsInstanced())
+                {
+                    Singleton<CursorManager>.Instance.SetCursorMenu(false);
+                    Singleton<CursorManager>.Instance.ShowCursor(false);
+                    Singleton<CursorManager>.Instance.Refresh();
+                }
+
+                Instance?.LogInfo("ForceResumeGame completed: TimeScale = 1.0, AllInputBlocked = false, Cursor refreshed.");
+            }
+            catch (Exception ex)
+            {
+                Instance?.LogWarning($"ForceResumeGame failed: {ex.Message}");
+            }
+        }
+
+        private static void ApplyGamePause(bool pause)
+        {
+            if (pause)
+            {
+                // Never pause the Main Menu
+                string sceneName = SceneManager.GetActiveScene().name;
+                if (!string.IsNullOrEmpty(sceneName) && sceneName.ToLower().Contains("menu"))
+                {
+                    return;
+                }
+
+                _previousTimeScale = Time.timeScale > 0.001f ? Time.timeScale : 1.0f;
+                try
+                {
+                    if (PauseManager.Instance != null)
+                    {
+                        PauseManager.Instance.SetGamePaused(true, "MilexModMenu", -1f);
+                    }
+                    else
+                    {
+                        Time.timeScale = 0.0f;
+                    }
+                }
+                catch
+                {
+                    Time.timeScale = 0.0f;
+                }
+                _isGamePausedByMenu = true;
+            }
+            else
+            {
+                try
+                {
+                    if (PauseManager.Instance != null)
+                    {
+                        PauseManager.Instance.SetGamePaused(false, "MilexModMenu", -1f);
+                    }
+                }
+                catch { }
+
+                if (_isGamePausedByMenu)
+                {
+                    Time.timeScale = _previousTimeScale > 0.001f ? _previousTimeScale : 1.0f;
+                    _isGamePausedByMenu = false;
+                }
+            }
+        }
+
+        private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+        {
+            _sceneLoadTimestamp = Time.realtimeSinceStartup;
+            LogInfo($"Scene loaded: '{scene.name}' (mode: {mode}). Resetting menu state.");
+
+            bool hadCursorUnlocked = IsCursorUnlocked;
+
+            // Force close menu on scene transition
+            if (IsMenuOpen)
+            {
+                IsMenuOpen = false;
+                Instance?._classicMenu?.Hide();
+                Instance?._modernMenu?.Hide();
+            }
+
+            // Only release game pause if the mod menu itself had paused it
+            if (_isGamePausedByMenu)
+            {
+                ApplyGamePause(false);
+            }
+
+            _cursorRequesters.Clear();
+
+            // Only restore cursor and unblock input if our mod had actually unlocked or blocked it
+            if (hadCursorUnlocked)
+            {
+                Patches.CursorControlPatches.GameLockState = CursorLockMode.None;
+                Patches.CursorControlPatches.GameCursorVisible = true;
+                OnCursorRestored();
+                SetNativeInputBlocked(false);
+            }
+        }
+
         public static void ToggleMenu()
         {
             bool wasUnlocked = IsCursorUnlocked;
@@ -263,9 +458,7 @@ namespace Milex.GMS1.Core
 
                 if (PauseGameOnMenu != null && PauseGameOnMenu.Value)
                 {
-                    _previousTimeScale = Time.timeScale > 0.001f ? Time.timeScale : 1.0f;
-                    Time.timeScale = 0.0f;
-                    _isGamePausedByMenu = true;
+                    ApplyGamePause(true);
                 }
 
                 // Show active UI renderer
@@ -286,8 +479,23 @@ namespace Milex.GMS1.Core
 
                 if (_isGamePausedByMenu)
                 {
-                    Time.timeScale = _previousTimeScale > 0.001f ? _previousTimeScale : 1.0f;
-                    _isGamePausedByMenu = false;
+                    ApplyGamePause(false);
+                }
+                else if (PauseGameOnMenu != null && !PauseGameOnMenu.Value && Time.timeScale < 0.001f)
+                {
+                    // If the user configured PauseGameOnMenu = false, and the game is paused,
+                    // closing the menu provides a recovery opportunity if loading has finished.
+                    string sceneName = SceneManager.GetActiveScene().name;
+                    if (!string.IsNullOrEmpty(sceneName) && !sceneName.ToLower().Contains("menu"))
+                    {
+                        bool isLoading = Singleton<GoldDigger.LevelLoadingManager>.IsInstanced() && Singleton<GoldDigger.LevelLoadingManager>.Instance.IsLoading();
+                        bool isVanillaMenuOpen = Singleton<GoldDigger.MenuManager>.IsInstanced() && Singleton<GoldDigger.MenuManager>.Instance.InGameMenu;
+                        if (!isLoading && !isVanillaMenuOpen)
+                        {
+                            Instance?.LogInfo("Menu closed with PauseGameOnMenu disabled while game was paused. Force-resuming gameplay...");
+                            ForceResumeGame();
+                        }
+                    }
                 }
 
                 // Hide UI renderers
@@ -303,6 +511,8 @@ namespace Milex.GMS1.Core
 
         protected override void OnDestroy()
         {
+            SceneManager.sceneLoaded -= OnSceneLoaded;
+
             if (_uiHost != null)
             {
                 Destroy(_uiHost);

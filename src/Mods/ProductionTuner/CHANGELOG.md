@@ -3,6 +3,125 @@
 All notable changes to this mod are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.9] – 2026-09-11
+
+### Fixed: Fuel Infrastructure Isolation & 6.6 HogPan Default Ratio
+
+- **Fuel Infrastructure Isolation & Portable Equipment Protection (`FuelTrailerPatch`)**:
+  - Fixed a critical issue where `FuelStationController` instances on portable equipment (portable generator 4L, small water pump 6L, big water pump 216L, Jerry can 20L, light trailer 50L, conveyor belt engines 300L) were improperly matched by the unconstrained fallback in `FuelTrailerPatch` and scaled to stationary fuel tank capacity ($10,000\text{L} \times \text{multiplier} = 30,000\text{L}$).
+  - This caused portable generators to hold thousands of gallons at the town gas station and charge exorbitant prices in the hundreds of thousands of dollars to refuel.
+  - Introduced strict instance filtering:
+    - **`IsMobileTrailer`**: Only matches mobile fuel trailers (`MachineType.TrailerFuel`, `TRAILER_FUELTANK_FUELMAXCAPACITY`). Corrected baseline capacity to verified runtime value of `VanillaTrailerCapacity = 2500f`.
+    - **`IsStationaryClaimTank`**: Only matches the large claim fuel tank (`FUELTANK_STATIONARY_FUELMAXCAPACITY`, $10,000\text{L}$).
+    - **All other machines & appliances**: Remain completely untouched at their authentic vanilla capacities.
+- **HogPan & Fine Processing Default Ratio Adjustments (`TuningConfig`, `Milex_GMS1_ProductionTuner.default.cfg`)**:
+  - Updated default `HogPan_Capacity` to `6.6f` (using standard invariant dot notation) so that a modified 2.0x bucket ($0.06\text{ m}^3$) fills exactly 10% of the HogPan dirt box ($0.60\text{ m}^3$).
+  - Updated default `MagnetiteSeparator_Capacity` to `4.9f` and `WaveTable_Capacity` to `4.9f` for harmonious fine processing pacing with enlarged buckets.
+- **Clean Configuration Range Formatting (`Milex_GMS1_ProductionTuner.default.cfg`)**:
+  - Replaced legacy verbose comma-separated lists (`# Acceptable values: 0,5, 1, 1,5, ...`) with clean BepInEx range directives (`# Acceptable value range: From 0.5 to 10` and `From 0.5 to 20`), reflecting continuous float slider support.
+
+---
+
+## [1.4.8] – 2026-09-11
+
+### Fixed: Full Alignment with Authentic Unity Prefab Dump Baselines (m³)
+
+- **Universal Unity Prefab Baseline Calibration**:
+  - Replaced all legacy C# uninitialized placeholder values with authentic numbers extracted from the live Unity runtime memory dump:
+    - **Hand Tools**: Shovel ($0.01\text{ m}^3$), Bucket ($0.03\text{ m}^3$), GoldPan ($0.01\text{ m}^3$), HogPan dirt box ($0.09\text{ m}^3$).
+    - **Processing Equipment**: WaveTable ($0.06\text{ m}^3$), Magnetite Separator ($0.12\text{ m}^3$, $0.002\text{ speed}$), Magnetite Trailer ($0.30\text{ m}^3$).
+    - **Conveyors**: ConveyorGround ($80.0\text{ m}^3$, $0.2\text{ speed}$), ConveyorElevator ($1.25\text{ m}^3$, $3.0\text{ speed}$).
+    - **Wash Plants**: MobileWashplant ($10.0\text{ m}^3$, $0.225\text{ speed}$), MiniWashplant ($3.0\text{ m}^3$, $0.05\text{ speed}$), WashPlantShaker ($40.0\text{ m}^3$, $0.55\text{ speed}$).
+    - **Miner's Moss**: HogPan mats ($0.2488\text{ m}^3$), Stationary & Orange Beast mats ($0.90\text{ m}^3$).
+- **Multi-Ratio Cascade Protection**:
+  - Rewrote cascade limits and automatic scaling in `TuningConfig` to strictly follow genuine equipment bucket capacities: HogPan ($3:1$), WaveTable ($2:1$), Magnetite Separator ($4:1$), and Magnetite Trailer ($10:1$).
+
+---
+
+## [1.4.7] – 2026-09-11
+
+### Fixed: Authentic Vanilla 3-Bucket HogPan Capacity Baseline (45.0f)
+
+- **HogPan Hopper Baseline Harmonization (`VanillaHogPanCapacity = 45.0f`)**:
+  - Corrected `VanillaHogPanCapacity` from the uncalibrated class field fallback ($10.0\text{f}$) to the authentic gameplay vanilla baseline ($45.0\text{f}$), reflecting the verified vanilla game reality that exactly 3 standard buckets ($15.0\text{f}$ each) fill 1 HogPan hopper ($45.0\text{f}$).
+  - A 2.0x modified bucket ($30.0\text{f}$) poured into a 1.0x vanilla HogPan ($45.0\text{f}$) now fills exactly $66.67\%$ (two thirds).
+  - With both bucket and HogPan scaled by the same multiplier (e.g., both 2.0x), 1 bucket fills exactly $33.33\%$, preserving authentic vanilla pacing while doubling throughput.
+- **Config Cascade Threshold Correction (`TuningConfig`)**:
+  - Adjusted `AutoScaleDependentInputs` and `EnforceMinimum` for HogPan to respect the $3:1$ vanilla volume ratio ($45.0\text{f} / 15.0\text{f}$), preventing HogPan's multiplier from being falsely forced to match bucket's multiplier when bucket capacity is already smaller than the HogPan.
+
+---
+
+## [1.4.6] – 2026-09-11
+
+### Fixed: HogPan Infinite Water Loop & GoldPan Capacity Synchronization
+
+- **HogPan Clean Zeroing Water Drain (`ProcessPlaneWaterGuardPatch`)**:
+  - Fixed a mathematical clamp loop where `WaterVolume` near zero was restored by excess drain compensation every frame, preventing it from ever reaching 0 and causing infinite water flow.
+  - The patch now directly applies the authentic vanilla water drain rate from the captured pre-drain volume (`WaterVolume = Mathf.Max(0f, __state - (Time.deltaTime * (VanillaHogPanCapacity / 7.5f)))`), ensuring water drains at authentic vanilla speed and cleanly shuts off at 0.
+- **GoldPan Capacity Synchronization & Recount (`BucketFillOutCorutinePatch`)**:
+  - Dynamically scales `GoldPan.PanMaxFill` to match enlarged `Bucket.MaxVolume`, preventing premature `PLACE_TO_FILL_IS_FULL` aborts.
+  - Automatically invokes `GoldPan.UpdateFillCount()` via reflection prior to capacity checks so that pans washed clean in the river are immediately recognized as empty.
+
+---
+
+## [1.4.5] – 2026-09-11
+
+### Fixed: Shovel-to-Bucket Capacity Harmonization & 1-Stroke Fill Ratio
+
+- **Container Scale Harmonization (`VanillaShovelVolume = 5.0f`)**:
+  - Identified the root cause of the broken shovel-to-bucket filling ratio: vanilla `Shovel.MaxVolume = 0.1f` was calibrated in Unity voxel mesh cubic meters ($0.1\text{ m}^3 = 100\text{ liters}$), while `Bucket.MaxVolume = 15.0f` and `HogPanDirtBox.PlaneVolumeMax = 10.0f` were calibrated in liters/container units without any conversion factor on transfer. This caused vanilla to require 150 shovels per bucket, and 2.0x bucket / 6.0x shovel to require 50 shovels.
+  - Harmonized baseline shovel capacity to `VanillaShovelVolume = 5.0f` (3 baseline shovels = 1 standard 15.0f bucket, aligning with player-expected vanilla balance).
+  - With default multipliers (`6.0x` Shovel = 30.0f yield, `2.0x` Bucket = 30.0f capacity), exactly **1 shovel** fills a 2.0x bucket to 100%, and fills a standard 1.0x bucket to full.
+- **Proportional 1-Stroke Digging Fill (`ShovelFixedUpdatePatch`)**:
+  - Added `ShovelFixedUpdatePatch` to monitor terrain voxel excavation during `TryTakeGround`.
+  - Smoothly scales the harvested dirt volume and claim mineral densities (gold, magnetite, diamonds) across the digging animation so that a single shovel stroke fills `CurrentVolume` to 100% of `MaxVolume` without requiring dozens of repeated digs in the same hole.
+
+---
+
+## [1.4.4] – 2026-09-11
+
+### Fixed: Bucket Dump Reflection Delegate Signature
+
+- **`Bucket.Wylej` Delegate Signature Fix**:
+  - Corrected the reflection delegate for the private `Bucket.Wylej` method from `Action<Bucket, float>` to parameterless `Action<Bucket>`, matching the vanilla `Assembly-CSharp` signature `private void Wylej()`.
+  - Prevents an `ArgumentException` / `TypeInitializationException` from occurring during static initialization of `BucketFillOutCorutinePatch`.
+
+---
+
+## [1.4.3] – 2026-09-11
+
+### Fixed: Pickup Bed Physics Integrity & Robust Shovel Tuning
+
+- **Pickup Bed Physics Integrity**:
+  - Removed faulty `PickupSafetyPatch.cs`. The vanilla game already manages item freezing safely via `FreezeObjectsCorutine()` and `WaitForFixedUpdate()`.
+  - Calling `FreezeNow()` prematurely in a postfix cleared `ObjectsOnBedD` without freezing objects, leaving loose tools as active colliders that caused physics explosions. Removing the patch completely restored stable truck physics.
+- **Robust Shovel Blade & Dig Depth Scaling**:
+  - Dynamically computes blade dimensions directly from `shovel.BladesBoxCollider.size` and `shovel.DigScale`, preserving genuine coordinates and signs across all game versions without hardcoded constant drift.
+  - Clamped `DigDepth` to a stable maximum (0.03m), ensuring single-stroke bucket filling while preventing severe terrain gouging around vehicles.
+
+---
+
+## [1.4.2] – 2026-09-11
+
+### Fixed: Config Defaults, HogPan Infinite Water, Shovel Digging Speed & Bucket-to-GoldPan Transfer
+
+- **Group Reset Defaults Alignment**:
+  - Aligned all `BindStep` parameter defaults in `TuningConfig.cs` with `Milex_GMS1_ProductionTuner.default.cfg`.
+  - Clicking the in-game "Reset Group" button in Modern Canvas or Classic IMGUI menus now cleanly restores the curated default values (e.g. 6.0x shovel, 3.0x capacities, 5.0x fuel hose) instead of falling back to 1.0x.
+- **Manual HogPan Infinite Water Flow Bug Fix**:
+  - Fixed an issue where the water guard patch added excess drain refund every frame even when the hog pan had zero water, causing dry hog pans to wash endlessly with infinite water and looping audio/particles.
+  - `ProcessPlaneWaterGuardPatch` now captures initial `WaterVolume` in a `[HarmonyPrefix]` and only refunds water in `[HarmonyPostfix]` if water was genuinely present before drain (`__state > 0.0001f`), clamped to never exceed pre-drain volume.
+- **Shovel Digging Volume & Speed Fix**:
+  - Fixed `_bladeSizez` negative sign inversion (`-VanillaBladeSize * bladeScale`), matching vanilla `Shovel.Awake` (`BladesBoxCollider.size.z * DigScaleZ` where `DigScaleZ = -1f`).
+  - Dynamically scales voxel cut depth (`DigDepth = VanillaDigDepth * multiplier`) so each dig scoop extracts dirt volume proportionally, allowing the enlarged shovel to fill in a single scoop instead of requiring dozens of scoops to fill a bucket.
+- **Bucket to GoldPan Transfer & Gold Loss Protection**:
+  - Fixed a critical vanilla design flaw where dumping an enlarged bucket into a gold pan unconditionally deducted the bucket's contents even if the pan had less free space or was already full, permanently destroying material and gold.
+  - Added `BucketFillOutCorutinePatch` to intercept bucket dumps into `GoldPan`.
+  - Queries available pan space (`PanMaxFill - _GroundVolume`) and strictly caps the transferred volume to the pan's capacity.
+  - If the pan is full, displays the native `PLACE_TO_FILL_IS_FULL` notification and retains 100% of material and gold in the bucket.
+
+---
+
 ## [1.4.1] – 2026-09-06
 
 ### Added & Fixed: Robust Fuel Hose Reach Scaling (`FuelHose_Length`)

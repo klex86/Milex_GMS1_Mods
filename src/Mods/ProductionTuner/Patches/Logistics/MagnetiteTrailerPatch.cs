@@ -9,7 +9,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
     /// </summary>
     public static class MagnetiteTrailerPatch
     {
-        public const float VanillaMaxMagnetiteTrailerVolume = 2.0f;
+        /// Authentic vanilla baseline from Unity prefab dump: 0.30 m3 (exactly 10 standard 0.03 m3 buckets).
+        public const float VanillaMaxMagnetiteTrailerVolume = 0.30f;
 
         private static readonly Dictionary<int, GoldDigger.MagnetiteTrailer> Tracked =
             new Dictionary<int, GoldDigger.MagnetiteTrailer>();

@@ -66,5 +66,8 @@
   "UI_UseGameLanguage_Desc": "Nutzt dieselbe Sprache wie das Hauptspiel.",
   "UI_ResetGroup": "Gruppe zurücksetzen",
   "UI_SelectLanguage": "Sprache manuell wählen",
-  "UI_SelectLanguage_Desc": "Wähle die gewünschte Sprache für Menüs und Tooltips."
+  "UI_SelectLanguage_Desc": "Wähle die gewünschte Sprache für Menüs und Tooltips.",
+  "core.force_resume.name": "Spiel fortsetzen (Notfall-Unpause)",
+  "core.force_resume.desc": "Hebt eventuelle hängengebliebene Lade-Pausen sofort auf, entsperrt die Eingaben und setzt die Spielzeit fort.",
+  "btn.force_resume": "Fortsetzen"
 }

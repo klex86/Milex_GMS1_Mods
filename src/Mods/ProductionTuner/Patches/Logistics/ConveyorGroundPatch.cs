@@ -9,7 +9,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
     /// </summary>
     public static class ConveyorGroundPatch
     {
-        public const float VanillaHopperMaxDirt = 40.0f;
+        /// Authentic vanilla baseline from Unity prefab dump: 80.0 m3.
+        public const float VanillaHopperMaxDirt = 80.0f;
 
         private static readonly Dictionary<int, GoldDigger.ConveyorGround> Tracked =
             new Dictionary<int, GoldDigger.ConveyorGround>();

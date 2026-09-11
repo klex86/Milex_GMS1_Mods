@@ -3,6 +3,35 @@
 All notable changes to the `Milex GMS1 CoreMod` management framework.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.3.5] - 2026-09-11
+
+### Added & Fixed: Real-Time Pause Diagnostics, Auto-Recovery & Emergency Unpause
+
+- **Real-Time Pause Diagnostics (`UpdatePauseDiagnosticsAndRecovery`)**:
+  - Automatically monitors `Time.timeScale`, `PauseManager.PauseReasons`, and `InputManager.AllInputBlocked` every 3 seconds outside the main menu.
+  - Emits detailed warning logs identifying any lingering pause tags and input blocking states.
+- **Intelligent Engine Auto-Recovery (`ForceResumeGame`)**:
+  - If the game remains paused after scene loading finishes (`elapsedSinceLoad > 4.0s`, safely beyond `AreaStreamerBase`'s 30-frame collider initialization) and no interactive player UI (`ShopGUI`, `LaptopUse`, `MenuManager`, `FastTravel`, `FreeCam`) is active, automatically clears leaked streaming pause reasons, restores `Time.timeScale = 1.0f`, clears input blocks, and locks the hardware cursor.
+- **Manual "Resume Game (Emergency Unpause)" Action**:
+  - Added an emergency unpause action card / button in both the Modern Canvas Dashboard and Classic IMGUI Menu under General Settings.
+  - Allows players to instantly unfreeze their game and regain full mouse and movement control at any time.
+- **Automatic Menu Close Recovery**:
+  - Closing the Mod Menu when `PauseGameOnMenu == false` while the game is stuck paused now triggers `ForceResumeGame()`.
+
+---
+
+## [1.3.4] - 2026-09-11
+
+### Fixed: Non-Intrusive Scene Loading & Engine Streaming Synchronization
+
+- **Streaming Synchronization & Void-Fall Immunity**:
+  - Removed harmful unconditional `Time.timeScale = 1.0f` overrides in `OnSceneLoaded` during intermediate level loading stages (`SceneBuffor`, `Build_Stream_Main`, `Scenario_1`, and additive chunk scenes).
+  - Preserved `AreaStreamerBase`'s native 30-frame initial freeze, allowing terrain collision meshes to fully generate before physics simulation begins. Resolves the issue where starting a fresh game caused the player to fall through the ground into the void.
+- **Conditional Menu Unpause (`ApplyGamePause`)**:
+  - `ApplyGamePause(false)` is now strictly conditional on `_isGamePausedByMenu == true`, ensuring the mod menu never tampers with native game loading pauses (`LevelLoadingManager`, `load`, `sceneName`, `THERE IS NO DIFFICULTY CHOSEN`).
+- **Default Config Alignment**:
+  - Aligned `Milex_GMS1_CoreMod.default.cfg` default for `PauseGameOnMenu` to `false` (matching code and documentation).
+
 ---
 
 ## [1.3.2] - 2026-09-06

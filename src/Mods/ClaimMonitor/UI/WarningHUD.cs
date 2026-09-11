@@ -125,6 +125,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             if (Config == null || !Config.HudEnabled.Value)
                 return;
 
+            string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            if (string.IsNullOrEmpty(sceneName) || sceneName.ToLower().Contains("menu") || sceneName.ToLower().Contains("buffor"))
+                return;
+
+            if (Singleton<GoldDigger.LevelLoadingManager>.IsInstanced() && Singleton<GoldDigger.LevelLoadingManager>.Instance.IsLoading())
+                return;
+
             InitStyles();
 
             var data = ClaimScanner.Instance?.CurrentData;
@@ -141,6 +148,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             float currentWidth = isCompact
                 ? Mathf.Clamp(Config.HudMaxWidth.Value, 280f, 450f)
                 : Mathf.Min(Config.HudMaxWidth.Value, Screen.width - 20f);
+
+            float configuredMaxHeight = Config?.HudMaxHeight?.Value ?? 420f;
+            float maxAllowedHeight = Mathf.Clamp(configuredMaxHeight, 100f, Screen.height - 40f);
 
             float currentHeight;
             if (isCompact)
@@ -162,7 +172,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                         int estimatedLines = Mathf.Max(1, Mathf.CeilToInt(line.Length / charsPerLine));
                         estimatedTotalTextHeight += (estimatedLines * 16f) + 6f;
                     }
-                    currentHeight = Mathf.Clamp(estimatedTotalTextHeight + 14f, 54f, Screen.height - 40f);
+                    currentHeight = Mathf.Clamp(estimatedTotalTextHeight + 14f, 54f, maxAllowedHeight);
                 }
             }
             else
@@ -188,8 +198,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                         estimatedTotalTextHeight += cardHeight;
                     }
 
-                    // Dynamically fit all content without scrolling, constrained only by the screen itself
-                    currentHeight = Mathf.Clamp(estimatedTotalTextHeight, 120f, Screen.height - 40f);
+                    // Dynamically fit all content without scrolling, constrained by HudMaxHeight and screen height
+                    currentHeight = Mathf.Clamp(estimatedTotalTextHeight, 120f, Mathf.Max(120f, maxAllowedHeight));
                 }
             }
 
@@ -255,6 +265,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                 }
                 else
                 {
+                    _scrollPos = GUILayout.BeginScrollView(_scrollPos, false, false);
                     for (int i = 0; i < alerts.Count; i++)
                     {
                         var alert = alerts[i];
@@ -262,9 +273,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                         string tag = alert.Severity == AlertSeverity.Critical ? LocalizationManager.T("hud.tag.critical", "CRITICAL") : LocalizationManager.T("hud.tag.warn", "WARN");
                         GUILayout.Label($"<color={bulletColor}><b>• [{tag}]</b></color> <b>{alert.Title}:</b> {alert.Description}", _compactItemStyle);
                     }
+                    GUILayout.EndScrollView();
                 }
 
-                GUI.DragWindow(new Rect(0, 0, 10000, 10000));
+                GUI.DragWindow(new Rect(0, 0, 10000, 24));
                 return;
             }
 

@@ -10,7 +10,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
     /// </summary>
     public static class HogPanDirtBoxPatch
     {
-        public const float VanillaHogPanCapacity = 10.0f;
+        /// Authentic vanilla baseline from Unity prefab dump: 0.09 m3 (exactly 3 standard 0.03 m3 buckets).
+        public const float VanillaHogPanCapacity = 0.09f;
 
         private static readonly Dictionary<int, GoldDigger.HogPanDirtBox> Tracked =
             new Dictionary<int, GoldDigger.HogPanDirtBox>();
@@ -70,20 +71,28 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 
         /// <summary>
         /// Sub-patch on ProcessPlane to refund excess water drainage caused by the enlarged PlaneVolumeMax.
+        /// Protects against infinite water flow by only refunding water when water was actually present.
         /// </summary>
         [HarmonyPatch(typeof(GoldDigger.HogPanDirtBox), "ProcessPlane")]
         public static class ProcessPlaneWaterGuardPatch
         {
+            [HarmonyPrefix]
+            public static void Prefix(GoldDigger.HogPanDirtBox __instance, out float __state)
+            {
+                __state = __instance != null ? __instance.WaterVolume : 0f;
+            }
+
             [HarmonyPostfix]
-            public static void Postfix(GoldDigger.HogPanDirtBox __instance)
+            public static void Postfix(GoldDigger.HogPanDirtBox __instance, float __state)
             {
                 if (__instance == null) return;
 
-                float currentCap = __instance.PlaneVolumeMax;
-                if (currentCap > VanillaHogPanCapacity)
+                if (__state > 0.0001f)
                 {
-                    float excessDrain = Time.deltaTime * ((currentCap - VanillaHogPanCapacity) / 7.5f);
-                    __instance.WaterVolume += excessDrain;
+                    // Compute authentic vanilla water drain rate (10.0f / 7.5f = 1.333 l/s)
+                    // and apply directly from pre-drain volume so it cleanly reaches 0 without clamp loops.
+                    float vanillaDrain = Time.deltaTime * (VanillaHogPanCapacity / 7.5f);
+                    __instance.WaterVolume = Mathf.Max(0f, __state - vanillaDrain);
                 }
             }
         }

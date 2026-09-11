@@ -3,6 +3,147 @@
 All notable changes and releases for this mod collection are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.8.16] - 2026-09-11
+
+### Production Tuner: Fuel Infrastructure Isolation & 6.6 HogPan Default Ratio
+
+- **Production Tuner v1.4.9 — Fuel Infrastructure Isolation (`FuelTrailerPatch`)**:
+  - Resolved a severe issue where `FuelStationController` instances across all portable machinery (portable generator 4L, water pump 6L, Jerry can 20L, light trailer 50L, conveyor engines 300L) were incorrectly classified as stationary claim fuel tanks, setting their `MaxCapacity` to $10,000\text{L} \times \text{multiplier}$ (up to $30,000\text{L}$).
+  - This caused the town gas station GUI to display exorbitant capacities (~7,925 gallons) for small generators, asking hundreds of thousands of dollars to refuel.
+  - Implemented strict equipment targeting:
+    - `IsMobileTrailer` scales mobile fuel trailers with verified runtime baseline `VanillaTrailerCapacity = 2500f`.
+    - `IsStationaryClaimTank` scales only the large claim fuel tank (`FUELTANK_STATIONARY_FUELMAXCAPACITY`, $10,000\text{L}$).
+    - Portable generators, pumps, Jerry cans, and vehicle tanks are completely excluded and preserve authentic vanilla values.
+- **Production Tuner v1.4.9 — HogPan & Fine Processing Default Ratios (`TuningConfig`, default cfg)**:
+  - Updated default `HogPan_Capacity` to `6.6f` with dot notation so that 1 modified 2.0x bucket ($0.06\text{ m}^3$) fills exactly 10% of the HogPan ($0.60\text{ m}^3$).
+  - Updated default `MagnetiteSeparator_Capacity` to `4.9f` and `WaveTable_Capacity` to `4.9f`.
+- **Production Tuner v1.4.9 — Clean Configuration Range Formatting (`Milex_GMS1_ProductionTuner.default.cfg`)**:
+  - Replaced verbose comma lists with clean `# Acceptable value range: From 0.5 to 10` and `From 0.5 to 20` directives across all settings.
+
+---
+
+## [1.8.15] - 2026-09-11
+
+### Production Tuner: Full Alignment with Authentic Unity Prefab Baselines (m³)
+
+- **Production Tuner v1.4.8 — Universal Unity Prefab Baseline Calibration**:
+  - Replaced legacy C# uninitialized placeholders across all stationary and hand equipment patches with authentic values from the live Unity runtime memory dump:
+    - **Hand Tools**: Shovel ($0.01\text{ m}^3$), Bucket ($0.03\text{ m}^3$), GoldPan ($0.01\text{ m}^3$), HogPan hopper ($0.09\text{ m}^3$).
+    - **Processing Equipment**: WaveTable ($0.06\text{ m}^3$), Magnetite Separator ($0.12\text{ m}^3$), Magnetite Trailer ($0.30\text{ m}^3$).
+    - **Conveyors**: ConveyorGround ($80.0\text{ m}^3$, $0.2\text{ speed}$), ConveyorElevator ($1.25\text{ m}^3$, $3.0\text{ speed}$).
+    - **Wash Plants**: MobileWashplant ($10.0\text{ m}^3$, $0.225\text{ speed}$), MiniWashplant ($3.0\text{ m}^3$, $0.05\text{ speed}$), WashPlantShaker ($40.0\text{ m}^3$, $0.55\text{ speed}$).
+    - **Miner's Moss**: HogPan mats ($0.2488\text{ m}^3$), Stationary & Orange Beast mats ($0.90\text{ m}^3$).
+- **Production Tuner v1.4.8 — Multi-Ratio Cascade Protection**:
+  - Rewrote cascade limits and automatic scaling in `TuningConfig` to strictly follow genuine equipment bucket capacities: HogPan ($3:1$), WaveTable ($2:1$), Magnetite Separator ($4:1$), and Magnetite Trailer ($10:1$).
+
+---
+
+## [1.8.14] - 2026-09-11
+
+### Claim Monitor: Equipment Baseline Dumper (JSON)
+
+- **Claim Monitor v1.0.10 — Equipment Baseline Dumper (`EquipmentBaselineDumper`)**:
+  - Added a dedicated button **"Dump Baseline (JSON)"** in the Diagnostic Inspector window (`F3`), positioned alongside "Dump All to File".
+  - Queries Unity's live memory (`Resources.FindObjectsOfTypeAll`) to inspect both scene instances and loaded prefabs across all tool, vehicle, washplant, conveyor, and infrastructure classes.
+  - Automatically captures all `[BalanceSheet]` attributes, capacity metrics, speeds, flow rates, volumes, and physical joint limits.
+  - Generates structured JSON files (`Equipment_Baseline_YYYYMMdd_HHmmss.json` and `Equipment_Baseline_Latest.json`) saved directly in `BepInEx/plugins/Milex_ClaimMonitor_Dumps/`.
+
+---
+
+## [1.8.13] - 2026-09-11
+
+### Production Tuner: Authentic Vanilla 3-Bucket HogPan Capacity Baseline (45.0f)
+
+- **Production Tuner v1.4.7 — HogPan Hopper Baseline Harmonization (`VanillaHogPanCapacity = 45.0f`)**:
+  - Harmonized `VanillaHogPanCapacity` from the raw C# field default ($10.0\text{f}$) to the authentic gameplay vanilla baseline ($45.0\text{f}$), perfectly matching the verified vanilla ratio where 3 standard buckets ($15.0\text{f}$) fill 1 HogPan hopper ($45.0\text{f}$).
+  - A 2.0x modified bucket ($30.0\text{f}$) poured into a 1.0x vanilla HogPan ($45.0\text{f}$) now fills exactly $66.67\%$ (two thirds).
+  - Preserves authentic vanilla pacing when scaling both bucket and HogPan equally (e.g., both 2.0x = 3 buckets to fill).
+- **Production Tuner v1.4.7 — Cascade Threshold Adjustment (`TuningConfig`)**:
+  - Adjusted cascade clamping so HogPan accounts for its genuine $3:1$ vanilla size advantage over the bucket, allowing independent down-tuning without false clamp locks.
+
+---
+
+## [1.8.12] - 2026-09-11
+
+### Production Tuner: HogPan Infinite Water Loop Fix & GoldPan Capacity Sync
+
+- **Production Tuner v1.4.6 — HogPan Clean Zeroing Water Drain (`ProcessPlaneWaterGuardPatch`)**:
+  - Eliminated the mathematical clamp loop that prevented water volume in the HogPan from reaching zero, causing infinite water flow.
+  - Directly calculates authentic vanilla water drain rate from the pre-drain snapshot (`WaterVolume = Mathf.Max(0f, __state - (Time.deltaTime * (VanillaHogPanCapacity / 7.5f)))`), ensuring water reliably runs out at authentic vanilla speed.
+- **Production Tuner v1.4.6 — GoldPan Capacity Synchronization & Recount (`BucketFillOutCorutinePatch`)**:
+  - Dynamically synchronizes `GoldPan.PanMaxFill` with `Bucket.MaxVolume` so that the gold pan scales proportionally with enlarged buckets.
+  - Automatically invokes `GoldPan.UpdateFillCount()` via reflection prior to capacity checks, recognizing washed pans as empty immediately.
+
+---
+
+## [1.8.11] - 2026-09-11
+
+### Production Tuner: Shovel-to-Bucket Proportion Alignment & 1-Stroke Fill Ratio
+
+- **Production Tuner v1.4.5 — Container Scale Harmonization (`VanillaShovelVolume = 5.0f`)**:
+  - Solved the severe ratio discrepancy between shovel and bucket: in vanilla, `Shovel.MaxVolume` was defined in Unity voxel cubic meters ($0.1\text{ m}^3 = 100\text{ l}$), but transferred directly into `Bucket.MaxVolume = 15.0f` (liters) without unit conversion, leading to 150 shovels per bucket in vanilla, and 50 shovels with 2.0x bucket / 6.0x shovel.
+  - Aligned baseline shovel capacity to `VanillaShovelVolume = 5.0f` so 3 baseline shovels fill 1 standard 15.0f bucket (aligning with player-expected vanilla balance).
+  - With default multipliers (`6.0x` Shovel = 30.0f, `2.0x` Bucket = 30.0f), exactly **1 shovel** fills a 2.0x bucket to 100%, and fills a 1.0x bucket to full.
+- **Proportional 1-Stroke Digging Fill (`ShovelFixedUpdatePatch`)**:
+  - Smoothly scales the harvested dirt volume and claim mineral densities (gold, magnetite, diamonds) across the digging animation so that a single shovel stroke fills `CurrentVolume` to 100% of `MaxVolume`.
+
+---
+
+## [1.8.10] - 2026-09-11
+
+### CoreMod & Production Tuner: Leaked Pause Auto-Recovery & In-Game Emergency Unpause
+
+- **CoreMod v1.3.5 — Leaked Pause Diagnostics & Auto-Recovery (`ForceResumeGame`)**:
+  - Added real-time diagnostics monitoring `PauseManager.Instance.PauseReasons` and `InputManager.AllInputBlocked` every 3 seconds during pause states outside the main menu.
+  - Implemented automatic pause recovery: 4.0 seconds after scene loading completes (giving `AreaStreamerBase` ample time to finish its 30-frame collision generation), if level loading is done and no in-game menu is open, orphaned transient pause tags are safely cleared, restoring `Time.timeScale = 1.0f`, unlocking player movement (`InputManager.SetAllInputBlocked(false)`), and refreshing the cursor.
+  - Added a dedicated "Resume Game (Emergency Unpause)" action card in both Modern Canvas and Classic IMGUI dashboards under General Settings.
+  - Closing the Mod Menu with `PauseGameOnMenu = false` now triggers `ForceResumeGame()` if the engine was stranded in a paused state.
+- **Production Tuner v1.4.4 — Bucket Wylej Reflection Delegate Fix**:
+  - Corrected `Bucket.Wylej` delegate from `Action<Bucket, float>` to parameterless `Action<Bucket>`, preventing type initializer crashes during Harmony patching.
+
+---
+
+## [1.8.9] - 2026-09-11
+
+### CoreMod, Claim Monitor & Production Tuner: Scene Loading Synchronization, Pause & Physics Fix
+
+- **CoreMod v1.3.4 — Non-Intrusive Scene Loading & Streaming Synchronization**:
+  - Removed premature `Time.timeScale = 1.0f` overwrites in `OnSceneLoaded` during intermediate scene loads (`SceneBuffor`, `Build_Stream_Main`, `Scenario_1`, and additive chunk scenes).
+  - Preserved `AreaStreamerBase`'s native 30-frame initial freeze, allowing terrain collision meshes to fully generate before physics simulation begins. This completely resolves the bug where starting a fresh game caused the player to spawn out-of-bounds and fall endlessly through the map into the void.
+  - Made `ApplyGamePause(false)` strictly conditional on `_isGamePausedByMenu == true`, ensuring the mod menu never tampers with native game loading pauses (`LevelLoadingManager`, `load`, `sceneName`, `THERE IS NO DIFFICULTY CHOSEN`).
+  - Aligned `Milex_GMS1_CoreMod.default.cfg` default for `PauseGameOnMenu` to `false` (matching code and documentation).
+- **Claim Monitor v1.0.9 — Main Menu & Level Loading Suppression**:
+  - Added strict scene and loading state guards to `WarningHUD.OnGUI`: suppressed completely in `MainMenu`, buffer scenes, and whenever `LevelLoadingManager.IsLoading()` is true.
+  - Suppressed background equipment scans in `ClaimScanner.PeriodicScan` and `ForceScan` during the Main Menu and level loading.
+- **Production Tuner v1.4.3 — Pickup Truck Physics Fix & Shovel Scaling**:
+  - Removed faulty `PickupSafetyPatch.cs` which called `FreezeNow()` prematurely before `WaitForFixedUpdate`, preventing PhysX collisions and flying pickup trucks.
+  - Dynamically calculates shovel blade extents from `shovel.BladesBoxCollider.size` and `shovel.DigScale` without hardcoded coordinate drift, and clamped voxel cut depth (`DigDepth <= 0.03m`).
+
+---
+
+## [1.8.8] - 2026-09-11
+
+### Production Tuner & Claim Monitor: Test Run 1 Fixes & Enhancements
+
+- **Production Tuner v1.4.2 — Group Reset Defaults Alignment**:
+  - Aligned all `BindStep` defaults in `TuningConfig.cs` with `Milex_GMS1_ProductionTuner.default.cfg`, allowing in-game "Reset Group" buttons to restore curated presets.
+- **Production Tuner v1.4.2 — Manual HogPan Infinite Water Flow Bug**:
+  - Captured initial water state in Prefix and clamped excess drain refunds in Postfix only when water was present before drain, eliminating infinite water loops and phantom particles on dry hog pans.
+- **Production Tuner v1.4.2 — Shovel Digging Volume & Speed Fix**:
+  - Corrected `_bladeSizez` negative sign and scaled penetration depth (`DigDepth = VanillaDigDepth * multiplier`), enabling single-scoop fills for tuned shovel volumes.
+- **Production Tuner v1.4.2 — Bucket to GoldPan Transfer & Gold Loss Protection**:
+  - Added safe transfer coroutine prefix (`BucketFillOutCorutinePatch`) to prevent dumping more volume than target gold pans can accept (`PanMaxFill - _GroundVolume`), preserving 100% of material and gold from destruction.
+- **Claim Monitor v1.0.8 — Conveyor False Alerts**:
+  - Standalone scene conveyors now verify stationary wash plant presence and cable hookups before alerting, eliminating unpowered warnings on fresh games.
+- **Claim Monitor v1.0.8 — F3 Hotkey & Mod Menu Synchronization**:
+  - Linked `EnableDebugGroup.SettingChanged` so the F3 hotkey and in-game menu toggle remain 100% in sync with cursor locking and scanner refreshes.
+- **Claim Monitor v1.0.8 — Warning HUD Max Height Clamping (`HudMaxHeight`)**:
+  - Clamped dynamic window height to `HudMaxHeight` with scrollviews enabled in both full and compact views.
+- **Claim Monitor v1.0.8 — ClaimDumper Expansion**:
+  - Added `HogPan`, `Bucket`, `GoldPan`, and `Shovel` to diagnostic dump component candidates.
+
+---
+
 ## [1.8.7] - 2026-09-06
 
 ### Production Tuner: Robust Fuel Hose Reach Scaling (`FuelHose_Length`) & Physics Integrity

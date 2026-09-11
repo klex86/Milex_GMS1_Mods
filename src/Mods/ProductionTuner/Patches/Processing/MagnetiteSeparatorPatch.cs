@@ -10,7 +10,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Processing
     /// </summary>
     public static class MagnetiteSeparatorPatch
     {
-        public const float VanillaMaxFill = 100.0f;
+        /// Authentic vanilla baseline from Unity prefab dump: 0.12 m3 (exactly 4 standard 0.03 m3 buckets).
+        public const float VanillaMaxFill = 0.12f;
         public const float VanillaFillOutSpeed = 0.002f;
 
         private static readonly Dictionary<int, GoldDigger.MagnetiteSeparator> Tracked =

@@ -9,7 +9,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
     /// </summary>
     public static class ConveyorElevatorPatch
     {
-        public const float VanillaBucketCapacity = 0.5f;
+        /// Authentic vanilla baseline from Unity prefab dump: 1.25 m3.
+        public const float VanillaBucketCapacity = 1.25f;
 
         private static readonly Dictionary<int, GoldDigger.ConveyorElevator> Tracked =
             new Dictionary<int, GoldDigger.ConveyorElevator>();
