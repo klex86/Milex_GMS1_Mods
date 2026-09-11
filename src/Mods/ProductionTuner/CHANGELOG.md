@@ -3,6 +3,21 @@
 All notable changes to this mod are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.11] – 2026-09-12
+
+### Added: Fast Travel Wheel Landing Shock Protection & Trailer Auto-Reconnection
+
+- **Fast Travel Wheel Landing Protection (`WheelLandingProtectionPatch`)**:
+  - Solved the notorious vanilla issue where trailer and vehicle wheels frequently break or suffer extreme damage immediately after fast travel.
+  - *Root cause*: During teleportation, vehicles drop slightly onto the terrain and joint springs stretch/snap into place. The physical suspension compresses violently (`suspensionCompression > 1.3f`). The native game code in `Trailer.cs`, `PickupSuspension.cs`, and `MachineRepairController.cs` evaluates this instant shock as hitting a massive pothole (`CheckAndRepair.EWearConditions.DrivingThroughHoles`), subtracting `suspensionCompression - 1f` durability each frame and destroying the wheels.
+  - *Vanilla Oversight*: The original developers anticipated teleport turbulence and created `Trailer.COR_RepairAfterTeleportDelay()`, but it only adjusted `drag = 10f` for 2 seconds and completely omitted wheel durability protection!
+  - *Fix*: Added a Harmony prefix patch on `CheckAndRepair.UpdateDurability` that suppresses `DrivingThroughHoles` damage during fast travel and for a 4-second settling grace window after landing (`FastTravelProtectionUntil`). Realistic pothole damage during normal road/terrain driving remains 100% active once the vehicle settles.
+- **Fast Travel Trailer Auto-Reconnection (`TrailerFastTravelPatch`)**:
+  - Solved the persistent vanilla annoyance where fast traveling in a pickup forcibly disconnects any hitched trailer (`MapMenu.FastTravel` calls `DisconnectInstantly()` and leaves the trailer 4 meters behind the vehicle).
+  - Automatically captures the connected trailer before fast travel and re-hitches it to the pickup hitch after destination streaming and physics settle.
+
+---
+
 ## [1.4.10] – 2026-09-12
 
 ### Fixed: Fuel Station Save/Load Clamping Protection & Mobile Trailer Baseline Calibration
@@ -13,9 +28,6 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
   - *Fix*:
     - Switched `FuelStationUpdatePatch` to `[HarmonyPrefix]` so `MaxCapacity` is guaranteed to be scaled before `Mathf.Clamp` is evaluated.
     - Added `FuelStationDeserializePatch` (`[HarmonyPostfix]` on `FuelStationController.Deserialize`) to immediately restore scaled capacity the instant save data is read.
-- **Fast Travel Trailer Auto-Reconnection (`TrailerFastTravelPatch`)**:
-  - Solved the persistent vanilla annoyance where fast-traveling in a pickup forcibly disconnects any hitched trailer (`MapMenu.FastTravel` calls `DisconnectInstantly()` and leaves the trailer 4 meters behind the vehicle).
-  - Automatically captures the connected trailer before fast travel and re-hitches it to the pickup hitch after destination streaming and physics settle.
 
 ---
 

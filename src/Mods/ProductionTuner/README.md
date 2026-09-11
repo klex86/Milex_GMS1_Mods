@@ -1,6 +1,6 @@
 # Milex GMS1 Production Tuner
 
-- **Version:** `1.3.0` ([View Changelog](CHANGELOG.md))
+- **Version:** `1.4.11` ([View Changelog](CHANGELOG.md))
 - **Mod Name:** Milex GMS1 Production Tuner
 - **Author:** Milex
 - **Assembly File:** `Milex_GMS1_ProductionTuner.dll`
@@ -76,6 +76,15 @@ All sliders operate in **0.5 increments**. Standard components range from **0.5x
 - **Hog Pan Water Protection**: Water drainage in the hog pan is clamped to the vanilla base rate. Even with 4x or 10x dirt capacity, water drains at normal vanilla speed without drying out mats.
 - **Pump & Generator Stability**: Wash plants and electric equipment do not request inflated wattage or water flow. Existing generators and pumps run stably without circuit breaker trips or pressure loss.
 - **Hydraulic Torque Scaling**: When wheel loader bucket capacity is enlarged, lifting cylinder torque (`AnimatedJoint.MaxTorque`) is automatically boosted to effortlessly lift full loads.
+
+### Logistics & Fast Travel Enhancements
+
+- **Trailer Fast Travel Auto-Reconnection**:
+  - In vanilla *Gold Rush*, fast-traveling in a pickup forcibly disconnects any hitched trailer, dropping it uncoupled 4 meters behind the vehicle at the destination.
+  - Production Tuner seamlessly tracks coupled trailers during map travel and automatically re-hitches the trailer to the pickup once the destination streaming completes.
+- **Teleport Landing Wheel Shock Protection**:
+  - In vanilla, vehicles and trailers dropping onto the terrain upon teleportation trigger extreme momentary suspension compression (`> 1.3x`). The game code falsely interprets this shock as high-speed pothole collisions (`DrivingThroughHoles`), instantly damaging or destroying wheels.
+  - Production Tuner provides a 4-second landing grace period after fast travel that suppresses false suspension shock damage. Genuine wear and tear from potholes during normal road and off-road driving remains fully active once the vehicle settles.
 
 ---
 

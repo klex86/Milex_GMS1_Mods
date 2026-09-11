@@ -3,6 +3,20 @@
 All notable changes and releases for this mod collection are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.8.18] - 2026-09-12
+
+### Production Tuner: Fast Travel Wheel Landing Shock Protection & Trailer Auto-Reconnection
+
+- **Production Tuner v1.4.11 — Fast Travel Wheel Landing Shock Protection (`WheelLandingProtectionPatch`)**:
+  - Eliminated the notorious vanilla bug where trailer or vehicle wheels are severely damaged or broken upon fast travel arrival.
+  - Teleporting vehicles causes instantaneous drops and joint snap that spike `suspensionCompression > 1.3f`, which the game erroneously treats as hitting severe potholes (`DrivingThroughHoles`), subtracting durability per frame until destroyed.
+  - Implemented a 4-second settling grace window (`FastTravelProtectionUntil`) in `CheckAndRepair.UpdateDurability` that suppresses false landing shock damage while preserving authentic road pothole wear during normal driving.
+- **Production Tuner v1.4.11 — Fast Travel Trailer Auto-Reconnection (`TrailerFastTravelPatch`)**:
+  - Solved the persistent vanilla annoyance where fast traveling in a pickup forcibly disconnects any hitched trailer (`MapMenu.FastTravel` calls `DisconnectInstantly()` and leaves the trailer 4 meters behind the vehicle).
+  - Automatically captures the connected trailer before fast travel and re-hitches it to the pickup hitch after destination streaming and physics settle.
+
+---
+
 ## [1.8.17] - 2026-09-12
 
 ### Production Tuner: Fuel Station Save/Load Clamping Protection & Prefab Baseline Calibration
@@ -14,8 +28,6 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 - **CoreMod v1.8.17 — Fast Travel & Streaming Engine Immunity (`CorePlugin`)**:
   - Fixed an issue where the leaked pause auto-recovery triggered prematurely after 4.0 seconds during Fast Travel (`MapMenu.ForceLoad`), which intentionally holds the engine paused for 6.5–7.5 seconds while terrain mesh colliders initialize.
   - Increased recovery grace period to 15.0 seconds and added active checks for `MenuLoading.gameObject.activeInHierarchy` / `isFastTravel`, preventing trailers from falling through the uncollided terrain and respawning at neutral points.
-- **Production Tuner v1.4.10 — Fast Travel Trailer Auto-Reconnection (`TrailerFastTravelPatch`)**:
-  - Overcame vanilla limitation where fast traveling in a pickup forcibly disconnects any hitched trailer and leaves it uncoupled 4 meters behind the vehicle. Automatically detects and re-couples hitched trailers upon destination arrival.
 
 ---
 

@@ -17,6 +17,12 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
         private static Pickup _pendingPickup;
         private static GoldDigger.Trailer _pendingTrailer;
 
+        /// <summary>
+        /// Timestamp until which suspension compression damage (potholes) is suppressed
+        /// to prevent teleport drops and hitching tension from destroying vehicle/trailer wheels.
+        /// </summary>
+        public static float FastTravelProtectionUntil { get; private set; }
+
         [HarmonyPatch(typeof(GoldDigger.MapMenu), "FastTravel")]
         public static class FastTravelHook
         {
@@ -25,6 +31,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
             {
                 try
                 {
+                    // Extend protection grace window during travel and landing
+                    FastTravelProtectionUntil = Time.realtimeSinceStartup + 15f;
+
                     if (!Singleton<Player>.IsInstanced()) return;
                     var machine = Singleton<Player>.Instance.GetControlledMachine();
                     if (machine is Pickup pickup && pickup.ConnectedTrailer != null)
@@ -48,6 +57,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
             [HarmonyPostfix]
             public static void Postfix()
             {
+                // Set grace period to allow physics to settle after teleport
+                FastTravelProtectionUntil = Mathf.Max(FastTravelProtectionUntil, Time.realtimeSinceStartup + 4f);
+
                 if (_pendingPickup != null && _pendingTrailer != null)
                 {
                     var pickup = _pendingPickup;
@@ -57,6 +69,25 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 
                     ProductionTunerPlugin.Instance?.StartCoroutine(AutoReconnectTrailerCor(pickup, trailer));
                 }
+            }
+        }
+
+        /// <summary>
+        /// Prevents instantaneous suspension compression spikes during teleport landing
+        /// and joint hitching from destroying wheels. Normal driving wear from genuine potholes
+        /// remains 100% intact once the vehicle settles.
+        /// </summary>
+        [HarmonyPatch(typeof(CheckAndRepair), "UpdateDurability")]
+        public static class WheelLandingProtectionPatch
+        {
+            [HarmonyPrefix]
+            public static bool Prefix(CheckAndRepair.EWearConditions reason)
+            {
+                if (reason == CheckAndRepair.EWearConditions.DrivingThroughHoles && Time.realtimeSinceStartup < FastTravelProtectionUntil)
+                {
+                    return false;
+                }
+                return true;
             }
         }
 
@@ -75,6 +106,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
                     {
                         trailer._Hook.PickupCanConnect = pickup;
                     }
+
+                    // Keep protection active through hitching snap
+                    FastTravelProtectionUntil = Mathf.Max(FastTravelProtectionUntil, Time.realtimeSinceStartup + 3f);
 
                     // Attempt official connection
                     trailer.ConnectToPickup();
