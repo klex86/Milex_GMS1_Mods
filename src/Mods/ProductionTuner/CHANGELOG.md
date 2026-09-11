@@ -12,9 +12,13 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
   - *Root cause*: During teleportation, vehicles drop slightly onto the terrain and joint springs stretch/snap into place. The physical suspension compresses violently (`suspensionCompression > 1.3f`). The native game code in `Trailer.cs`, `PickupSuspension.cs`, and `MachineRepairController.cs` evaluates this instant shock as hitting a massive pothole (`CheckAndRepair.EWearConditions.DrivingThroughHoles`), subtracting `suspensionCompression - 1f` durability each frame and destroying the wheels.
   - *Vanilla Oversight*: The original developers anticipated teleport turbulence and created `Trailer.COR_RepairAfterTeleportDelay()`, but it only adjusted `drag = 10f` for 2 seconds and completely omitted wheel durability protection!
   - *Fix*: Added a Harmony prefix patch on `CheckAndRepair.UpdateDurability` that suppresses `DrivingThroughHoles` damage during fast travel and for a 4-second settling grace window after landing (`FastTravelProtectionUntil`). Realistic pothole damage during normal road/terrain driving remains 100% active once the vehicle settles.
-- **Fast Travel Trailer Auto-Reconnection (`TrailerFastTravelPatch`)**:
+- **Fast Travel Trailer Auto-Reconnection & Manual Unhitch Fix (`TrailerFastTravelPatch`)**:
   - Solved the persistent vanilla annoyance where fast traveling in a pickup forcibly disconnects any hitched trailer (`MapMenu.FastTravel` calls `DisconnectInstantly()` and leaves the trailer 4 meters behind the vehicle).
   - Automatically captures the connected trailer before fast travel and re-hitches it to the pickup hitch after destination streaming and physics settle.
+  - **Manual Unhitch Lever Restoration (`RestoreHitchInteraction` & `TrailerConnectToPickupGuard`)**:
+    - Fixed an issue where the player was unable to manually detach the trailer after fast travel upon exiting the vehicle.
+    - *Root cause*: Vanilla `Pickup.Teleport` called `instance.SetEnabled(false)` on all `TrailerHook` instances, which deactivated the hitch lever GameObject (`OnCanConnect.SetActive(false)`) and set `PickupCanConnect = null`. Because the trailer was automatically reconnected, `Pickup.HookUpdate()` skipped execution (`ConnectedTrailer != null`) and never reactivated the lever GameObject.
+    - *Fix*: `RestoreHitchInteraction` now re-enables `OnCanConnect` (and the lever's collider/interaction components) and restores `_Hook.PickupCanConnect = pickup`. Added `TrailerConnectToPickupGuard` to dynamically ensure `PickupCanConnect` is resolved before evaluating `Trunk.IsOpen`, eliminating any possible `NullReferenceException` during manual uncoupling.
 
 ---
 

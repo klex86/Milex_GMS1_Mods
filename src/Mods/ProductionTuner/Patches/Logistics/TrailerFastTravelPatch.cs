@@ -91,6 +91,45 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
             }
         }
 
+        /// <summary>
+        /// Safety guard: ensures PickupCanConnect is never null when disconnecting/connecting
+        /// to avoid NullReferenceExceptions in trunk check.
+        /// </summary>
+        [HarmonyPatch(typeof(GoldDigger.Trailer), "ConnectToPickup")]
+        public static class TrailerConnectToPickupGuard
+        {
+            [HarmonyPrefix]
+            public static void Prefix(GoldDigger.Trailer __instance)
+            {
+                try
+                {
+                    if (__instance?._Hook != null && __instance._Hook.PickupCanConnect == null)
+                    {
+                        // Recover connected pickup from joint if present
+                        var joint = __instance.GetComponent<ConfigurableJoint>();
+                        if (joint != null && joint.connectedBody != null)
+                        {
+                            __instance._Hook.PickupCanConnect = joint.connectedBody.GetComponent<Pickup>();
+                        }
+
+                        if (__instance._Hook.PickupCanConnect == null)
+                        {
+                            var pickups = UnityEngine.Object.FindObjectsOfType<Pickup>();
+                            foreach (var p in pickups)
+                            {
+                                if (p.ConnectedTrailer == __instance)
+                                {
+                                    __instance._Hook.PickupCanConnect = p;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+                catch { }
+            }
+        }
+
         private static IEnumerator AutoReconnectTrailerCor(Pickup pickup, GoldDigger.Trailer trailer)
         {
             // Allow physics and terrain mesh colliders to settle after teleport
@@ -98,6 +137,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 
             if (pickup == null || trailer == null) yield break;
 
+            bool reconnected = false;
             try
             {
                 if (trailer._Hook != null && !trailer._Hook.IsConnected)
@@ -122,6 +162,9 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
 
                     if (trailer._Hook.IsConnected)
                     {
+                        reconnected = true;
+                        RestoreHitchInteraction(trailer, pickup);
+
                         ProductionTunerPlugin.Instance?.LogInfo(
                             $"[FastTravel] Successfully auto-reconnected trailer '{trailer.name}' to Pickup!");
                     }
@@ -130,6 +173,55 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Logistics
             catch (Exception ex)
             {
                 ProductionTunerPlugin.Instance?.LogWarning($"[FastTravel] Auto-reconnect failed: {ex.Message}");
+            }
+
+            if (reconnected)
+            {
+                // Wait for CreateJoint() lerp (1.0s) to complete, then reinforce lever interaction state
+                yield return new WaitForSeconds(1.1f);
+                try
+                {
+                    RestoreHitchInteraction(trailer, pickup);
+                }
+                catch { }
+            }
+        }
+
+        private static void RestoreHitchInteraction(GoldDigger.Trailer trailer, Pickup pickup)
+        {
+            if (trailer?._Hook == null) return;
+
+            // In vanilla, Pickup.Teleport called instance.SetEnabled(false) on all TrailerHooks
+            // which deactivated OnCanConnect (the hitch lever GameObject) and set PickupCanConnect to null.
+            // Since ConnectedTrailer is now non-null, Pickup.HookUpdate() returns early and will never re-enable it.
+            // Re-enabling it here allows the player to walk up to the hitch and manually uncouple the trailer.
+            trailer._Hook.PickupCanConnect = pickup;
+
+            if (trailer._Hook.OnCanConnect != null && !trailer._Hook.OnCanConnect.activeSelf)
+            {
+                trailer._Hook.OnCanConnect.SetActive(true);
+            }
+
+            try
+            {
+                AccessTools.Method(typeof(GoldDigger.TrailerHook), "SetEnabled", new[] { typeof(bool) })
+                    ?.Invoke(trailer._Hook, new object[] { true });
+            }
+            catch { }
+
+            if (trailer.LeverShifters != null)
+            {
+                foreach (ToggleShifter leverShifter in trailer.LeverShifters)
+                {
+                    if (leverShifter?.ShifterTransform != null)
+                    {
+                        var col = leverShifter.ShifterTransform.GetComponent<Collider>();
+                        if (col != null && !col.enabled)
+                        {
+                            col.enabled = true;
+                        }
+                    }
+                }
             }
         }
     }
