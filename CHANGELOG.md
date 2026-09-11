@@ -13,6 +13,8 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
   - Automatically wires `FuelPistolHoldable.MyConfigurableJ`, allowing vanilla `Attach` distance validation and strong 5,000,000 N vehicle locking.
   - Buffers `breakForce` and `breakTorque` (min 50,000 N) to prevent false snaps during player running and vehicle suspension movement.
   - Configurable in `[Group5_Trailers]` via continuous slider (1.0x–5.0x, default 2.0x).
+- **Production Tuner v1.4.1 — Stationary Tanks & Diesel Generator Scope (`FuelTank_Capacity`)**:
+  - Clarified UI descriptions: `FuelTank_Capacity` deliberately covers both stationary claim depot fuel tanks and stationary claim infrastructure (large diesel generators, pump stations) sharing the internal `FuelStationController` component, ensuring reliable fuel reserves across claim equipment.
 
 ---
 

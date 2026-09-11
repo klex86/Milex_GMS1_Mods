@@ -189,7 +189,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
             FuelTrailer_Capacity = BindStep("Group5_Trailers", "FuelTrailer_Capacity", 3.0f,
                 "Load capacity of the mobile fuel trailer.");
             FuelTank_Capacity = BindStep("Group5_Trailers", "FuelTank_Capacity", 2.0f,
-                "Capacity of stationary fuel tanks placed on the claim (not the mobile trailer).");
+                "Capacity of stationary claim fuel tanks, diesel generators, and claim infrastructure (not the mobile trailer).");
             FuelHose_Length = BindStep("Group5_Trailers", "FuelHose_Length", 2.0f,
                 "Physical reach and length multiplier of the fuel dispenser hose on mobile fuel trailers and stationary claim tanks.");
 

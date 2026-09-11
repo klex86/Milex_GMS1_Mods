@@ -21,6 +21,8 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
 - **Continuous In-Game Slider (`[Group5_Trailers] FuelHose_Length`)**:
   - Added `FuelHose_Length` with range 1.0x to 5.0x (default 2.0x, reaching 10–12 meters).
   - Fully integrated with real-time menu updates, reset buttons, and English/German localizations.
+- **Stationary Fuel Tanks & Generators Clarification (`FuelTank_Capacity`)**:
+  - Clarified UI descriptions and labels: `FuelTank_Capacity` deliberately scales both stationary claim depot fuel tanks and stationary claim infrastructure (large diesel generators, pump stations) sharing the internal `FuelStationController` component, providing consistent long-running fuel supplies across the entire claim.
 
 ---
 

@@ -73,8 +73,8 @@
   "config.group5_trailers.magnetitetrailer_capacity.desc": "Ladekapazität des Anhängers für Magnetit.",
   "config.group5_trailers.fueltrailer_capacity.name": "Kraftstoffanhänger Tankvolumen",
   "config.group5_trailers.fueltrailer_capacity.desc": "Tankkapazität und Betankungsrate des mobilen Tankwagens.",
-  "config.group5_trailers.fueltank_capacity.name": "Stationärer Tank Kapazität",
-  "config.group5_trailers.fueltank_capacity.desc": "Tankkapazität der auf dem Claim platzierten stationären Dieseltanks.",
+  "config.group5_trailers.fueltank_capacity.name": "Stationäre Tanks & Generatoren",
+  "config.group5_trailers.fueltank_capacity.desc": "Tankkapazität der auf dem Claim platzierten stationären Dieseltanks, Dieselgeneratoren und Pumpen.",
   "config.group5_trailers.fuelhose_length.name": "Zapfschlauch Reichweite",
   "config.group5_trailers.fuelhose_length.desc": "Reichweite und Länge des Zapfschlauchs am mobilen Tankwagen und an stationären Claim-Tanks.",
 
