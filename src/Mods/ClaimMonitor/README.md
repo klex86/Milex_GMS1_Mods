@@ -1,123 +1,147 @@
 # Milex GMS1 Claim Monitor
 
 - **Version:** `1.0.1` ([View Changelog](CHANGELOG.md))
-- **Mod Name:** Milex Claim Monitor
+- **Mod Name:** Milex GMS1 Claim Monitor
 - **Author:** Milex
 - **Assembly File:** `Milex_GMS1_ClaimMonitor.dll`
 - **Dependencies:** `Milex_GMS1_CoreMod.dll`, `BepInEx 5.4.21+`
 
-Live telemetry, real-time warning HUD, and component malfunction monitoring for wash plants, sluice mats, feeding chains, and vehicles in *Gold Mining Simulator* (*Gold Rush: The Game*).
+The **Claim Monitor** is a real-time tactical warning HUD for *Gold Mining Simulator* (*Gold Rush: The Game*). It actively scans your claim and monitors wash plants, sluice box mats, water pumps, power generators, and vehicles. It warns you before equipment breaks down, alerts you when Miner's Moss mats reach capacity, and notifies you when machinery runs low on fuel or water.
 
 ---
 
-## 1. Features & Overview
+## Quick Install & Getting Started
 
-- **Real-Time Warning HUD Overlay**:
-  - Live on-screen tactical dashboard monitoring all active equipment across the claim.
-  - Automatically identifies and groups machinery into three distinct setups:
-    - **Setup 1**: Mobile Wash Plants (Mini Wash Plant, Mobile Wash Plant).
-    - **Setup 2**: Stationary Setup T3–T5 (Large Shaker, Trommel, Duplex Jigs, Sluice Boxes).
-    - **Setup 3**: Setup T6 / Orange Beast (Giant Shaker, Extended Sluices).
-  - Optional monitoring of the **Feeding Chain** (Hoppers and Conveyors) linked to stationary setups.
-- **Critical Malfunction Warnings**:
-  - **Trommel**: Broken or destroyed drive chain (`_TrommelChainDestroyed`).
-  - **Shaker**: Motor stoppage, power outage, or broken water supply hose.
-  - **Duplex Jig**: Broken pump mechanism or full buckets requiring replacement.
-  - **Sluice Mats**: Warning when mats reach high fill capacity (default: 90%), and critical alerts when mats overflow (100%).
-  - **Vehicles & Machines**: Low fuel warnings (< 15%) and critical alerts when fuel tanks run dry.
-  - **Utilities**: Power generator stoppages, empty water towers, and disabled pumps.
-- **Interactive In-Game Customization**:
-  - Configurable position, width, height, and display modes (Full or Ultra-Compact) via the CoreMod Menu (**`Insert`** key).
-  - Drag and drop window repositioning directly on screen.
-  - Optional mode to only show the HUD when active warnings exist.
-- **Built-in Diagnostic Inspector & Claim Dumper**:
-  - Press **`F3`** or **`F8`** to open the Diagnostic Inspector for deep inspection of live Unity scene objects and properties.
-  - One-click deep memory dump to file (`BepInEx/plugins/Milex_ClaimMonitor_Dumps/`) for troubleshooting.
+1. **Prerequisites**: Ensure you have **BepInEx 5** (x64) and **`Milex_GMS1_CoreMod.dll`** installed in your game directory.
+2. **Install**: Copy `Milex_GMS1_ClaimMonitor.dll` into your `BepInEx/plugins/` folder.
+3. **Start Game**: Launch the game and load into your claim.
+4. **Quick Start**: 
+   - The Warning HUD will appear on your screen automatically whenever active machinery is running on your claim.
+   - Press **`Insert`** to open the Milex Mod Menu if you want to fine-tune alert thresholds, change window size, or customize HUD behavior.
 
 ---
 
-## 2. Documentation & Navigation
+## In-Game Controls & Usage
 
-| Topic | Description | Link |
-|---|---|---|
-| **Root Monorepo** | Overview of the full Milex mod collection | [Main README](../../../README.md) |
-| **Changelog** | Version history and release notes | [ClaimMonitor Changelog](CHANGELOG.md) |
-| **Developer Guide** | Guide for building Sub-Mods on CoreMod | [Developer Guide](../../../DEVELOPER_GUIDE.md) |
-| **AI Agent Blueprint** | Architectural blueprint for AI coding agents | [Agent Guide](../../../AGENT_MOD_GUIDE.md) |
+- **`Insert` (Mod Menu)**: Opens the central Milex configuration menu. From here you can toggle the HUD on or off, adjust warning thresholds (mat fill %, vehicle fuel %), and choose which setups to monitor.
+- **Move the HUD**: Click and drag the top title bar of the Warning HUD anywhere on your screen. Its position is saved automatically.
+- **Minimize HUD**: Click `[ - Minimize ]` on the HUD header to collapse it into an ultra-compact status badge. Click it again to expand the full alert list.
+- **Instant Mod Toggle**: You can disable the mod at any time in the menu sidebar. The HUD and vehicle fuel bars disappear immediately with zero leftover UI elements.
 
 ---
 
-## 3. Installation & Getting Started
+## Detailed Features & Functions
 
-1. Ensure **BepInEx 5** (x64) and **`Milex_GMS1_CoreMod.dll`** are installed in your game directory.
-2. Place `Milex_GMS1_ClaimMonitor.dll` into your `BepInEx/plugins/` folder.
-3. Start the game. The Warning HUD will appear automatically on your screen.
-4. Press **`Insert`** to open the Milex Mod Menu and configure alert thresholds or reposition the HUD.
+### 1. Tactical Warning HUD
+The Warning HUD operates with three severity tiers: **Critical** (Red), **Warning** (Yellow), and **Nominal** (Green). It groups your equipment into familiar in-game mining setups:
+
+- **Setup 1: Mobile Wash Plants (Tier 2)**:
+  - Monitors the **Mini Wash Plant** (including its internal diesel engine fuel) and the **Mobile Wash Plant**.
+  - Tracks Hog Pan hopper dirt level, water flow, and Miner's Moss mats.
+- **Setup 2: Stationary Plant (Tier 3 to Tier 5)**:
+  - **Large Shaker**: Alerts if power fails, the motor stops, or water pressure drops.
+  - **Trommel** (Standard, Reinforced, and Old Arnold): Alerts immediately if the drive chain snaps.
+  - **Duplex Jig & Gravel Pump**: Alerts if the jig mechanism breaks or if concentrate collection buckets are full and need replacement.
+  - **Sluice Boxes & Miner's Moss**: Warns when mats reach your chosen fill threshold (default: 90%) and triggers an urgent alarm upon overflow (100%).
+- **Setup 3: Giant Setup (Tier 6 / Orange Beast)**:
+  - Tracks the giant Orange Beast shaker, trommel, nugget traps, and extended sluice rows.
+- **Feeding Chain (Optional)**:
+  - Can be toggled on to monitor Feeder Hoppers and Conveyor Belts for earth jams, motor stoppages, and power disconnects.
+- **Vehicle & Machine Fuel**:
+  - Monitors fuel tanks across all your vehicles: Pickup, Small Excavator, Large Excavator, Wheel Loader, Dump Truck, Backhoe Loader, and Bulldozer.
+  - Triggers an early warning when fuel dips below 15% and a critical alarm when empty.
+- **Power & Water Utilities**:
+  - Monitors fuel levels in the large diesel generator and fuel tanks.
+  - Monitors water flow from small and large water pumps as well as water towers.
+
+### 2. Smart Standby & Parked Machine Protection
+The Claim Monitor understands how you work on your claim:
+- Unconnected, parked, or spare equipment (pumps without hoses, generators without cables, or unhooked mobile wash plants) is recognized as **standby** and will never trigger annoying false alarms.
+- The 10 individual switch buttons on the large generator can be excluded from wear alerts (`MonitorGeneratorSwitchButtons = false`) to keep your HUD clean.
+- During loading screens and in the main menu, background scanning and HUD rendering are fully paused to save CPU cycles.
+
+### 3. Vehicle Switcher Fuel Bar
+- Integrates a colored vertical fuel bar and percentage directly into the game's top vehicle quick-switching bar (left of each vehicle icon), allowing you to check the fuel status of your entire fleet at a glance without blocking vehicle names or distance text.
+
+### 4. Flexible HUD Display Modes
+- **Always Visible**: Shows current equipment status continuously.
+- **Warnings Only Mode (`HudOnlyShowWarnings = true`)**: Keeps the HUD completely invisible during normal operation and only displays it when equipment actually requires your attention (e.g. low fuel, full mats, or broken parts).
+- **Compact Mode**: Reduces the HUD to a small single-line status badge to maximize screen real estate.
 
 ---
 
-## 4. In-Game Usage & Hotkeys
+## Configuration Reference (`Milex_GMS1_ClaimMonitor.cfg`)
 
-- **`Insert`**: Opens the CoreMod in-game configuration menu to adjust settings and thresholds.
-- **`F3`**: Toggles the Diagnostic Inspector window for raw object and component diagnostics.
-- **HUD Drag & Drop**: Click and drag the top title bar of the Warning HUD to reposition it on your screen. Positions are saved automatically.
-- **Minimize / Expand Button**: Click `[ - Minimize ]` on the HUD to toggle between compact status and full alert lists.
+All settings can be adjusted in the in-game menu (**`Insert`**) or saved in `BepInEx/config/Milex_GMS1_ClaimMonitor.cfg`:
 
----
+### Section `[General]`
 
-## 5. Configuration Reference (`Milex_GMS1_ClaimMonitor.cfg`)
+| Key | Type | Default | Range | Description |
+|---|---|---|---|---|
+| **`ScanIntervalSeconds`** | `Float` | `3.0` | `1.0` to `30.0` | Seconds between background equipment scans. |
 
-Configuration is saved in `BepInEx/config/Milex_GMS1_ClaimMonitor.cfg`:
-
-### Section `[General]` (General Settings)
+### Section `[Setups]`
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **`ScanIntervalSeconds`** | `Single` | `3.0` | Interval in seconds between background equipment scans and warning evaluations (1.0s–30.0s). |
+| **`MonitorSetup1`** | `Boolean` | `true` | Monitor mobile wash plants (Mini Wash Plant & Mobile Wash Plant). |
+| **`MonitorSetup2`** | `Boolean` | `true` | Monitor stationary setup (Tier 3–5 Shakers, Trommels, Duplex Jigs, Gravel Pump). |
+| **`Setup2IncludeFeedingChain`** | `Boolean` | `false` | Include Feeder Hoppers and Conveyors in Setup 2 health evaluation. |
+| **`MonitorSetup3`** | `Boolean` | `true` | Monitor Setup Tier 6 (Orange Beast) wash plants and extended sluices. |
+| **`Setup3IncludeFeedingChain`** | `Boolean` | `false` | Include Feeder Hoppers and Conveyors in Orange Beast evaluation. |
+| **`MonitorGeneratorSwitchButtons`** | `Boolean` | `false` | Monitor wear on individual generator switch buttons (disabled by default to avoid clutter). |
 
-### Section `[Setups]` (Wash Plant Setups)
+### Section `[Thresholds]`
+
+| Key | Type | Default | Range | Description |
+|---|---|---|---|---|
+| **`MatWarningThreshold`** | `Float` | `90.0` | `70.0` to `98.0` | Mat fill percentage threshold to trigger an early attention warning. |
+| **`VehicleLowFuelThreshold`** | `Float` | `15.0` | `5.0` to `30.0` | Vehicle fuel percentage threshold to trigger a low fuel warning. |
+| **`ComponentWearWarningThreshold`** | `Float` | `20.0` | `5.0` to `50.0` | Durability percentage threshold to trigger a repair warning before total machine failure. |
+
+### Section `[WarningHUD]`
+
+| Key | Type | Default | Range | Description |
+|---|---|---|---|---|
+| **`HudEnabled`** | `Boolean` | `true` | - | Master toggle for the on-screen Warning HUD. |
+| **`HudOnlyShowWarnings`** | `Boolean` | `false` | - | Automatically hides the HUD when all equipment is nominal. |
+| **`HudCompactMode`** | `Boolean` | `false` | - | Displays the HUD in an ultra-compact single-line badge format. |
+| **`HudMaxWidth`** | `Float` | `340.0` | `200.0` to `800.0` | Maximum width of the HUD window in pixels. |
+| **`HudMaxHeight`** | `Float` | `420.0` | `100.0` to `1000.0` | Maximum height of the HUD window in pixels. |
+
+### Section `[Fuel]`
 
 | Key | Type | Default | Description |
 |---|---|---|---|
-| **`MonitorSetup1`** | `Boolean` | `true` | Monitor mobile wash plants (Tier 2) in the Warning HUD. |
-| **`MonitorSetup2`** | `Boolean` | `true` | Monitor stationary setup (Tier 3–T5: Shakers, Trommels, Duplex Jigs / Gravel Pumps) in the Warning HUD. |
-| **`Setup2IncludeFeedingChain`** | `Boolean` | `false` | Include hoppers and conveyors in Setup T3–T5 evaluation. |
-| **`MonitorSetup3`** | `Boolean` | `true` | Monitor Setup T6 (Orange Beast) in the Warning HUD. |
-| **`Setup3IncludeFeedingChain`** | `Boolean` | `false` | Include hoppers and conveyors in Orange Beast evaluation. |
-
-### Section `[Thresholds]` (Alert Thresholds)
-
-| Key | Type | Default | Description |
-|---|---|---|---|
-| **`MatWarningThreshold`** | `Single` | `90.0` | Mat fill percentage threshold to trigger an attention warning (70%–98%). |
-| **`VehicleLowFuelThreshold`** | `Single` | `15.0` | Vehicle fuel percentage threshold to trigger low fuel warning (5%–30%). |
-
-### Section `[WarningHUD]` (Warning HUD Settings)
-
-| Key | Type | Default | Description |
-|---|---|---|---|
-| **`HudEnabled`** | `Boolean` | `true` | Master switch for the on-screen Warning HUD. |
-| **`HudOnlyShowWarnings`** | `Boolean` | `false` | Automatically hides the HUD when all equipment is nominal. |
-| **`HudCompactMode`** | `Boolean` | `false` | Displays the HUD in an ultra-compact single line badge. |
-| **`HudPosX`** | `Single` | `20.0` | Horizontal screen position in pixels. |
-| **`HudPosY`** | `Single` | `100.0` | Vertical screen position in pixels. |
-| **`HudMaxWidth`** | `Single` | `340.0` | Maximum width of the HUD container. |
-| **`HudMaxHeight`** | `Single` | `420.0` | Maximum height of the HUD container. |
+| **`ShowFuelInVehicleSwitcher`** | `Boolean` | `true` | Displays real-time fuel status bars inside the vehicle quick-switch bar. |
 
 ---
 
-## 6. Localization Files
+## Optional Diagnostics for Modders & Troubleshooting (`F3` Overlay)
 
-Translation templates are extracted automatically to:
-- `BepInEx/plugins/Milex GMS1 Mod Localization/Milex_GMS1_ClaimMonitor_en.json`
-- `BepInEx/plugins/Milex GMS1 Mod Localization/Milex_GMS1_ClaimMonitor_de.json`
+For mod creators or technical troubleshooting, pressing **`F3`** (or `F8`) opens an optional diagnostic overlay that displays raw machinery data (exact durability values, fluid capacities, and power connections) across your claim. It also includes a button to dump physical claim data to JSON files. Regular players will never need this screen during normal gameplay.
 
 ---
 
-## 7. Development & Compilation
+## Localization Files
 
-Compile with the .NET SDK:
+Language files are managed automatically by CoreMod:
+- `BepInEx/plugins/Milex GMS1 Mod Localization/Milex_GMS1_ClaimMonitor_en.json` (English)
+- `BepInEx/plugins/Milex GMS1 Mod Localization/Milex_GMS1_ClaimMonitor_de.json` (German)
+
+---
+
+## Development & Compilation
+
+To compile this project from source:
+
 ```powershell
-dotnet build src/Mods/ClaimMonitor/Milex_GMS1_ClaimMonitor.csproj
+dotnet build GMSModding.sln
 ```
-Assemblies are deployed automatically to `BepInEx/plugins/`.
+
+---
+
+## License & Free Use (Open Source)
+
+All code in **Milex GMS1 Claim Monitor** is free and open source:
+> Anyone is free to use, copy, modify, adapt, or incorporate this code into other mods and projects, in whole or in part, without restriction.

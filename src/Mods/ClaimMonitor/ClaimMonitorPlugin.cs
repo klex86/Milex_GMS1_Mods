@@ -93,14 +93,21 @@ namespace Milex.GMS1.Mods.ClaimMonitor
         {
             Scanner?.StartScanning();
             if (Hud != null) Hud.enabled = true;
+            if (DebugOverlay != null) DebugOverlay.enabled = true;
             LogInfo(Translate("log.enabled", "Claim Monitor enabled."));
         }
 
         protected override void OnModDisabled()
         {
             Core.CorePlugin.ReleaseCursorUnlock("ClaimMonitor_DebugOverlay");
+            if (MonitorConfig?.EnableDebugGroup != null)
+            {
+                MonitorConfig.EnableDebugGroup.Value = false;
+            }
             Scanner?.StopScanning();
             if (Hud != null) Hud.enabled = false;
+            if (DebugOverlay != null) DebugOverlay.enabled = false;
+            Patches.VehicleSwitcherFuelPatch.HideAllBadges();
             LogInfo(Translate("log.disabled", "Claim Monitor disabled."));
         }
 

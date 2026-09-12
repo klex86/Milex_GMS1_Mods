@@ -1,5 +1,5 @@
 {
-  "menu.title": "MILEX GMS1 MODS",
+  "menu.title": "Milex GMS1 Mods",
   "menu.subtitle": "Gold Mining Simulator Milex Mod-Manager",
   "menu.close": "Schließen",
   "menu.switch_modern": "Modern UI",
@@ -9,29 +9,24 @@
   "menu.no_mods": "Keine Feature-Mods geladen",
   "menu.select_mod": "Wähle einen Mod aus der linken Liste aus.",
   "menu.status_footer": "Aktive Mods: {0} | Menü-Taste: {1} | Sprache: {2}",
-
   "core.section.general": "Allgemeines Verhalten",
   "config.general.pausegameonmenu.name": "Spiel bei offenem Menü pausieren",
   "config.general.pausegameonmenu.desc": "Setzt die Spielgeschwindigkeit (TimeScale) auf 0, solange das Mod-Menü geöffnet ist",
   "config.general.ignoreexternaltranslations.name": "Externe Sprachdateien ignorieren",
   "config.general.ignoreexternaltranslations.desc": "Ignoriert externe JSON-Dateien im Ort 'Milex GMS1 Mod Localization' und lädt Übersetzungen direkt aus den eingebetteten DLL-Ressourcen",
-
   "core.section.language": "Sprach-Einstellungen",
   "core.use_game_language.name": "Spiel-Sprache verwenden",
   "core.use_game_language.desc": "Verwendet automatisch die im Spiel bzw. System eingestellte Sprache",
   "core.selected_language.name": "Sprache wählen",
   "core.selected_language.desc": "Manuelle Sprachauswahl (nur aktiv, wenn 'Spiel-Sprache verwenden' abgewählt ist)",
-
   "core.section.appearance": "Darstellung & UI-Skalierung",
   "core.ui_scale.name": "UI-Skalierung (Schrift- & Fenstergröße)",
   "core.ui_scale.desc": "Vergrößert oder verkleinert das Fenster",
   "core.menu_engine.name": "Menü-Darstellungs-Engine",
   "core.menu_engine.desc": "Wähle zwischen Modernem Dashboard (uGUI Canvas) und Klassisch (IMGUI)",
-
   "core.section.controls": "Tastenbelegung",
   "config.general.menutogglekey.name": "Menü-Taste",
   "config.general.menutogglekey.desc": "Taste zum Öffnen und Schließen dieses Mod-Menüs",
-
   "dialog.missing_trans.title": "Fehlende Sprachdateien erkannt",
   "dialog.missing_trans.prompt": "Für folgende Mods existiert noch keine Übersetzung für '{0}':",
   "dialog.missing_trans.question": "Möchtest du, dass wir dir dafür Vorlagen-Dateien zur Übersetzung anlegen?",
@@ -39,18 +34,15 @@
   "dialog.missing_trans.btn_yes": "Vorlagen erstellen",
   "dialog.missing_trans.btn_no": "Nein, Standard behalten",
   "dialog.missing_trans.btn_open": "Ordner öffnen",
-
   "btn.enabled": "[v] Aktiviert",
   "btn.disabled": "[  ] Deaktiviert",
   "btn.rebind_prompt": "Taste drücken...",
   "btn.reset": "Zurücksetzen",
   "btn.rebind": "Taste: [ {0} ]",
   "ui.default_value": "(Standard: {0})",
-
   "mod.toggle.label": "Mod-Status",
   "mod.toggle.desc": "Schaltet den Mod inkl. aller Harmony-Patches sofort an oder aus. Der Zustand wird gespeichert.",
   "mod.disabled.hint": "Dieser Mod ist deaktiviert. Einstellungen sind gesperrt.",
-
   "UI_SearchPlaceholder": "Einstellungen durchsuchen...",
   "UI_Status_Disabled": "Deaktiviert",
   "UI_Tab_All": "Alle",

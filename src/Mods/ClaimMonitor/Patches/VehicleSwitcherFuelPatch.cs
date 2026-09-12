@@ -177,5 +177,24 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Patches
             _barSprite = Sprite.Create(tex, new Rect(0, 0, w, h), new Vector2(0.5f, 0.5f));
             return _barSprite;
         }
+
+        public static void HideAllBadges()
+        {
+            try
+            {
+                var panels = Object.FindObjectsOfType<VehicleInPanel>();
+                if (panels == null) return;
+                foreach (var panel in panels)
+                {
+                    if (panel == null) continue;
+                    var existing = panel.transform.Find("ClaimMonitor_FuelBadge");
+                    if (existing != null)
+                    {
+                        existing.gameObject.SetActive(false);
+                    }
+                }
+            }
+            catch { }
+        }
     }
 }

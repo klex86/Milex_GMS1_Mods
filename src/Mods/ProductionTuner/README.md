@@ -4,106 +4,159 @@
 - **Mod Name:** Milex GMS1 Production Tuner
 - **Author:** Milex
 - **Assembly File:** `Milex_GMS1_ProductionTuner.dll`
-- **Dependency:** `Milex_GMS1_CoreMod.dll`
+- **Dependencies:** `Milex_GMS1_CoreMod.dll`, `BepInEx 5.4.21+`
 
-The **Production Tuner** gives you complete control over processing speeds, throughput, hydraulic movement rates, and capacities for all equipment, tools, and vehicles in *Gold Rush: The Game*.
+The **Production Tuner** gives you total control over work speeds, material capacities, hydraulic movement rates, and logistics in *Gold Mining Simulator* (*Gold Rush: The Game*). 
 
-All 29 individual parameters are applied as direct multipliers to the game's original base values. Each setting has its own carefully tuned default multiplier and can be adjusted in precise 0.5 steps (ranging from 0.5x up to 10.0x or 20.0x).
-
----
-
-## Documentation & Navigation
-
-| Document | Link |
-|---|---|
-| **Repository Root Documentation** | [README.md](../../../README.md) |
-| **Repository Root Changelog** | [CHANGELOG.md](../../../CHANGELOG.md) |
-| **CoreMod Documentation** | [CoreMod README.md](../../CoreMod/README.md) |
-| **Production Tuner Changelog** | [ProductionTuner CHANGELOG.md](CHANGELOG.md) |
-| **Community Knowledge Compendium** | [COMMUNITY_KNOWLEDGE_COMPENDIUM.md](../../../Community%20Knowledge/COMMUNITY_KNOWLEDGE_COMPENDIUM.md) |
+Whether you want realistic mining or high-speed gameplay, you can adjust all 29 sliders live in-game with zero restarts required. Built-in smart protections ensure that faster speeds and larger capacities never cause lost gold, spilled dirt, or blown generator fuses.
 
 ---
 
-## Installation & First Steps
+## Quick Install & Getting Started
 
-1. **Requirements**: BepInEx 5 (x64) and `Milex_GMS1_CoreMod.dll` must be installed in the game directory.
-2. **Installation**: Copy `Milex_GMS1_ProductionTuner.dll` into your `BepInEx/plugins/` folder.
-3. **Launch**: Start the game. On the first launch, the mod will automatically create its configuration and localization files.
-
----
-
-## In-Game Usage
-
-1. Press **`Insert`** to open the mod menu.
-2. Select **Production Tuner** in the left sidebar.
-3. Adjust any of the 29 individual sliders independently.
-4. Each entry displays its default value (e.g. `(Default: 2.0)`).
-5. Click **`[ Reset Group ]`** to restore all settings in a section to their default multipliers.
-6. **Live Toggle**: If you disable the mod via the `[x] Active` checkbox in the menu, all machines instantly revert to their original vanilla values without requiring a game restart.
+1. **Prerequisites**: Ensure you have **BepInEx 5** (x64) and **`Milex_GMS1_CoreMod.dll`** installed in your game directory.
+2. **Install**: Copy `Milex_GMS1_ProductionTuner.dll` into your `BepInEx/plugins/` folder.
+3. **Start Game**: Launch the game normally.
+4. **Quick Start**:
+   - Press **`Insert`** in-game to open the Milex Mod Menu.
+   - Select **Production Tuner** in the left sidebar to view all categories (*Hand Tools*, *Vehicles*, *Wash Plants*, *Fine Processing*, *Trailers & Logistics*).
+   - Adjust any slider to your liking. Changes take effect immediately in the live game!
 
 ---
 
-## Configuration
+## In-Game Controls & Usage
 
-The configuration file is automatically generated on first startup:  
-`BepInEx/config/Milex_GMS1_ProductionTuner.cfg`
+- **`Insert` (Mod Menu)**: Opens the in-game dashboard where you can adjust speeds and capacities on the fly.
+- **Continuous Fine-Tuning Sliders**: Smooth, continuous sliders let you dial in precise multipliers (from 0.5x up to 10.0x, and up to 20.0x for processing equipment).
+- **Default Displays & Reset**: Every setting displays its recommended default value. Click **`[ Reset Group ]`** at the top of any section to revert only that category back to defaults.
+- **Instant Mod Toggle**: You can temporarily disable the mod via the `[x] Active` checkbox in the sidebar. All machines instantly revert to 100% original vanilla behavior without restarting the game.
+
+---
+
+## Detailed Features & Functions
+
+### 1. Hand Tools & Early Game
+- **Shovel (1-Scoop Filling)**:
+  - Fills your shovel to 100% in a single scoop instead of having to dig 5 times.
+  - Symmetrically balanced so that with default mod settings, exactly **1 shovel scoop fills 1 bucket to 100%**.
+- **Buckets & Hog Pan**:
+  - Lets you carry more dirt per bucket to speed up early-game mining.
+  - Hog Pan dirt washes through faster while water drainage stays perfectly balanced so your Miner's Moss mats won't run dry.
+- **Gold Pan Spill & Flake Protection**:
+  - When emptying a large bucket into a Gold Pan, pouring stops automatically when the pan is full. Dirt and gold flakes are never destroyed or wasted.
+
+### 2. Heavy Machinery & Vehicles
+- **Small & Large Excavators**:
+  - Independent hydraulic speed sliders for the **Boom/Arm**, **Turret Rotation**, and **Bucket Tilt/Curl** give you responsive, fluid handling without jerky vehicle tipping.
+  - Increased bucket dirt capacity lets you move paydirt much faster.
+- **Wheel Loader**:
+  - Increased front bucket capacity with an automatic **hydraulic lifting boost**, allowing heavy loads to lift effortlessly without bogging down the hydraulics or rolling the loader forward.
+- **Backhoe Loader & Dump Truck**:
+  - Faster bucket loading and larger load capacities.
+  - Expanded Dump Truck dump bed capacity so you can transport more paydirt per haul.
+- **Heavy Conveyor Belts (Frankenstein & Cordylus)**:
+  - Independent sliders for both conveyor systems: one for dirt capacity and one for transport speed.
+
+### 3. Wash Plants, Sluices & Mats
+- **Feeder Hoppers & Conveyor Elevators**:
+  - Larger hopper capacities and faster conveyor bucket throughput for continuous feeding.
+- **Shakers & Trommels**:
+  - Increased gravel throughput and dirt washing speeds across all stationary plant tiers.
+- **Sluice Boxes & Miner's Moss**:
+  - Multiplies the gold-holding capacity of Miner's Moss mats so you can run your wash plants longer between clean-ups.
+- **Resource Neutrality (Safe Electricity & Water)**:
+  - Higher throughput does not increase power or water demand. Water pumps and diesel generators run at normal baseline load without blown fuses or pressure drops.
+
+### 4. Fine Processing Equipment
+- **Gold Nuggetator**: Faster washing speed to quickly separate nuggets from paydirt.
+- **Magnetite Separator**: Accelerated separation speed and enlarged magnetite hopper capacity.
+- **Wave Table**: Faster shaking speed and increased concentrate capacity.
+
+### 5. Fuel Infrastructure & Logistics
+- **Mobile Fuel Trailer**:
+  - Significantly enlarged trailer fuel tank capacity and accelerated pump flow rate so field refueling is quick and easy.
+- **Large Claim Fuel Tank**:
+  - Expanded fuel storage for your main stationary claim tank so you don't run dry during large operations.
+- **Extended Fuel Hose Reach**:
+  - Drastically extends the reach of fuel hoses on both the trailer and stationary tank. You no longer need to park machinery millimeters away to refuel, and nozzles lock securely into place without snapping off.
+- **Small Equipment Protection**:
+  - Only your fuel trailer and main claim tank are enlarged. Small equipment (portable generators, small water pumps, light towers, Jerry cans) keeps standard sizes, preventing exorbitant fuel bills in town.
+
+### 6. Fast Travel & Trailer Fixes
+- **Trailer Fast Travel Auto-Reconnection**:
+  - Fixes the annoying vanilla bug where fast travel unhitches trailers and drops them 4 meters behind your pickup. Trailers now stay hitched after fast travel, and you can still manually detach them at the hitch lever whenever you want.
+- **Fast Travel Tire Protection**:
+  - Fixes the vanilla bug where pickup or trailer tires blow out or break when landing after fast travel. Landing impacts are safely absorbed while normal driving wear remains completely untouched.
+
+### 7. Smart Container Sizing (`AutoScaleDependentInputs`)
+- When enabled, increasing your bucket size automatically keeps downstream processing equipment (Hog Pan, Wave Table, Magnetite Separator, Magnetite Trailer) at least as large as the bucket.
+- The bucket slider is dynamically capped at the maximum allowed size of dependent equipment, making dirt overflow or material loss impossible.
+
+---
+
+## Configuration Reference (`Milex_GMS1_ProductionTuner.cfg`)
+
+All settings are configured via the in-game menu (**`Insert`**) or saved in `BepInEx/config/Milex_GMS1_ProductionTuner.cfg`:
 
 ### Section `[General]`
 
-| Key | Default | Description |
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **`AutoScaleDependentInputs`** | `Boolean` | `true` | Smart Container Sizing: Automatically keeps downstream equipment at least as large as the bucket to prevent overflow. |
+
+### Multiplier Defaults & Ranges
+
+All multipliers use smooth continuous sliders. Standard machinery ranges from **0.5x to 10.0x**, while processing equipment offers an extended range up to **20.0x**.
+
+| Section | Target Equipment & Multipliers | Default |
 |---|---|---|
-| `AutoScaleDependentInputs` | `true` | Cascade Protection: Automatically keeps dependent downstream containers (hog pan, wave table, magnetite separator, trailers) at least as large as the bucket multiplier to prevent material overflow. |
-
-### Multiplier Groups
-
-All sliders operate in **0.5 increments**. Standard components range from **0.5x to 10.0x**. Dependent container capacities (hog pan, magnetite separator, wave table, magnetite trailer) offer an extended range of **0.5x to 20.0x** to provide ample buffer capacity when emptying large buckets repeatedly.
-
-| Section | Included Components & Default Multipliers |
-|---|---|
-| `[Group1_HandTools]` | Shovel Scoop Capacity (2.0x), Bucket Capacity (2.0x), Hog Pan Capacity (2.0x), Mobile Wash Plant Speed (3.0x), Mobile Wash Plant Capacity (2.0x) |
-| `[Group2_Vehicles]` | Excavator Bucket Capacity (3.0x), Excavator Arm Speed (2.0x), Excavator Turret Rotation Speed (2.0x), Excavator Bucket Tilt Speed (1.0x), Wheel Loader Loading Speed (3.0x), Backhoe Loader Loading Speed (3.0x), Dump Truck Load Capacity (3.0x), Frankenstein Conveyor Capacity (2.0x), Frankenstein Conveyor Speed (2.0x), Cordylus Conveyor Capacity (2.0x), Cordylus Conveyor Speed (2.0x) |
-| `[Group3_WashPlantModules]` | Feeder Hopper Capacity (2.0x), Conveyor Bucket Capacity (2.0x), Wash Plant Buffer Capacity (2.0x), Wash Plant Processing Speed (2.0x), Sluice Box Capacity (2.0x), Miner's Moss Mat Capacity (2.0x) |
-| `[Group4_FineProcessing]` | Gold Nuggetator Speed (2.0x), Magnetite Separator Speed (2.0x), Magnetite Separator Capacity (2.0x), Wave Table Speed (3.0x), Wave Table Capacity (3.0x) |
-| `[Group5_Trailers]` | Magnetite Trailer Capacity (2.0x), Fuel Trailer Capacity (3.0x), Stationary Fuel Tanks & Diesel Generators (2.0x), Fuel Hose Reach (2.0x) |
-
-### Cascade Protection & Bucket Cap (`AutoScaleDependentInputs = true`)
-
-- **Automatic Synchronization**: If you increase the bucket capacity, downstream processing containers (hog pan, magnetite separator, wave table, magnetite trailer) are dynamically synchronized to at least the same value in real time.
-- **Dynamic Bucket Ceiling**: The bucket multiplier is capped at the maximum allowed value of dependent inputs, ensuring the bucket can never exceed what downstream stations are capable of receiving.
-
-### Resource Neutrality (Water, Fuel, Electricity)
-
-- **Hog Pan Water Protection**: Water drainage in the hog pan is clamped to the vanilla base rate. Even with 4x or 10x dirt capacity, water drains at normal vanilla speed without drying out mats.
-- **Pump & Generator Stability**: Wash plants and electric equipment do not request inflated wattage or water flow. Existing generators and pumps run stably without circuit breaker trips or pressure loss.
-- **Hydraulic Torque Scaling**: When wheel loader bucket capacity is enlarged, lifting cylinder torque (`AnimatedJoint.MaxTorque`) is automatically boosted to effortlessly lift full loads.
-
-### Logistics & Fast Travel Enhancements
-
-- **Trailer Fast Travel Auto-Reconnection**:
-  - In vanilla *Gold Rush*, fast-traveling in a pickup forcibly disconnects any hitched trailer, dropping it uncoupled 4 meters behind the vehicle at the destination.
-  - Production Tuner seamlessly tracks coupled trailers during map travel and automatically re-hitches the trailer to the pickup once the destination streaming completes.
-  - Properly restores the trailer hitch lever and interaction state so the player can walk up to the hitch and manually uncouple the trailer at any time.
-- **Teleport Landing Wheel Shock Protection**:
-  - In vanilla, vehicles and trailers dropping onto the terrain upon teleportation trigger extreme momentary suspension compression (`> 1.3x`). The game code falsely interprets this shock as high-speed pothole collisions (`DrivingThroughHoles`), instantly damaging or destroying wheels.
-  - Production Tuner provides a 4-second landing grace period after fast travel that suppresses false suspension shock damage. Genuine wear and tear from potholes during normal road and off-road driving remains fully active once the vehicle settles.
+| **`[Group1_HandTools]`** | Shovel Scoop Capacity | `6.0x` |
+| | Bucket Capacity | `2.0x` |
+| | Hog Pan Dirt Capacity | `6.6x` |
+| | Mobile Wash Plant Speed | `3.0x` |
+| | Mobile Wash Plant Capacity | `2.0x` |
+| **`[Group2_Vehicles]`** | Small Excavator Bucket Capacity | `3.0x` |
+| | Excavator Arm / Boom Speed | `2.0x` |
+| | Excavator Turret Rotation Speed | `2.0x` |
+| | Excavator Bucket Tilt / Curl Speed | `1.0x` |
+| | Wheel Loader Loading Capacity | `3.0x` |
+| | Backhoe Loader Loading Capacity | `3.0x` |
+| | Dump Truck Bed Capacity | `3.0x` |
+| | Frankenstein Heavy Conveyor Capacity | `2.0x` |
+| | Frankenstein Heavy Conveyor Speed | `2.0x` |
+| | Cordylus Heavy Conveyor Capacity | `2.0x` |
+| | Cordylus Heavy Conveyor Speed | `2.0x` |
+| **`[Group3_WashPlantModules]`** | Feeder Hopper Capacity | `2.0x` |
+| | Conveyor Elevator Bucket Capacity | `2.0x` |
+| | Wash Plant Buffer Capacity | `2.0x` |
+| | Wash Plant Processing Speed | `2.0x` |
+| | Sluice Box Earth Capacity | `2.0x` |
+| | Miner's Moss Mat Gold Capacity | `2.0x` |
+| **`[Group4_FineProcessing]`** | Gold Nuggetator Washing Speed | `2.0x` |
+| | Magnetite Separator Processing Speed | `2.0x` |
+| | Magnetite Separator Earth Capacity | `4.9x` |
+| | Wave Table Shaking Speed | `3.0x` |
+| | Wave Table Concentrate Capacity | `4.9x` |
+| **`[Group5_Trailers]`** | Magnetite Trailer Earth Capacity | `2.0x` |
+| | Mobile Fuel Trailer Capacity | `3.0x` |
+| | Stationary Claim Fuel Tank Capacity | `2.0x` |
+| | Fuel Hose Reach & Joint Strength | `2.0x` |
 
 ---
 
 ## Localization Files
 
-The mod features full localization support handled by CoreMod:
-
-- **Directory:** `BepInEx/plugins/Milex GMS1 Mod Localization/`
-- **Files:** `Milex_GMS1_ProductionTuner_en.json` and `Milex_GMS1_ProductionTuner_de.json`
-- Missing language templates can be generated directly via the in-game CoreMod menu.
+Translations are managed automatically by CoreMod:
+- `BepInEx/plugins/Milex GMS1 Mod Localization/Milex_GMS1_ProductionTuner_en.json` (English)
+- `BepInEx/plugins/Milex GMS1 Mod Localization/Milex_GMS1_ProductionTuner_de.json` (German)
 
 ---
 
 ## Development & Compilation
 
-To compile all projects in the solution, use the standard .NET CLI:
+To compile this project from source:
 
-```bash
+```powershell
 dotnet build GMSModding.sln
 ```
 
@@ -111,29 +164,16 @@ dotnet build GMSModding.sln
 
 ## Acknowledgements & Credits
 
-A major portion of reverse engineering insights, component mappings, and architectural techniques in this mod builds upon pioneering work from the Gold Rush modding community. Sincere thanks and credits go to the following authors and their projects:
-
-- **stregkoden**:
-  - *Better_Conveyor*: Component mappings for `ConveyorGround.MaxDirt` and `ConveyorElevator.BucketCapacity`.
-  - *Better_FEL*: Discovery of hydraulic torque demands (`AnimatedJoint.MaxTorque`) and steering assist for wheel loaders (`Ladowarka`).
-  - *Better_FuelTrailer*: Identification of fuel trailers via `FuelStationController` and proportional refueling flow rates.
-  - *Better_Nuggetator*: Analysis of `CleanigDirtSpeed` throughput rates.
-  - *HogPan_Pack*: Discovery of `MobileWashplant` and `MiniWashplant` classes, as well as hog pan water consumption mechanics.
-- **DeepCore / Jonathan**:
-  - *Bigger Shovel*: Precise mathematical $\sqrt{M}$ scaling of shovel digging edges (`_bladeSizex`, `_bladeSizez`) and base value caching patterns.
-  - *Smart Buckets*: In-depth analysis of `Bucket` internals (`UpdatePlaneAndMass`, `MudVolume`, material tints).
-- **FedeRama**:
-  - *GMS.WaveTableCapacity*: Identification of `WaveTable.MaxGroundVolume`.
-- **DSS**:
-  - *DSS PickupSnap*: Discovery of `TrailerHook.Instances`, native trigger coupling state (`PickupCanConnect`), hitch position alignment (`HookPosition`), and dual-purpose trailer coupling toggle (`trailer.ConnectToPickup()`).
-- **GMS Community Modders**:
-  - *Increased Capacity And Speed* & *IncreasedCapacity*: Foundational work on `MagnetiteSeparator`, `DumpTruck`, `OrangeBeastFilter`, and reciprocal volume conservation (`_invmaxShovelVolume`).
+Sincere thanks to the pioneers of the Gold Rush modding community whose reverse-engineering insights helped inspire this project:
+- **stregkoden**: *Better_Conveyor*, *Better_FEL*, *Better_FuelTrailer*, *Better_Nuggetator*, and *HogPan_Pack*.
+- **DeepCore / Jonathan**: *Bigger Shovel* and *Smart Buckets*.
+- **FedeRama**: *GMS.WaveTableCapacity*.
+- **DSS**: *DSS PickupSnap* (trailer hitching and trigger coupling insights).
+- **GMS Community Modders**: Foundations for `MagnetiteSeparator`, `DumpTruck`, and volume conservation.
 
 ---
 
-## License & Free Use (Open Source / Public Domain)
+## License & Free Use (Open Source)
 
-All code in **Milex GMS1 Production Tuner** is released under an open-source license inspired by MIT and The Unlicense:
-
-> **Free Use Notice:**  
-> Anyone is free to use, copy, modify, merge, publish, distribute, or incorporate this code into other mods and projects, in whole or in part, without restriction or obligation. A brief attribution or mention in your project's credits is appreciated.
+All code in **Milex GMS1 Production Tuner** is free and open source:
+> Anyone is free to use, copy, modify, adapt, or incorporate this code into other mods and projects, in whole or in part, without restriction.

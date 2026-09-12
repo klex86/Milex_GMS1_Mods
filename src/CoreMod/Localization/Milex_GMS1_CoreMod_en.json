@@ -1,5 +1,5 @@
 {
-  "menu.title": "MILEX GMS1 MODS",
+  "menu.title": "Milex GMS1 Mods",
   "menu.subtitle": "Gold Mining Simulator Milex Mod-Manager",
   "menu.close": "Close",
   "menu.switch_modern": "Modern UI",
@@ -9,29 +9,24 @@
   "menu.no_mods": "No feature mods loaded",
   "menu.select_mod": "Select a mod from the left sidebar.",
   "menu.status_footer": "Active Mods: {0} | Menu Key: {1} | Language: {2}",
-
   "core.section.general": "General Behavior",
   "config.general.pausegameonmenu.name": "Pause game world when menu is open",
   "config.general.pausegameonmenu.desc": "Sets game time scale to 0 while the mod menu is open",
   "config.general.ignoreexternaltranslations.name": "Ignore External Translation Files",
   "config.general.ignoreexternaltranslations.desc": "Bypasses external JSON files in 'Milex GMS1 Mod Localization' and loads translations directly from embedded DLL resources",
-
   "core.section.language": "Language Settings",
   "core.use_game_language.name": "Use Game Language",
   "core.use_game_language.desc": "Automatically detect language from game settings",
   "core.selected_language.name": "Select Language",
   "core.selected_language.desc": "Override language manually (available when 'Use Game Language' is disabled)",
-
   "core.section.appearance": "Appearance & UI Scaling",
   "core.ui_scale.name": "UI Scale (Font & Window Size)",
   "core.ui_scale.desc": "Adjust interface size",
   "core.menu_engine.name": "Menu Interface Engine",
   "core.menu_engine.desc": "Choose between Modern Dashboard (uGUI Canvas) and Classic (IMGUI)",
-
   "core.section.controls": "Hotkeys & Controls",
   "config.general.menutogglekey.name": "Menu Toggle Key",
   "config.general.menutogglekey.desc": "Key to open and close this mod management menu",
-
   "dialog.missing_trans.title": "Missing Language Files Detected",
   "dialog.missing_trans.prompt": "The following mods do not have a translation file for '{0}' yet:",
   "dialog.missing_trans.question": "Would you like to generate editable translation template files for them now?",
@@ -39,18 +34,15 @@
   "dialog.missing_trans.btn_yes": "Create Templates",
   "dialog.missing_trans.btn_no": "No, keep defaults",
   "dialog.missing_trans.btn_open": "Open Folder",
-
   "btn.enabled": "[v] Enabled",
   "btn.disabled": "[  ] Disabled",
   "btn.rebind_prompt": "Press a key...",
   "btn.reset": "Reset",
   "btn.rebind": "Key: [ {0} ]",
   "ui.default_value": "(Default: {0})",
-
   "mod.toggle.label": "Mod Status",
   "mod.toggle.desc": "Toggles the mod including all Harmony patches instantly. State is persisted.",
   "mod.disabled.hint": "This mod is disabled. Settings are locked.",
-
   "UI_SearchPlaceholder": "Search settings...",
   "UI_Status_Disabled": "Disabled",
   "UI_Tab_All": "All",
