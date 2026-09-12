@@ -5,12 +5,13 @@ using Milex.GMS1.Mods.ProductionTuner.Helpers;
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
     /// <summary>
-    /// Scales dirt capacity for washplant sluice boxes using pristine vanilla constant (0.005f) from Assembly-CSharp.
+    /// Scales dirt capacity for washplant sluice box nugget trap grates using verified vanilla baseline (0.007f).
+    /// Synchronized with the T3-T5 wash plant setup multiplier.
     /// Excludes Orange Beast components and prevents multi-instance desynchronization.
     /// </summary>
     public static class SluiceBoxPatch
     {
-        public const float VanillaMaxFill = 0.005f;
+        public const float VanillaMaxFill = 0.007f;
 
         private static readonly Dictionary<int, GoldDigger.WashPlantSluiceBoxDirt> Tracked =
             new Dictionary<int, GoldDigger.WashPlantSluiceBoxDirt>();
@@ -30,7 +31,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
                 int id = __instance.GetInstanceID();
                 Tracked[id] = __instance;
 
-                float multiplier = ProductionTunerPlugin.Service?.SluiceboxCapacityMultiplier ?? 1f;
+                float multiplier = ProductionTunerPlugin.Service?.WashplantT3T5SetupCapacityMultiplier ?? 1f;
                 __instance.MaxFill = VanillaMaxFill * multiplier;
             }
         }
@@ -49,7 +50,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
                 int id = __instance.GetInstanceID();
                 Tracked[id] = __instance;
 
-                float multiplier = ProductionTunerPlugin.Service?.SluiceboxCapacityMultiplier ?? 1f;
+                float multiplier = ProductionTunerPlugin.Service?.WashplantT3T5SetupCapacityMultiplier ?? 1f;
                 if (multiplier != _lastMultiplier)
                 {
                     _lastMultiplier = multiplier;

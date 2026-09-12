@@ -73,6 +73,8 @@ namespace Milex.GMS1.Mods.ProductionTuner
 
         public static void RestoreAllVanillaValues()
         {
+            WashPlantGoldCounterPatch.RestoreVanilla();
+            OrangeBeastGoldCounterPatch.RestoreVanilla();
             MinersMossPatch.RestoreVanilla();
             SluiceBoxPatch.RestoreVanilla();
             WashPlantShakerPatch.RestoreVanilla();
@@ -97,6 +99,8 @@ namespace Milex.GMS1.Mods.ProductionTuner
         public static void ResetAllPatchCaches()
         {
             RestoreAllVanillaValues();
+            WashPlantGoldCounterPatch.Reset();
+            OrangeBeastGoldCounterPatch.Reset();
             MinersMossPatch.Reset();
             SluiceBoxPatch.Reset();
             WashPlantShakerPatch.Reset();

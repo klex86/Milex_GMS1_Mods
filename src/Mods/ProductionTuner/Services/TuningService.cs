@@ -72,10 +72,13 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         /// <summary>Applies to all wash plants (Derocker, Glacier Creek, etc.).</summary>
         public float GetWashplantSpeed() => _cfg.Washplant_Speed.Value;
 
-        /// <summary>Applies to all sluice boxes.</summary>
-        public float GetSluiceboxCapacity() => _cfg.Sluicebox_Capacity.Value;
+        public float GetWashplantT3T5SetupCapacity() => _cfg.Washplant_T3T5_SetupCapacity.Value;
 
-        public float GetMinersMossCapacity() => _cfg.MinersMoss_Capacity.Value;
+        public float GetWashplantT6OrangeBeastCapacity() => _cfg.Washplant_T6_OrangeBeastCapacity.Value;
+
+        public float GetSluiceboxCapacity() => _cfg.Washplant_T3T5_SetupCapacity.Value;
+
+        public float GetMinersMossCapacity() => _cfg.Washplant_T3T5_SetupCapacity.Value;
 
         // ===========================================================
         // GROUP 4 – Fine Processing
@@ -127,8 +130,10 @@ namespace Milex.GMS1.Mods.ProductionTuner.Services
         public float ConveyorBucketCapacityMultiplier => GetConveyorBucketCapacity();
         public float WashplantCapacityMultiplier => GetWashplantCapacity();
         public float WashplantSpeedMultiplier => GetWashplantSpeed();
-        public float SluiceboxCapacityMultiplier => GetSluiceboxCapacity();
-        public float MinersMossCapacityMultiplier => GetMinersMossCapacity();
+        public float WashplantT3T5SetupCapacityMultiplier => GetWashplantT3T5SetupCapacity();
+        public float WashplantT6OrangeBeastCapacityMultiplier => GetWashplantT6OrangeBeastCapacity();
+        public float SluiceboxCapacityMultiplier => GetWashplantT3T5SetupCapacity();
+        public float MinersMossCapacityMultiplier => GetWashplantT3T5SetupCapacity();
         public float NuggetatorSpeedMultiplier => GetNuggetatorSpeed();
         public float MagnetiteSeparatorSpeedMultiplier => GetMagnetiteSeparatorSpeed();
         public float MagnetiteSeparatorCapacityMultiplier => GetMagnetiteSeparatorCapacity();

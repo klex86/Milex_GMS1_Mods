@@ -3,6 +3,35 @@
 All notable changes to this mod are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.12] – 2026-09-12
+
+### Added: Synchronized Setup-Wide Wash Plant Scaling & Baseline Harmonization
+
+- **Synchronized T3–T5 Wash Plant Scaling (`WashPlantGoldCounterPatch`, `MinersMossPatch`, `SluiceBoxPatch`)**:
+  - Resolved component fill desynchronization across stationary wash plants (Tier 3 Glacier Creek, Tier 4 Derocker, Tier 5 setup) where Miner's Moss mats, Sluice Box nugget grates, Duplex Jig buckets, and tailing Hog Pans filled at wildly differing rates (e.g. 2% on moss vs 14% on jig buckets and hog pan).
+  - *Root Cause Analysis*:
+    - Vanilla distributes dirt through 4 concurrent balance equations in `WashPlantGoldCounter.CalculateRatios()`:
+      1. Sluice Miner's Moss Mats: `v0 = MinerMossMaxGroundVolume / (DirtToMossRatio / 12f)` ($12 \times 0.225\text{ m}^3$)
+      2. Sluice Nugget Trap Grates: `WashplantToSluiceCrateDirtRatio = SLUICECRATE_MAX_DIRT_VOLUME / v0` ($0.007\text{ m}^3$)
+      3. Duplex Jig Buckets: `DirtToBucketRatio = (BUCKET_MAX_CAPACITY / v0) * 2f` ($2 \times 0.030\text{ m}^3$)
+      4. Tailing Hog Pan: `DirtToHogPanRatio = HOGPAN_MATS_MAX_CAPACITY / 103f` ($0.2488\text{ m}^3$)
+    - Previous versions used an uncalibrated `0.90f` baseline for Miner's Moss instead of the authentic `0.225f` runtime baseline, inadvertently inflating moss capacity by 400% relative to other components.
+  - *Unified Synchronization*:
+    - Replaced fragmented standalone sliders with a single synchronized slider: `Washplant_T3T5_SetupCapacity` (default **`5.0x`**, range 0.5x–20.0x).
+    - `WashPlantGoldCounterPatch` hooks `WashPlantGoldCounter.CalculateRatios` to scale all 4 counter properties (`MinerMossMaxGroundVolume`, `SLUICECRATE_MAX_DIRT_VOLUME`, `BUCKET_MAX_CAPACITY`, `HOGPAN_MATS_MAX_CAPACITY`), Duplex Jig buckets (`WashplantDuplexJigBase.Bucket1/2`), and attached tailing Hog Pans in lockstep.
+    - **Fixed Vanilla Hog Pan Divisor Bug (`DirtToHogPanRatio`)**: Discovered that vanilla `CalculateRatios()` calculated `DirtToHogPanRatio = HOGPAN_MATS_MAX_CAPACITY / 103f` using a hardcoded `103f` divisor rather than `v0`. This caused the dirt flow into the Hog Pan to remain unscaled relative to the setup, making Hog Pan mats fill ~3.3x–5.5x faster than the other 3 components (e.g. 10% vs 3%). A postfix patch now harmonizes `DirtToHogPanRatio = (4f * HOGPAN_MATS_MAX_CAPACITY) / v0`, guaranteeing that Hog Pan mats fill at the exact mathematical identity `loc1 / v0` as the 12 Sluice Miner's Moss mats and Duplex Jig buckets.
+    - All connected wash plant components now fill simultaneously and reach 100% at the exact same moment with zero spill or overflow.
+- **Synchronized T6 Orange Beast Setup Multiplier (`OrangeBeastGoldCounterPatch`)**:
+  - Added dedicated setup slider `Washplant_T6_OrangeBeastCapacity` (default **`2.0x`**, range 0.5x–20.0x) for the Tier 6 Orange Beast wash plant.
+  - Scales the 20 Orange Beast Miner's Moss mats (`WASHPLANT_OBMATS_MAX_CAPACITY = 0.900f`) and the internal `OrangeBeastWashPlantGoldCounter` in sync.
+- **Handheld Tool Decoupling & Hog Pan Mat Isolation**:
+  - `BucketPatch` ignores wash plant Duplex Jig buckets (`IsJigBucket()`), ensuring manual digging buckets (`Bucket_Capacity`) scale independently.
+  - `MinersMossPatch` and `HogPanDirtBoxPatch` dynamically identify whether a Hog Pan and its mats belong to a stationary wash plant (`IsWashPlantHogPanMoss()`, `IsWashPlantHogPan()`). Standalone handheld Hog Pans and mats scale via `HogPan_Capacity`, while wash plant tailing Hog Pans and mats scale exclusively with `Washplant_T3T5_SetupCapacity`.
+- **100% Clean Vanilla Restoration**:
+  - Both `WashPlantGoldCounterPatch` and `OrangeBeastGoldCounterPatch` implement full state restoration and cache invalidation on mod disable (`SetEnabled(false)`).
+
+---
+
 ## [1.4.11] – 2026-09-12
 
 ### Added: Fast Travel Wheel Landing Shock Protection & Trailer Auto-Reconnection

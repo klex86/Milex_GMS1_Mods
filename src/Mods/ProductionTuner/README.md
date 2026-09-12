@@ -39,9 +39,10 @@ Whether you want realistic mining or high-speed gameplay, you can adjust all 29 
 - **Shovel (1-Scoop Filling)**:
   - Fills your shovel to 100% in a single scoop instead of having to dig 5 times.
   - Symmetrically balanced so that with default mod settings, exactly **1 shovel scoop fills 1 bucket to 100%**.
-- **Buckets & Hog Pan**:
+- **Buckets & Handheld Hog Pan**:
   - Lets you carry more dirt per bucket to speed up early-game mining.
   - Hog Pan dirt washes through faster while water drainage stays perfectly balanced so your Miner's Moss mats won't run dry.
+  - Handheld buckets and standalone Hog Pans are decoupled from wash plant setups; Duplex Jig buckets and attached tailing Hog Pans scale synchronously with your wash plants instead.
 - **Gold Pan Spill & Flake Protection**:
   - When emptying a large bucket into a Gold Pan, pouring stops automatically when the pan is full. Dirt and gold flakes are never destroyed or wasted.
 
@@ -62,8 +63,10 @@ Whether you want realistic mining or high-speed gameplay, you can adjust all 29 
   - Larger hopper capacities and faster conveyor bucket throughput for continuous feeding.
 - **Shakers & Trommels**:
   - Increased gravel throughput and dirt washing speeds across all stationary plant tiers.
-- **Sluice Boxes & Miner's Moss**:
-  - Multiplies the gold-holding capacity of Miner's Moss mats so you can run your wash plants longer between clean-ups.
+- **Synchronized T3–T5 Wash Plant Setup**:
+  - Single synchronized slider that scales all interconnected T3–T5 wash plant components in 100% lockstep: 12 Sluice Miner's Moss mats, Sluice Nugget Trap grates, Duplex Jig buckets, and attached tailing Hog Pan (box & mats). All stations fill concurrently and reach 100% at the exact same moment without material overflow.
+- **Synchronized T6 Orange Beast Setup**:
+  - Synchronously scales the 20 Orange Beast Miner's Moss mats and the internal gold counter of the Tier 6 wash plant setup.
 - **Resource Neutrality (Safe Electricity & Water)**:
   - Higher throughput does not increase power or water demand. Water pumps and diesel generators run at normal baseline load without blown fuses or pressure drops.
 
@@ -111,10 +114,10 @@ All multipliers use smooth continuous sliders. Standard machinery ranges from **
 | Section | Target Equipment & Multipliers | Default |
 |---|---|---|
 | **`[Group1_HandTools]`** | Shovel Scoop Capacity | `6.0x` |
-| | Bucket Capacity | `2.0x` |
-| | Hog Pan Dirt Capacity | `6.6x` |
+| | Handheld Bucket Capacity | `2.0x` |
+| | Standalone Hog Pan Dirt Capacity | `6.6x` |
 | | Mobile Wash Plant Speed | `3.0x` |
-| | Mobile Wash Plant Capacity | `2.0x` |
+| | Mobile Wash Plant Capacity | `3.0x` |
 | **`[Group2_Vehicles]`** | Small Excavator Bucket Capacity | `3.0x` |
 | | Excavator Arm / Boom Speed | `2.0x` |
 | | Excavator Turret Rotation Speed | `2.0x` |
@@ -122,25 +125,25 @@ All multipliers use smooth continuous sliders. Standard machinery ranges from **
 | | Wheel Loader Loading Capacity | `3.0x` |
 | | Backhoe Loader Loading Capacity | `3.0x` |
 | | Dump Truck Bed Capacity | `3.0x` |
-| | Frankenstein Heavy Conveyor Capacity | `2.0x` |
-| | Frankenstein Heavy Conveyor Speed | `2.0x` |
-| | Cordylus Heavy Conveyor Capacity | `2.0x` |
-| | Cordylus Heavy Conveyor Speed | `2.0x` |
-| **`[Group3_WashPlantModules]`** | Feeder Hopper Capacity | `2.0x` |
-| | Conveyor Elevator Bucket Capacity | `2.0x` |
-| | Wash Plant Buffer Capacity | `2.0x` |
-| | Wash Plant Processing Speed | `2.0x` |
-| | Sluice Box Earth Capacity | `2.0x` |
-| | Miner's Moss Mat Gold Capacity | `2.0x` |
-| **`[Group4_FineProcessing]`** | Gold Nuggetator Washing Speed | `2.0x` |
-| | Magnetite Separator Processing Speed | `2.0x` |
+| | Frankenstein Heavy Conveyor Capacity | `3.0x` |
+| | Frankenstein Heavy Conveyor Speed | `3.0x` |
+| | Cordylus Heavy Conveyor Capacity | `3.0x` |
+| | Cordylus Heavy Conveyor Speed | `3.0x` |
+| **`[Group3_WashPlantModules]`** | Feeder Hopper Capacity | `3.0x` |
+| | Conveyor Elevator Bucket Capacity | `3.0x` |
+| | Wash Plant Buffer Capacity | `3.0x` |
+| | Wash Plant Processing Speed | `3.0x` |
+| | T3–T5 Setup Capacity (Mats, Grates, Jigs, Hog Pan) | `5.0x` |
+| | T6 Orange Beast Setup Capacity | `2.0x` |
+| **`[Group4_FineProcessing]`** | Gold Nuggetator Washing Speed | `3.0x` |
+| | Magnetite Separator Processing Speed | `3.0x` |
 | | Magnetite Separator Earth Capacity | `4.9x` |
 | | Wave Table Shaking Speed | `3.0x` |
 | | Wave Table Concentrate Capacity | `4.9x` |
-| **`[Group5_Trailers]`** | Magnetite Trailer Earth Capacity | `2.0x` |
+| **`[Group5_Trailers]`** | Magnetite Trailer Earth Capacity | `3.0x` |
 | | Mobile Fuel Trailer Capacity | `3.0x` |
-| | Stationary Claim Fuel Tank Capacity | `2.0x` |
-| | Fuel Hose Reach & Joint Strength | `2.0x` |
+| | Stationary Claim Fuel Tank Capacity | `3.0x` |
+| | Fuel Hose Reach & Joint Strength | `5.0x` |
 
 ---
 

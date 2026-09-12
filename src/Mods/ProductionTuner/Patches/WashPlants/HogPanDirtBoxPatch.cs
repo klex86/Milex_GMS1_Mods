@@ -26,7 +26,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             [HarmonyPostfix]
             public static void UpdatePostfix(GoldDigger.HogPanDirtBox __instance)
             {
-                if (__instance == null) return;
+                if (__instance == null || WashPlantGoldCounterPatch.IsWashPlantHogPan(__instance)) return;
                 int id = __instance.GetInstanceID();
 
                 float multiplier = ProductionTunerPlugin.Service?.HogPanCapacityMultiplier ?? 1f;
@@ -42,7 +42,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
                     _lastMultiplier = multiplier;
                     foreach (var hogPan in Tracked.Values)
                     {
-                        if (hogPan != null)
+                        if (hogPan != null && !WashPlantGoldCounterPatch.IsWashPlantHogPan(hogPan))
                         {
                             hogPan.PlaneVolumeMax = VanillaHogPanCapacity * multiplier;
                         }

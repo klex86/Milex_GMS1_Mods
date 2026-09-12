@@ -3,6 +3,25 @@
 All notable changes and releases for this mod collection are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.8.20] - 2026-09-12
+
+### Production Tuner: Synchronized Setup-Wide Wash Plant Scaling & Baseline Harmonization
+
+- **Production Tuner v1.4.12 — Synchronized T3–T5 Wash Plant Scaling (`WashPlantGoldCounterPatch`)**:
+  - Eliminated desynchronized filling rates across Tier 3–5 stationary wash plants where Miner's Moss filled at only ~2% while Duplex Jig buckets and tailing Hog Pans sat at 14%.
+  - Corrected authentic runtime baselines for stationary Miner's Moss (`WASHPLANT_MATS_MAX_CAPACITY = 0.225f` vs prior uncalibrated `0.90f`), Sluice Box nugget trap grates (`0.007f`), Duplex Jig buckets (`0.030f`), and attached tailing Hog Pan mats (`0.2488f`).
+  - Introduced unified `Washplant_T3T5_SetupCapacity` slider (default **`5.0x`**, range 0.5x–20.0x) hooking `WashPlantGoldCounter.CalculateRatios` to scale all 4 distribution streams simultaneously.
+  - **Fixed Vanilla Hog Pan Divisor Bug (`DirtToHogPanRatio`)**: Corrected vanilla hardcoded `103f` divisor in `CalculateRatios()` to `DirtToHogPanRatio = (4f * HOGPAN_MATS_MAX_CAPACITY) / v0`, resolving the issue where Hog Pan mats grew ~3.3x–5.5x faster than other stations (e.g. 10% vs 3%) and guaranteeing 100% mathematical lockstep across all 4 stations.
+- **Production Tuner v1.4.12 — Synchronized T6 Orange Beast Setup Multiplier (`OrangeBeastGoldCounterPatch`)**:
+  - Added dedicated setup slider `Washplant_T6_OrangeBeastCapacity` (default **`2.0x`**, range 0.5x–20.0x) for the Tier 6 Orange Beast wash plant, scaling the 20 Miner's Moss mats (`WASHPLANT_OBMATS_MAX_CAPACITY = 0.900f`) and internal gold counter in lockstep.
+- **Production Tuner v1.4.12 — Handheld Tool Decoupling & Hog Pan Mat Isolation**:
+  - Handheld buckets (`Bucket_Capacity`) and standalone handheld Hog Pans (`HogPan_Capacity`) now ignore wash plant Duplex Jig buckets and attached tailing Hog Pans, giving players clean independent control over manual hand tools.
+  - `MinersMossPatch` dynamically identifies whether Hog Pan mats belong to a wash plant (`IsWashPlantHogPanMoss()`), ensuring wash plant mats scale exclusively with `Washplant_T3T5_SetupCapacity`.
+- **100% Clean Vanilla Restoration**:
+  - Comprehensive state restoration and cache invalidation ensures disabling Production Tuner instantly restores all wash plant components to authentic vanilla specs.
+
+---
+
 ## [1.8.19] - 2026-09-12
 
 ### CoreMod: Central Memory & VRAM Cleaner (FPS Stability & Anti-Leak Optimization)

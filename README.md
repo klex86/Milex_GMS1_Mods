@@ -55,7 +55,7 @@ The central management framework:
 Fine-grained speed, capacity, and logistics tuning across 29 components:
 - **Hand Tools**: 1-scoop shovel filling (1 shovel scoop fills 1 bucket to 100%), water-balanced Hog Pan, and Gold Pan spill/flake protection.
 - **Heavy Machinery**: Independent hydraulic sliders for excavator boom, turret rotation, and bucket tilt; torque-boosted Wheel Loader buckets; Backhoe Loader and Dump Truck capacity scaling.
-- **Wash Plants & Sluices**: Shakers, Trommels, Duplex Jigs, Hoppers, Conveyors, and Miner's Moss mats with gold-holding capacity multipliers and safe water/electrical consumption.
+- **Wash Plants & Sluices**: Synchronized setup multipliers for T3–T5 plants and T6 Orange Beast ensuring all connected mats, grates, jig buckets, and hog pans fill in 100% lockstep without overflow; safe water/electrical baseline load.
 - **Fine Processing**: Faster processing speeds and expanded capacities for Gold Nuggetator, Magnetite Separator, and Wave Table.
 - **Fuel Logistics**: Enlarged Mobile Fuel Trailer and stationary Claim Tank, faster pump speed, and extended fuel hose reach so you don't need to park millimeter-close.
 - **Fast Travel & Trailer Fixes**: Keeps trailers hitched after fast travel, restores the physical hitch lever, and shields tires from landing damage.

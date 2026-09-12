@@ -79,8 +79,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
         public ConfigEntry<float> ConveyorBucket_Capacity { get; private set; }
         public ConfigEntry<float> Washplant_Capacity { get; private set; }
         public ConfigEntry<float> Washplant_Speed { get; private set; }
-        public ConfigEntry<float> Sluicebox_Capacity { get; private set; }
-        public ConfigEntry<float> MinersMoss_Capacity { get; private set; }
+        public ConfigEntry<float> Washplant_T3T5_SetupCapacity { get; private set; }
+        public ConfigEntry<float> Washplant_T6_OrangeBeastCapacity { get; private set; }
 
         // ===========================================================
         // GROUP 4 – Fine Processing
@@ -166,10 +166,10 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                 "Maximum material capacity of all wash plants.");
             Washplant_Speed = BindStep("Group3_WashPlantModules", "Washplant_Speed", 3.0f,
                 "Processing speed of all wash plants.");
-            Sluicebox_Capacity = BindStep("Group3_WashPlantModules", "Sluicebox_Capacity", 3.0f,
-                "Maximum material capacity of all sluice boxes.");
-            MinersMoss_Capacity = BindStep("Group3_WashPlantModules", "MinersMoss_Capacity", 3.0f,
-                "Gold retention capacity of the miner's moss mats.");
+            Washplant_T3T5_SetupCapacity = BindStep("Group3_WashPlantModules", "Washplant_T3T5_SetupCapacity", 5.0f,
+                "Synchronized capacity multiplier for the entire T3-T5 wash plant setup (Miner's Moss, Nugget Trap, Duplex Jigs, and attached Hog Pan).", DependentCapacitySteps);
+            Washplant_T6_OrangeBeastCapacity = BindStep("Group3_WashPlantModules", "Washplant_T6_OrangeBeastCapacity", 2.0f,
+                "Synchronized capacity multiplier for the T6 Orange Beast wash plant setup.", DependentCapacitySteps);
 
             // Group 4
             Nuggetator_Speed = BindStep("Group4_FineProcessing", "Nuggetator_Speed", 3.0f,
@@ -389,8 +389,8 @@ namespace Milex.GMS1.Mods.ProductionTuner.Config
                         ConveyorBucket_Capacity.Value = (float)ConveyorBucket_Capacity.DefaultValue;
                         Washplant_Capacity.Value = (float)Washplant_Capacity.DefaultValue;
                         Washplant_Speed.Value = (float)Washplant_Speed.DefaultValue;
-                        Sluicebox_Capacity.Value = (float)Sluicebox_Capacity.DefaultValue;
-                        MinersMoss_Capacity.Value = (float)MinersMoss_Capacity.DefaultValue;
+                        Washplant_T3T5_SetupCapacity.Value = (float)Washplant_T3T5_SetupCapacity.DefaultValue;
+                        Washplant_T6_OrangeBeastCapacity.Value = (float)Washplant_T6_OrangeBeastCapacity.DefaultValue;
                         break;
                     case 4:
                         Nuggetator_Speed.Value = (float)Nuggetator_Speed.DefaultValue;

@@ -35,6 +35,14 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Tools
                 typeof(Action<GoldDigger.GoldPan>),
                 AccessTools.Method(typeof(GoldDigger.GoldPan), "UpdateFillCount"));
 
+        public static bool IsJigBucket(GoldDigger.Bucket bucket)
+        {
+            if (bucket == null) return false;
+            if (WashPlants.WashPlantGoldCounterPatch.IsWashPlantBucket(bucket)) return true;
+            if (bucket.GetComponentInParent<GoldDigger.WashplantDuplexJigBase>() != null) return true;
+            return false;
+        }
+
         // -------------------------------------------------------------------------
         // Update() Postfix — Safe initial scaling on first sight & live multiplier changes
         // -------------------------------------------------------------------------
@@ -44,7 +52,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Tools
             [HarmonyPostfix]
             public static void Postfix(GoldDigger.Bucket __instance)
             {
-                if (__instance == null) return;
+                if (__instance == null || IsJigBucket(__instance)) return;
 
                 int id = __instance.GetInstanceID();
                 float multiplier = ProductionTunerPlugin.Service?.BucketCapacityMultiplier ?? 1f;
@@ -60,7 +68,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Tools
                     _lastMultiplier = multiplier;
                     foreach (var bucket in Tracked.Values)
                     {
-                        if (bucket != null)
+                        if (bucket != null && !IsJigBucket(bucket))
                         {
                             bucket.MaxVolume = VanillaBucketCapacity * multiplier;
                         }
