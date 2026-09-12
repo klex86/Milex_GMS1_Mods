@@ -1,6 +1,6 @@
 # Milex GMS1 Claim Monitor
 
-- **Version:** `1.0.1` ([View Changelog](CHANGELOG.md))
+- **Version:** `1.0.10` ([View Changelog](CHANGELOG.md))
 - **Mod Name:** Milex GMS1 Claim Monitor
 - **Author:** Milex
 - **Assembly File:** `Milex_GMS1_ClaimMonitor.dll`

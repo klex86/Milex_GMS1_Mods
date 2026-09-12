@@ -1,6 +1,6 @@
 # Milex GMS1 Production Tuner
 
-- **Version:** `1.4.11` ([View Changelog](CHANGELOG.md))
+- **Version:** `1.4.14` ([View Changelog](CHANGELOG.md))
 - **Mod Name:** Milex GMS1 Production Tuner
 - **Author:** Milex
 - **Assembly File:** `Milex_GMS1_ProductionTuner.dll`
