@@ -3,6 +3,34 @@
 All notable changes to the `Milex GMS1 CoreMod` management framework.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.0] - 2026-09-12
+
+### Added: Central Memory & VRAM Cleaner (Anti-Leak & FPS Drop Mitigation)
+
+- **Central Memory & VRAM Cleaner (`MemoryCleanerService`)**:
+  - Implemented an asynchronous memory and asset optimization service to combat the game's progressive FPS degradation (~80 FPS drop over 60 minutes).
+  - Triggers asynchronous `Resources.UnloadUnusedAssets()` combined with a 2-stage `GC.Collect()` sweep to purge stale textures, meshes, audio clips, and Mono heap fragmentation.
+- **Smart Imperceptible Triggers**:
+  - **Fast Travel (`MapMenu.FastTravel`)**: Automatically triggers cleanup behind the black loading screen (`MenuLoading`).
+  - **Save Game (`CheckpointManager.QuickSave` & `Autosave`)**: Purges unreferenced memory during saving.
+  - **Computer / Laptop Access (`LaptopManager.OnEnable`)**: Cleans memory when the player opens the in-game laptop/tablet.
+  - **Mod Menu Open (`CorePlugin.ToggleMenu`)**: Cleans memory while gameplay is paused or menu is displayed.
+- **Manual Cleanup Button & Live Telemetry**:
+  - Added "Clean Memory & VRAM Now" action button in both Modern Canvas Dashboard and Classic IMGUI Menu under `[Performance]`.
+  - Displays real-time status: time elapsed since last clean, trigger source, and megabytes of RAM freed.
+  - Bypasses cooldown when clicked manually.
+- **Cooldown Guard**:
+  - Configurable cooldown timer (`MemoryCleanCooldownSeconds`, default 60s) prevents redundant GC or asset unload sweeps during rapid quicksaving or laptop toggling.
+- **New Configuration Options**:
+  - `[Performance] EnableMemoryCleaner` (default: `true`)
+  - `[Performance] MemoryCleanCooldownSeconds` (default: `60.0`)
+  - `[Performance] CleanOnFastTravel` (default: `true`)
+  - `[Performance] CleanOnSave` (default: `true`)
+  - `[Performance] CleanOnLaptop` (default: `true`)
+  - `[Performance] CleanOnMenuOpen` (default: `true`)
+
+---
+
 ## [1.3.5] - 2026-09-11
 
 ### Added & Fixed: Real-Time Pause Diagnostics, Auto-Recovery & Emergency Unpause

@@ -37,6 +37,7 @@ Direct links to documentation, guides, and changelogs for all repository compone
 - **Enable/Disable Mods Live**: In the *Loaded Mods* sidebar, toggle any mod on or off during live gameplay without restarting.
 - **Adjust Configuration**: Keybindings, sliders, and options can be configured directly inside the menu.
 - **Switch Languages**: In the *General* tab, select any installed language or keep automatic game-language synchronization enabled.
+- **Central Memory & VRAM Cleaner**: Automatically purges stale textures, meshes, and fragmented heap memory during Fast Travel, saving, laptop access, and menu pauses to eliminate the progressive ~80 FPS degradation over time. Includes a manual *"Clean Memory & VRAM"* button with live status reporting.
 
 ---
 

@@ -3,6 +3,25 @@
 All notable changes and releases for this mod collection are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.8.19] - 2026-09-12
+
+### CoreMod: Central Memory & VRAM Cleaner (FPS Stability & Anti-Leak Optimization)
+
+- **CoreMod v1.4.0 — Central Memory & VRAM Optimization Service (`MemoryCleanerService`)**:
+  - Addressed the long-standing vanilla memory bloat and progressive FPS degradation (~80 FPS drop over 60 minutes of runtime).
+  - Automatically runs an asynchronous garbage collection and asset unloading pass (`Resources.UnloadUnusedAssets()` + `GC.Collect()`) to purge stale textures, meshes, and fragmented heap memory.
+- **Player-Imperceptible Event Triggers (Zero-Stutter Background Sweeps)**:
+  - **Fast Travel (`MapMenu.FastTravel`)**: Cleans memory behind the loading screen (`MenuLoading`).
+  - **Save Game (`CheckpointManager.QuickSave` & `Autosave`)**: Cleans memory when saving the game.
+  - **Laptop Access (`LaptopManager.OnEnable`)**: Cleans memory when the player accesses the laptop or tablet computer in-game.
+  - **Mod Menu Open (`CorePlugin.ToggleMenu`)**: Cleans memory while browsing settings.
+- **Manual "Clean Memory & VRAM Now" Button & Live Telemetry**:
+  - Added a dedicated action card in both the Modern Canvas Dashboard and Classic IMGUI Menu under `[Performance]`.
+  - Displays real-time status: time elapsed since last sweep, trigger source, and megabytes of RAM freed.
+  - Cooldown guard (`MemoryCleanCooldownSeconds`, default 60s) prevents stutter from rapid player triggers while allowing manual button override at any time.
+
+---
+
 ## [1.8.18] - 2026-09-12
 
 ### Production Tuner: Fast Travel Wheel Landing Shock Protection & Trailer Auto-Reconnection

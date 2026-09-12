@@ -1,11 +1,11 @@
 # Milex GMS1 CoreMod
 
-- **Version:** `1.3.0` ([View Changelog](CHANGELOG.md))
+- **Version:** `1.4.0` ([View Changelog](CHANGELOG.md))
 - **Mod Name:** Milex GMS1 CoreMod
 - **Author:** Milex
 - **Assembly File:** `Milex_GMS1_CoreMod.dll`
 
-The **CoreMod** is the central management framework for all Milex mods in *Gold Mining Simulator*. It provides dual-engine in-game menus (Modern Canvas Dashboard & Classic IMGUI), localization lifecycle management, input locking, and base mod state persistence.
+The **CoreMod** is the central management framework for all Milex mods in *Gold Mining Simulator*. It provides dual-engine in-game menus (Modern Canvas Dashboard & Classic IMGUI), localization lifecycle management, input locking, base mod state persistence, and real-time performance optimization (Memory & VRAM Cleaner).
 
 ---
 
@@ -24,15 +24,25 @@ The **CoreMod** is the central management framework for all Milex mods in *Gold 
    - **Classic IMGUI**: Lightweight, rock-solid fallback menu.
    - Seamlessly switch between engines live in-game at any time.
 
-2. **Live Mod Lifecycle Management**:
+2. **Central Memory & VRAM Cleaner (FPS Drop Mitigation)**:
+   - Fights the game's progressive FPS degradation (~80 FPS drop over 60 minutes) by purging unreferenced Unity assets (`Resources.UnloadUnusedAssets()`) and garbage collecting the Mono heap (`GC.Collect()`).
+   - Automatically executes during player-imperceptible moments:
+     - **Fast Travel**: Purges memory behind the black loading screen.
+     - **Saving**: Cleans RAM when quicksaving (F5) or autosaving.
+     - **Laptop Access**: Cleans RAM when opening the computer/tablet in-game.
+     - **Mod Menu Open**: Cleans RAM while navigating settings or paused.
+   - Includes a manual **"Clean Memory & VRAM Now"** button with live status reporting (time elapsed & MB freed).
+   - Cooldown protection (default: 60s) guarantees no gameplay stutter from rapid user actions.
+
+3. **Live Mod Lifecycle Management**:
    - Toggle individual extension mods on or off at any time. Changes take effect immediately without requiring a game restart.
 
-3. **Localization Engine**:
+4. **Localization Engine**:
    - Automatic game-language synchronization.
    - Central management of all JSON language files in `BepInEx/plugins/Milex GMS1 Mod Localization/`.
    - Developer option *"Ignore External Localization Files"* to test embedded DLL resources directly.
 
-4. **Reliable Input & Camera Locking**:
+5. **Reliable Input & Camera Locking**:
    - Freezes player rotation, camera movements, and tool switching while the menu is open.
 
 ---
@@ -48,6 +58,17 @@ CoreMod settings are stored in `BepInEx/config/Milex_GMS1_CoreMod.cfg`:
 | **`MenuToggleKey`** | `KeyCode` | `Insert` | Hotkey used to open and close the mod menu. |
 | **`PauseGameOnMenu`** | `Boolean` | `false` | Freezes the game world (TimeScale = 0) while the mod menu is open. |
 | **`IgnoreExternalTranslations`** | `Boolean` | `false` | Developer option: Ignores external JSON files and loads strings directly from embedded DLL resources. |
+
+### Section `[Performance]` (Memory & Asset Cleaner)
+
+| Key | Type | Default | Description |
+|---|---|---|---|
+| **`EnableMemoryCleaner`** | `Boolean` | `true` | Master switch for automatic background asset and heap purging. |
+| **`MemoryCleanCooldownSeconds`** | `Float` | `60.0` | Minimum cooldown in seconds between automatic background sweeps. |
+| **`CleanOnFastTravel`** | `Boolean` | `true` | Purges unused assets during Fast Travel loading screens. |
+| **`CleanOnSave`** | `Boolean` | `true` | Purges unused assets during quicksaving and autosaving. |
+| **`CleanOnLaptop`** | `Boolean` | `true` | Purges unused assets when accessing the laptop/tablet computer. |
+| **`CleanOnMenuOpen`** | `Boolean` | `true` | Purges unused assets when opening the Mod Menu. |
 
 ### Section `[Localization]` (Language Settings)
 

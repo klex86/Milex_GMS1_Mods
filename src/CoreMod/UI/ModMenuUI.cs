@@ -643,6 +643,49 @@ namespace Milex.GMS1.Core.UI
             DrawConfigEntryCard(CorePlugin.IgnoreExternalTranslations, CoreAssemblyName);
             GUILayout.Space(6);
 
+            // === SECTION: PERFORMANCE & MEMORY ===
+            GUILayout.Label(L("UI_Section_Performance", "Leistung & Speicherbereinigung"), _sectionHeaderStyle);
+            GUILayout.BeginVertical("box");
+            
+            string cleanerDesc;
+            if (Services.MemoryCleanerService.Instance != null && Services.MemoryCleanerService.Instance.IsCleaning)
+            {
+                cleanerDesc = L("core.cleaner.in_progress", "Bereinigung läuft gerade im Hintergrund...");
+            }
+            else if (Services.MemoryCleanerService.Instance != null && Services.MemoryCleanerService.Instance.LastCleanTime.HasValue)
+            {
+                float elapsedSec = Mathf.Max(0f, Time.realtimeSinceStartup - Services.MemoryCleanerService.Instance.LastCleanRealtime);
+                float freedMb = Services.MemoryCleanerService.Instance.LastFreedBytes / (1024f * 1024f);
+                string source = Services.MemoryCleanerService.Instance.LastTriggerSource;
+                cleanerDesc = string.Format(L("core.cleaner.last_run_info", "Zuletzt vor {0:F0}s bereinigt ({1}): {2:F1} MB freigegeben"), elapsedSec, source, freedMb);
+            }
+            else
+            {
+                cleanerDesc = L("core.cleaner.ready_desc", "Gibt ungenutzte Texturen, Meshes und RAM/VRAM sofort frei.");
+            }
+
+            GUILayout.Label(cleanerDesc, _entryDescStyle);
+            GUILayout.Space(4);
+
+            if (GUILayout.Button(L("core.clean_memory.name", "Speicher jetzt bereinigen"), _buttonStyle, GUILayout.Height(30)))
+            {
+                Services.MemoryCleanerService.Instance?.Clean(force: true, "ManualClassic");
+            }
+
+            GUILayout.EndVertical();
+            GUILayout.Space(6);
+
+            DrawConfigEntryCard(CorePlugin.EnableMemoryCleaner, CoreAssemblyName);
+            GUILayout.Space(4);
+            DrawConfigEntryCard(CorePlugin.CleanOnFastTravel, CoreAssemblyName);
+            GUILayout.Space(4);
+            DrawConfigEntryCard(CorePlugin.CleanOnSave, CoreAssemblyName);
+            GUILayout.Space(4);
+            DrawConfigEntryCard(CorePlugin.CleanOnLaptop, CoreAssemblyName);
+            GUILayout.Space(4);
+            DrawConfigEntryCard(CorePlugin.CleanOnMenuOpen, CoreAssemblyName);
+            GUILayout.Space(6);
+
             // === SECTION: HOTKEYS ===
             GUILayout.Label(L("core.section.controls", "Tastenbelegung"), _sectionHeaderStyle);
             DrawConfigEntryCard(CorePlugin.MenuToggleKey, CoreAssemblyName);

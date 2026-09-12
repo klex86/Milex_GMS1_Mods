@@ -20,7 +20,7 @@ namespace Milex.GMS1.Core
     {
         public const string PluginGuid = "com.milex.gms1.core";
         public const string PluginName = "Milex GMS1 CoreMod";
-        public const string PluginVersion = "1.3.0";
+        public const string PluginVersion = "1.4.0";
 
         public override string ModGuid => PluginGuid;
         public override string ModName => PluginName;
@@ -40,6 +40,14 @@ namespace Milex.GMS1.Core
         public static ConfigEntry<float> UIScale { get; private set; }
         public static ConfigEntry<MenuEngineType> MenuEngine { get; private set; }
 
+        // Performance & Memory Cleaner Entries
+        public static ConfigEntry<bool> EnableMemoryCleaner { get; private set; }
+        public static ConfigEntry<float> MemoryCleanCooldownSeconds { get; private set; }
+        public static ConfigEntry<bool> CleanOnFastTravel { get; private set; }
+        public static ConfigEntry<bool> CleanOnSave { get; private set; }
+        public static ConfigEntry<bool> CleanOnLaptop { get; private set; }
+        public static ConfigEntry<bool> CleanOnMenuOpen { get; private set; }
+
         public static bool IsMenuOpen { get; private set; } = false;
 
         private GameObject _uiHost;
@@ -58,6 +66,14 @@ namespace Milex.GMS1.Core
             SelectedLanguage = Config.Bind("Localization", "SelectedLanguage", "en", "Manually selected language code (only active when UseGameLanguage is false).");
             UIScale = Config.Bind("UI", "UIScale", 1.0f, "Scale factor of the mod menu interface (0.75 to 1.5 for High-DPI / 4K displays).");
             MenuEngine = Config.Bind("UI", "MenuEngine", MenuEngineType.Modern, "Interface engine style: Modern (uGUI Canvas Dashboard) or Classic (IMGUI).");
+
+            // Bind Performance Settings
+            EnableMemoryCleaner = Config.Bind("Performance", "EnableMemoryCleaner", true, "Periodically purges unused assets (Resources.UnloadUnusedAssets) and triggers GC during player-imperceptible moments to fight FPS loss.");
+            MemoryCleanCooldownSeconds = Config.Bind("Performance", "MemoryCleanCooldownSeconds", 60.0f, "Minimum cooldown in seconds between automatic background memory cleans to prevent stutter.");
+            CleanOnFastTravel = Config.Bind("Performance", "CleanOnFastTravel", true, "Automatically purge unused assets and collect memory during Fast Travel loading screens.");
+            CleanOnSave = Config.Bind("Performance", "CleanOnSave", true, "Automatically purge unused assets and collect memory when saving (Quicksave / Autosave).");
+            CleanOnLaptop = Config.Bind("Performance", "CleanOnLaptop", true, "Automatically purge unused assets and collect memory when opening the laptop / tablet computer.");
+            CleanOnMenuOpen = Config.Bind("Performance", "CleanOnMenuOpen", true, "Automatically purge unused assets and collect memory when opening the Mod Menu.");
 
             IgnoreExternalTranslations.SettingChanged += (s, e) => LocalizationManager.ReloadAll();
 
@@ -79,6 +95,9 @@ namespace Milex.GMS1.Core
             SceneManager.sceneLoaded += OnSceneLoaded;
 
             base.Awake();
+
+            // Initialize optimization service
+            Services.MemoryCleanerService.Initialize();
 
             // Attach Menu Components to persistent UI Host
             _uiHost = new GameObject("Milex_GMS1_Core_UIHost", typeof(RectTransform));
@@ -464,6 +483,11 @@ namespace Milex.GMS1.Core
                 if (PauseGameOnMenu != null && PauseGameOnMenu.Value)
                 {
                     ApplyGamePause(true);
+                }
+
+                if (CleanOnMenuOpen != null && CleanOnMenuOpen.Value)
+                {
+                    Services.MemoryCleanerService.Instance?.Clean(force: false, triggerSource: "MenuOpen");
                 }
 
                 // Show active UI renderer

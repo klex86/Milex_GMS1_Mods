@@ -779,12 +779,51 @@ namespace Milex.GMS1.Core.UI.Modern
             // General Section
             CreateCategoryHeader(L("UI_Section_General", "Allgemeine Einstellungen"), "General");
             CreateToggleCard("General", L("UI_PauseGameOnMenu", "Pause Game in Menu"), L("UI_PauseGameOnMenu_Desc", "Freezes game time while menu is open."), CorePlugin.PauseGameOnMenu.Value, (val) => CorePlugin.PauseGameOnMenu.Value = val);
+            CreateActionCard("General", L("core.force_resume.name", "Spiel fortsetzen (Notfall-Unpause)"), L("core.force_resume.desc", "Hebt eventuelle hängengebliebene Lade-Pausen sofort auf und startet die Engine."), L("btn.force_resume", "Fortsetzen"), () =>
+            {
+                CorePlugin.ForceResumeGame();
+            }, new Color(0.18f, 0.45f, 0.25f, 0.95f));
             CreateSliderCard("General", L("UI_ScaleLabel", "UI Scale"), L("UI_Scale_Desc", "Scale interface size for 1080p, 1440p or 4K."), CorePlugin.UIScale.Value, 0.8f, 1.8f, 1.0f, (val) =>
             {
                 CorePlugin.UIScale.Value = (float)Math.Round(val, 2);
                 if (_scaler != null) _scaler.referenceResolution = new Vector2(1920f / CorePlugin.UIScale.Value, 1080f / CorePlugin.UIScale.Value);
             });
             CreateToggleCard("General", L("UI_IgnoreTranslations", "Ignore External Translations"), L("UI_IgnoreTranslations_Desc", "Forces embedded DLL localization resources."), CorePlugin.IgnoreExternalTranslations.Value, (val) => CorePlugin.IgnoreExternalTranslations.Value = val);
+
+            // Performance & Memory Optimization Section
+            CreateCategoryHeader(L("UI_Section_Performance", "Leistung & Speicherbereinigung"), "Performance");
+
+            string cleanerDesc;
+            if (Services.MemoryCleanerService.Instance != null && Services.MemoryCleanerService.Instance.IsCleaning)
+            {
+                cleanerDesc = L("core.cleaner.in_progress", "Bereinigung läuft gerade im Hintergrund...");
+            }
+            else if (Services.MemoryCleanerService.Instance != null && Services.MemoryCleanerService.Instance.LastCleanTime.HasValue)
+            {
+                float elapsedSec = Mathf.Max(0f, Time.realtimeSinceStartup - Services.MemoryCleanerService.Instance.LastCleanRealtime);
+                float freedMb = Services.MemoryCleanerService.Instance.LastFreedBytes / (1024f * 1024f);
+                string source = Services.MemoryCleanerService.Instance.LastTriggerSource;
+                cleanerDesc = string.Format(L("core.cleaner.last_run_info", "Zuletzt vor {0:F0}s bereinigt ({1}): {2:F1} MB freigegeben"), elapsedSec, source, freedMb);
+            }
+            else
+            {
+                cleanerDesc = L("core.cleaner.ready_desc", "Gibt ungenutzte Texturen, Meshes und RAM/VRAM sofort frei.");
+            }
+
+            CreateActionCard("Performance", L("core.clean_memory.name", "Speicher jetzt bereinigen"), cleanerDesc, L("btn.clean_memory", "Bereinigen"), () =>
+            {
+                Services.MemoryCleanerService.Instance?.Clean(force: true, "ManualCanvas", (res) =>
+                {
+                    RefreshSettingsContent(resetScroll: false);
+                });
+                RefreshSettingsContent(resetScroll: false);
+            }, new Color(0.20f, 0.40f, 0.60f, 0.95f));
+
+            CreateToggleCard("Performance", L("core.enable_memory_cleaner.name", "Automatischer Speicher-Cleaner"), L("core.enable_memory_cleaner.desc", "Bereinigt automatisch RAM & VRAM bei unmerklichen Aktionen."), CorePlugin.EnableMemoryCleaner.Value, (val) => CorePlugin.EnableMemoryCleaner.Value = val);
+            CreateToggleCard("Performance", L("core.clean_on_fast_travel.name", "Bei Schnellreise bereinigen"), L("core.clean_on_fast_travel.desc", "Nutzt den schwarzen Ladebildschirm für unsichtbare Asset-Freigabe."), CorePlugin.CleanOnFastTravel.Value, (val) => CorePlugin.CleanOnFastTravel.Value = val);
+            CreateToggleCard("Performance", L("core.clean_on_save.name", "Beim Speichern bereinigen"), L("core.clean_on_save.desc", "Räumt beim Quicksave (F5) und Autosave im Hintergrund auf."), CorePlugin.CleanOnSave.Value, (val) => CorePlugin.CleanOnSave.Value = val);
+            CreateToggleCard("Performance", L("core.clean_on_laptop.name", "Bei Laptop / Computer bereinigen"), L("core.clean_on_laptop.desc", "Räumt auf, wenn der Laptop im Spiel geöffnet wird."), CorePlugin.CleanOnLaptop.Value, (val) => CorePlugin.CleanOnLaptop.Value = val);
+            CreateToggleCard("Performance", L("core.clean_on_menu_open.name", "Bei Mod-Menü öffnen bereinigen"), L("core.clean_on_menu_open.desc", "Räumt beim Öffnen dieses Menüs auf."), CorePlugin.CleanOnMenuOpen.Value, (val) => CorePlugin.CleanOnMenuOpen.Value = val);
 
             // Localization Section
             CreateCategoryHeader(L("UI_Section_Localization", "Sprache & Lokalisierung"), "Localization");
