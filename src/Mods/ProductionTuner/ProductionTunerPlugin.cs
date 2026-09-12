@@ -17,7 +17,7 @@ namespace Milex.GMS1.Mods.ProductionTuner
     {
         public const string PluginGuid = "com.milex.gms1.productiontuner";
         public const string PluginName = "Milex GMS1 Production Tuner";
-        public const string PluginVersion = "1.4.10";
+        public const string PluginVersion = "1.4.14";
 
         public override string ModGuid => PluginGuid;
         public override string ModName => PluginName;
@@ -85,6 +85,7 @@ namespace Milex.GMS1.Mods.ProductionTuner
             WheelLoaderPatch.RestoreVanilla();
             DumpTruckPatch.RestoreVanilla();
             ExcavatorPatch.RestoreVanilla();
+            ExcavatorStabilityPatch.RestoreVanilla();
             BackhoeLoaderPatch.RestoreVanilla();
             MatScrubberPatch.RestoreVanilla();
             MagnetiteSeparatorPatch.RestoreVanilla();
@@ -111,6 +112,7 @@ namespace Milex.GMS1.Mods.ProductionTuner
             WheelLoaderPatch.Reset();
             DumpTruckPatch.Reset();
             ExcavatorPatch.Reset();
+            ExcavatorStabilityPatch.Reset();
             BackhoeLoaderPatch.Reset();
             MatScrubberPatch.Reset();
             MagnetiteSeparatorPatch.Reset();

@@ -3,6 +3,38 @@
 All notable changes and releases for this mod collection are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.8.22] - 2026-09-12
+
+### Production Tuner: Airborne / Teleportation Spawning Immunity (Anti-Hover Protection)
+
+- **Production Tuner v1.4.14 — Airborne & Teleport Settling Protection (`ExcavatorStabilityPatch`)**:
+  - Resolved an issue where newly purchased or transported excavators floated above the ground at spawn points instead of landing cleanly on the terrain.
+  - Requires physical ground contact (`IsGrounded` or downward raycast within 2.5m) and introduces a 2.5-second settling grace window (`TeleportSettleUntil`) after teleportation before ground stabilization can engage.
+  - Automatically releases constraints if any vehicle is detected in mid-air, allowing gravity to drop it to the terrain instantly.
+
+---
+
+## [1.8.21] - 2026-09-12
+
+### Production Tuner: Excavator Anti-Topple Stabilization, Mini DLC Joint Physics Fix & In-Place Upright Recovery
+
+- **Production Tuner v1.4.13 — Excavator Undercarriage Anti-Topple Stabilization (`ExcavatorStabilityPatch`)**:
+  - Solved the persistent vanilla physics issue where excavators parked stably on solid ground with handbrake engaged toppled over onto their side when the player walked or drove away to deliver paydirt to the wash plant.
+  - Undercarriage `Rigidbody` is anchored firmly to the ground using `FreezeAll` whenever the handbrake is engaged or when parked and uncrewed (`!IsControlled()`).
+  - Active arm joint oscillation damping quenches residual pendulum energy in uncrewed excavator arms (`ControledJoints.Arms`).
+  - Cabin rotation and boom/arm operation remain 100% fluid and responsive while digging with handbrake engaged. Releasing the handbrake immediately restores full unconstrained driving physics.
+- **Production Tuner v1.4.13 — DLC Mini Excavator (`SmallExcavator`) Transport Entanglement & Despin Fix (`MiniExcavatorTransportPatch`)**:
+  - Fixed the game-breaking vanilla bug where purchasing or transporting the DLC mini excavator caused it to fly and tumble infinitely through the air across all axes.
+  - Automatically resets velocities, starts `ReloadObjects()`, and updates joint limits via `ForceChangeLimits()` whenever a mini excavator is delivered or teleported.
+  - Includes a real-time update watchdog that detects uncrewed mini excavators in abnormal spin states (`angularVelocity.sqrMagnitude > 4f`) and quenches the error immediately.
+- **Production Tuner v1.4.13 — In-Place Upright Recovery (`MachineUprightRecoveryPatch`)**:
+  - Intercepts vanilla `MachineController.SanityCheck()` upon entering an overturned machine (`transform.up.y < 0.2f`).
+  - Gently rights the vehicle upright on its tracks directly where the player was working instead of teleporting it across the map back to the claim entrance depot.
+- **100% Clean Vanilla Restoration**:
+  - On mod disable, all frozen chassis constraints are released back to vanilla `RigidbodyConstraints.None`.
+
+---
+
 ## [1.8.20] - 2026-09-12
 
 ### Production Tuner: Synchronized Setup-Wide Wash Plant Scaling & Baseline Harmonization

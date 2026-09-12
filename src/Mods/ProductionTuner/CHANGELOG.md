@@ -3,6 +3,46 @@
 All notable changes to this mod are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.14] – 2026-09-12
+
+### Fixed: Airborne / Teleportation Spawning Immunity (Anti-Hover Protection)
+
+- **Airborne & Teleport Settling Protection (`ExcavatorStabilityPatch`)**:
+  - Fixed an issue where freshly purchased or transported excavators floated in mid-air above the claim depot spawn point instead of dropping cleanly onto the terrain.
+  - *Root Cause*: Vehicles spawn slightly elevated above ground spawn points. Because newly delivered vehicles spawn with handbrake engaged (`HandbrakeOn == true`) and initial zero velocity, the stability patch locked `FreezeAll` prematurely on the very first frame before gravity could pull the vehicle down to the terrain.
+  - *Fix*:
+    - Added grounded verification: `ExcavatorStabilityPatch` now strictly requires the machine to be in physical ground contact (`IsGrounded` or downward raycast within 2.5m) before any constraints can be applied.
+    - Added teleport settling window: When any vehicle is delivered or teleported, `MachineTeleportPatch` clears all constraints to `RigidbodyConstraints.None` and tracks a 2.5-second settling grace window (`TeleportSettleUntil`), guaranteeing that the machine falls freely and rests cleanly on its tracks before ground stabilization engages.
+    - Any vehicle detected in mid-air (`!IsGrounded` or active settling window) automatically releases constraints, allowing gravity to bring it down to earth immediately without requiring player intervention.
+
+---
+
+## [1.4.13] – 2026-09-12
+
+### Added: Excavator Chassis Anti-Topple Stabilization, Mini DLC Joint Physics Fix & In-Place Upright Recovery
+
+- **Excavator Chassis Anti-Topple & Undercarriage Stabilization (`ExcavatorStabilityPatch`)**:
+  - Solved the persistent issue where excavators parked stably on solid ground with handbrake engaged toppled over onto their side when the player walked or drove away to deliver paydirt to the wash plant.
+  - *Root Cause*: Vanilla VehiclePhysics Pro only applies brake torque to the track wheels, leaving the undercarriage `Rigidbody` dynamic. Excavators carry heavy cantilever boom, arm, and bucket masses with spring-damper joints (`JointSpringDamperSolver`). These residual spring forces prevent the physics body from sleeping. Micro-jitter and terrain collider updates at a distance caused track drift and arm sagging, eventually shifting the high center-of-mass over the track edge and rolling the vehicle onto its side.
+  - *Stabilization*:
+    - Whenever the handbrake is engaged (`HandbrakeOn`) OR whenever the machine is uncrewed (`!IsControlled()`), upright, and stationary (`velocity.sqrMagnitude < 0.3f`), the undercarriage `Rigidbody` is anchored solidly to the ground using `RigidbodyConstraints.FreezeAll` with velocity and angular velocity zeroed.
+    - Residual oscillation in uncrewed cantilever arm rigidbodies (`ControledJoints.Arms`) is actively quenched, preventing joint pendulum spikes.
+    - When inside the cabin with handbrake engaged, the operator retains 100% full movement of the cabin rotation, boom, stick, and bucket without any chassis rock.
+    - Releasing the handbrake while driving (`IsControlled() && !HandbrakeOn`) instantly restores full unconstrained physics (`RigidbodyConstraints.None`).
+- **DLC Mini Excavator (`SmallExcavator`) Transport Entanglement & Despin Fix (`MiniExcavatorTransportPatch`)**:
+  - Solved the game-breaking bug where buying or transporting the DLC mini excavator to the claim caused it to fly and tumble infinitely through the air across all axes ("tumbling near the ground as if rotating around an invisible axis").
+  - *Root Cause*: The DLC mini excavator has tight `HingeJoint` limits and overlapping child colliders (`objectsToReload`). The original game developers created `ReloadObjects()` (which disables/enables child colliders across two frames and resets limits via `ForceChangeLimits()`) specifically to resolve this, but only hooked it to `OnEnable()`. When transported to the claim via `MachineController.Teleport()`, the vehicle is already enabled, so `OnEnable()` never runs. The displaced hinge joints enter extreme solver violation error, generating huge rotational impulses that launch the machine into an infinite tumbling loop.
+  - *Fix*:
+    - Hooked `MachineController.Teleport` to automatically zero velocities, start `ReloadObjects()`, and invoke `ForceChangeLimits()` whenever a `SmallExcavator` is teleported or delivered.
+    - Implemented a despin watchdog in `Update` that detects uncrewed mini excavators in abnormal flight/spin states (`angularVelocity.sqrMagnitude > 4f` or `velocity.sqrMagnitude > 16f`) and immediately dampens the physics error.
+- **In-Place Upright Recovery (`MachineUprightRecoveryPatch`)**:
+  - Intercepts vanilla `MachineController.SanityCheck()` upon entering an overturned vehicle (`transform.up.y < 0.2f`).
+  - Instead of beaming the vehicle across the map to the claim starting point, automatically rights the vehicle upright on its tracks directly where the player was working (`position + Vector3.up * 1.5f`, upright yaw orientation).
+- **100% Clean Vanilla Restoration**:
+  - All frozen chassis constraints are safely released back to `RigidbodyConstraints.None` on mod disable (`SetEnabled(false)`).
+
+---
+
 ## [1.4.12] – 2026-09-12
 
 ### Added: Synchronized Setup-Wide Wash Plant Scaling & Baseline Harmonization

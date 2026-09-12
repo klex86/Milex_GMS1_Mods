@@ -75,4 +75,38 @@
   <Target Name="PostBuildDeploy" AfterTargets="PostBuildEvent">
     <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(BepInExPluginsPath)\" ContinueOnError="true" />
   </Target>
+
+ 
+
+  <Target Name="PackageModZip" AfterTargets="Build" Condition="'$(Configuration)' == 'Release' and '$(IsModProject)' == 'true'">
+    <PropertyGroup>
+      <ReleasesOutputDir>$(SolutionDir)Builds\</ReleasesOutputDir>
+      <StagingDir>$(ReleasesOutputDir)staging\$(AssemblyName)\</StagingDir>
+      <TargetPluginDir>$(StagingDir)BepInEx\plugins\</TargetPluginDir>
+      
+      <PackageVersion Condition="'$(Version)' != ''">$(Version)</PackageVersion>
+      <PackageVersion Condition="'$(PackageVersion)' == ''">1.0.0</PackageVersion>
+      <ZipFileName>$(AssemblyName)_v$(PackageVersion).zip</ZipFileName>
+    </PropertyGroup>
+
+    <!-- 1. Staging-Ordner vorbereiten -->
+    <RemoveDir Directories="$(StagingDir)" />
+    <MakeDir Directories="$(TargetPluginDir)" />
+    <MakeDir Directories="$(ReleasesOutputDir)" />
+
+    <!-- 2. Nur die gebaute DLL kopieren -->
+    <Copy SourceFiles="$(TargetPath)" DestinationFolder="$(TargetPluginDir)" />
+
+    <!-- 3. Altes Zip löschen & neu schnüren -->
+    <Delete Files="$(ReleasesOutputDir)$(ZipFileName)" Condition="Exists('$(ReleasesOutputDir)$(ZipFileName)')" />
+    <ZipDirectory SourceDirectory="$(StagingDir)" 
+                  DestinationFile="$(ReleasesOutputDir)$(ZipFileName)" 
+                  Overwrite="true" />
+
+    <!-- 4. Aufräumen -->
+    <RemoveDir Directories="$(StagingDir)" />
+
+    <Message Importance="High" Text="[PackageModZip] Mod-Archiv erstellt: $(ReleasesOutputDir)$(ZipFileName)" />
+  </Target>
+
 </Project>

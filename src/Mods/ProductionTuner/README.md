@@ -50,6 +50,9 @@ Whether you want realistic mining or high-speed gameplay, you can adjust all 29 
 - **Small & Large Excavators**:
   - Independent hydraulic speed sliders for the **Boom/Arm**, **Turret Rotation**, and **Bucket Tilt/Curl** give you responsive, fluid handling without jerky vehicle tipping.
   - Increased bucket dirt capacity lets you move paydirt much faster.
+  - **Chassis Stabilization & Anti-Topple**: Eliminates the notorious vanilla issue where excavators parked stably on solid ground topple over onto their side when you walk or drive away to deliver paydirt. Whenever the handbrake is engaged or the excavator is left parked, the undercarriage is solidly anchored to the terrain with zero drift or vibration, while the cabin and arm remain 100% operational for digging.
+  - **DLC Mini Excavator Transport Physics Fix**: Resolves the game-breaking vanilla bug where purchasing or transporting the DLC mini excavator to your claim causes it to tumble and spin infinitely through the air across all axes.
+  - **In-Place Upright Recovery**: If a vehicle ever ends up tipped onto its side or roof, entering the cabin gently rights the machine upright directly where you were working, rather than beaming it across the map to the claim entrance depot.
 - **Wheel Loader**:
   - Increased front bucket capacity with an automatic **hydraulic lifting boost**, allowing heavy loads to lift effortlessly without bogging down the hydraulics or rolling the loader forward.
 - **Backhoe Loader & Dump Truck**:

@@ -6,6 +6,7 @@
     <Authors>Milex</Authors>
     <Product>Milex GMS1 HelloMod</Product>
     <Description>Proof-of-concept mod for Milex GMS1 Mods demonstrating CoreMod integration and Localization</Description>
+    <IsModProject>true</IsModProject>
   </PropertyGroup>
 
   <ItemGroup>

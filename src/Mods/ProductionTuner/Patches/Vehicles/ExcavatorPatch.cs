@@ -42,20 +42,6 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
 
             int id = __instance.GetInstanceID();
 
-            // Stabilize excavator chassis against aggressive tilt/slide when handbrake is engaged
-            var rb = __instance.GetComponent<Rigidbody>();
-            if (rb != null)
-            {
-                if (__instance.HandbrakeOn)
-                {
-                    rb.constraints = RigidbodyConstraints.FreezePositionX | RigidbodyConstraints.FreezePositionZ |
-                                     RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
-                }
-                else if (rb.constraints != RigidbodyConstraints.None)
-                {
-                    rb.constraints = RigidbodyConstraints.None;
-                }
-            }
 
             // Zero-allocation fast-path
             if (Tracked.TryGetValue(id, out var data))
