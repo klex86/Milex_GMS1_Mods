@@ -1,0 +1,32 @@
+Milex GMS1 CoreMod - Version History
+
+v1.4.0:
+- Overhauled in-game menu performance: super smooth, fast, and responsive with zero lag.
+- Improved window dragging and resizing across high-resolution displays.
+- Added central memory and VRAM cleaner to stop FPS drops during long play sessions.
+- Added one-click "Clean Memory Now" button with real-time freed RAM display.
+
+v1.3.5:
+- Added emergency unpause button under General settings to easily unfreeze the game if a fast-travel loading screen glitches.
+- Added automatic detection and recovery for frozen game states.
+
+v1.3.2:
+- Added in-game missing translation template generator with one-click folder opening in Windows Explorer.
+- Improved mouse cursor handling so cursor lock and camera control always restore cleanly after closing menus.
+
+v1.3.0:
+- Introduced the Modern Canvas in-game dashboard with dark slate & gold theme, draggable header, smooth sliders, and category tabs.
+- Added real-time search bar to instantly find any mod setting.
+- Added expandable native language dropdown selector supporting 21 languages.
+- Dual-Engine menu architecture: switch seamlessly between Modern Dashboard and Classic IMGUI menu anytime.
+
+v1.2.0:
+- Added live mod enable/disable toggling in the sidebar without needing to restart the game.
+- Added UI scale slider (0.8x to 1.8x) for comfortable reading on 1080p, 1440p, and 4K displays.
+- Improved input blocking so your character never moves or clicks tools while tweaking mod settings.
+
+v1.1.0:
+- Integrated in-game mod menu opened via the Insert key.
+
+v1.0.0:
+- Initial release with core mod management, configuration loading, and multi-language localization engine.

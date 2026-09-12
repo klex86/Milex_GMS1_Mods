@@ -1,0 +1,45 @@
+Milex GMS1 Production Tuner - Version History
+
+v1.4.14:
+- Added excavator chassis stabilization: parked excavators stay solidly anchored on their tracks and will not roll over while you are away hauling dirt.
+- Added in-place upright recovery: entering an overturned vehicle sets it upright on its tracks directly where you were working.
+
+v1.4.12:
+- Added synchronized wash plant scaling: a single master slider scales all T3-T5 components (Sluice mats, nugget grates, Jig buckets, and tailing Hog Pan) in 100% lockstep.
+- Added synchronized scaling for the Tier 6 Orange Beast wash plant setup.
+- Handheld buckets and manual Hog Pans now scale independently from wash plant setups.
+
+v1.4.11:
+- Added trailer fast-travel auto-reconnection: trailers stay hitched to your pickup after fast travel with full hitch lever functionality.
+
+v1.4.10:
+- Improved fuel trailer and stationary tank fuel saving so refueled tanks never lose fuel after reloading a save.
+
+v1.4.5:
+- Added 1-scoop shovel filling: 1 shovel scoop fills 1 full bucket to 100%.
+- Added automatic spill protection when pouring buckets into a gold pan so dirt and gold are never wasted.
+
+v1.4.1:
+- Extended fuel hose reach on fuel trailers and claim tanks with high-strength locking nozzles.
+
+v1.4.0:
+- Added continuous smooth sliders across all 29 machinery and logistics parameters.
+- Expanded mobile fuel trailer (up to 10,000 L) and stationary claim tank (up to 100,000 L).
+- Added smart container sizing (AutoScaleDependentInputs) to automatically prevent dirt overflow.
+
+v1.3.1:
+- Added dump truck driving mass compensation so fully loaded trucks drive smoothly over rough ground.
+
+v1.3.0:
+- Added independent excavator hydraulic speed sliders (Boom/Arm lift, Turret swing, Bucket tilt).
+- Added heavy conveyor belt speed and dirt capacity controls for Frankenstein and Cordylus belts.
+
+v1.2.0:
+- Added support for all core mining tools, wash plants, vehicles, and logistics equipment.
+- Added front loader hydraulic lifting boost for heavy payloads.
+
+v1.1.0:
+- Tuned default multipliers for all machines and tools for optimal gameplay pacing.
+
+v1.0.0:
+- Initial release featuring 5 customizable tuning groups (Hand Tools, Vehicles, Wash Plants, Fine Processing, Logistics).

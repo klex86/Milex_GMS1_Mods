@@ -3,6 +3,87 @@
 All notable changes to the `Milex GMS1 Claim Monitor` mod are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.13] - 2026-09-12
+
+### Fixed: Glacier Creek Springs, Water Detection, Conveyor Alarm De-duplication & T5 HogPan Water Monitoring
+
+- **Glacier Creek Suspension Spring False Alarm & Multiplication Fix**:
+  - Resolved an issue where `GetMissingSuspensionSpringCount` checked `CrowbarComponent._IsUnscrew` (which is `true` in normal game operation for installed springs), causing the Warning HUD to falsely report that both suspension springs were missing when fully mounted.
+  - Cleaned spring tracking to count only truly empty `ShakerSpring` holders (`h.IsEmpty() || h.ObjectInHolder == null || !h.ObjectInHolder.gameObject.activeInHierarchy`).
+  - Fixed a formatting bug in `LocalizationManager.Format` where `displayName` was passed as the fallback format string instead of a valid format template, causing the alert description to read simply `"Glacier Creek"`.
+  - Set `isCritical = false` on the wash plant component when the stoppage is caused by missing wear parts, allowing `WearParts` to handle the single, precise `[CRITICAL]` card without redundant machinery failure duplicates.
+- **Glacier Creek Water Valve & Hose Shutoff Detection**:
+  - Restored water supply detection on Glacier Creek which was previously masked by the permanent spring failure state.
+  - Added explicit check for `!ws.Water.EnabledInProducer()`: closing a water valve or splitter manifold is now specifically diagnosed and reported as `"{0} water valve / splitter valve is closed."`.
+- **Conveyor Hopper Feeder Drive Belt Cascade & Alarm Storm Fix**:
+  - Eliminated the 4-alarm storm previously triggered by removing a single drive belt on the hopper feeder:
+    - Added wear part de-duplication in `ScanEquipmentWear` between detached `CheckAndRepair` components and empty `RepairHolder`s, preventing twin alerts (`Waschanlagen-Antriebsriemen Missing!` and `ConveyorEngineBelt Missing!`).
+    - Added localized translations for `ConveyorEngineBelt`, `ConveyorBeltBucket`, and `SpringGlacierCreek`.
+    - Removed duplicate critical conveyor failure on `ConveyorGround` when the drive belt is already alerted by `WearParts`.
+    - On `ConveyorElevator`, feeder hopper stoppage (`cg.GetIsBroken()`) is now classified as an operational pause (`isCritical = false`) rather than an elevator breakdown.
+- **Active Claim Setup Anchoring & T5 HogPan Water Monitoring**:
+  - Fixed a major anchoring defect in `ForceScan()` where `stationaryGoldCounter` was overwritten in a blind loop across all scene counters, causing the anchor position to drift to an inactive allotment 366 meters away.
+  - Implemented intelligent setup scoring in `ForceScan()` that prioritizes counters with actively assigned equipment (`WashPlantShaker`, `Trommel`, `WashPlantDuplex`, `MyHogPan`) and proximity to the player.
+  - Added type support for `HogPan` in `IsPlantMachinery()`.
+  - Upgraded `HogPanDirtBox` water monitoring to verify physical connection on `WaterSocket` (`!WaterSocket.IsEmpty()`), valve state (`EnabledInProducer()`), and active water flow (`MyWaterConsumer.HaveWater`), immediately detecting disconnected water hoses or closed valves.
+  - Differentiated multiple HogPans on Tier 5 setups with `#1` and `#2` numbering.
+
+---
+
+## [1.0.12] - 2026-09-12
+
+### Fixed & Enhanced: Parent Pollution Removal, Plant Membership Isolation & Critical Offline Detection
+
+- **Eliminated Duplicate Wear & Missing Part Warnings Across Sibling Equipment**:
+  - Resolved parent hierarchy pollution where scanning `rootGo.transform.parent` and `comp.transform.parent` caused missing wear parts (such as detached Conveyor Hopper belts, missing conveyor buckets, or removed suspension springs) to be attributed to every sibling machine on the claim (Power Generator, Electric Water Pump, Conveyor Elevator).
+  - Component wear scanning (`ScanEquipmentWear`) and suspension spring checks (`GetMissingSuspensionSpringCount`) now strictly target the equipment GameObject itself (`rootGo` / `comp.gameObject`), preventing spurious multi-equipment alarm cascades.
+- **Robust Stationary Wash Plant Membership (Setup T3-T5)**:
+  - Fixed a critical filter issue where unplugging power cables or disconnecting water hoses caused wash plant machines (Trommel, Duplex Jigs, Gravel Pump, Glacier Creek) to be dropped from scanning and falsely report all systems green.
+  - Machinery is now persistently recognized as part of the wash plant if mounted in scaffold holders (`ShovelHoldable.MyHolder != null` / `AllHolders`) or positioned within the plant scaffold perimeter (<= 30 m; <= 50 m for Gravel Pump).
+  - Unplugging electric power cables now immediately triggers a prominent `[CRITICAL]` alert on the Warning HUD instead of silently vanishing.
+- **Water Valve & Supply State Detection (`CheckWaterState`)**:
+  - Addressed an issue where a closed valve on a water splitter or manifold left the downstream machine (Glacier Creek, Shaker) without water while the monitor remained green.
+  - Evaluates live game indicators (`WaterConsumer.WaterIndicator`): if the indicator is not active/green (e.g. white, gray, closed, or red), or if `WaterConsumer.CheckHasWater()` evaluates to false, water flow failure is detected immediately and flagged as a critical alert.
+- **Glacier Creek Engine Detachment Monitoring**:
+  - Added explicit attachment verification for the Glacier Creek engine via `EngineRepair` and `RepairHolder` (type 63 `GlacierCreekEngine` / type 58 `ElectricEngine`).
+  - Removing the engine with a wrench/crowbar is now immediately flagged as `[CRITICAL] Glacier Creek Engine Missing!`.
+- **Hog Pan Dirt Box Monitoring (Tier 4 & Tier 5 Setups)**:
+  - Integrated `HogPanDirtBox` into the plant machinery scanner (`IsPlantMachinery`).
+  - Automatically associates downstream dirt boxes with the active wash plant setup and monitors water supply to `WaterSocket` / `MyWaterConsumer`.
+  - Disconnecting water supply immediately triggers `[CRITICAL] Setup T3-T5: Hog Pan Dirt Box has no water supply!`.
+- **Localization Updates**:
+  - Added English and German localization strings for `Hog Pan Dirt Box`, `Glacier Creek Engine`, and Hog Pan water supply failures.
+
+---
+
+## [1.0.11] - 2026-09-12
+
+### Fixed & Enhanced: Missing / Broken Part Detection & Active Setup Isolation
+
+- **Fixed False Water Tower "FilterRepair Missing" Alarm**:
+  - Resolved an issue where functional Water Towers raised a false `[CRITICAL] Infrastructure: FilterRepair Missing!` warning.
+  - Built-in machine meshes without detachable holders (`RepairHoldable`) are no longer erroneously flagged as missing wear parts.
+  - Excluded stationary Water Towers from consumable wear part scanning as they contain no serviceable filters.
+- **Glacier Creek & Shaker Suspension Spring Tracking (2 Real Springs vs. Transport Hooks)**:
+  - Corrected suspension spring detection: Wash plant shakers (T3 Shaker, T4 DeRocker, T5 Glacier Creek, T6 Orange Beast Shaker) feature exactly 2 suspension springs.
+  - Resolved false detection where excavator rigging hooks (`ShovelRopeHolder` / `ShovelRopeHolderWashplant`) were previously misidentified as suspension springs. Rigging hooks are used exclusively for excavator crane cable transport and remain empty during normal plant operation.
+  - Physical springs are now tracked via `ShakerSpring` holders, `CrowbarComponent`, and `CheckAndRepair` wear items.
+  - Detaching/unbolting a spring with the crowbar or running a spring to 0% durability (broken/destroyed) is immediately detected and reported as a critical wash plant failure with the exact missing/broken spring status.
+- **Missing & Detached Component Detection on Wash Plants**:
+  - Scans all machinery part holders (`RepairHolder`) and motors (`EngineRepair`) for physical presence and attachment.
+  - Detects unbolted parts and open maintenance covers and immediately raises a `[CRITICAL]` warning so players know why a plant will not start.
+- **Feeding Chain Drive Belt & Hopper Failure Tracking**:
+  - Added dedicated monitoring for Conveyor Belt drive belts: alerts if the drive belt is broken, detached, or missing.
+  - Monitors the hopper feeder connection and mechanical health so earth supply stoppages are spotted immediately.
+- **Smart Active Setup Isolation (Eliminated Standby Ghost Warnings)**:
+  - Equipment monitoring for wash plant tiers (Setup 2 and Setup 3) now strictly isolates active, installed setup components.
+  - Machines and parts must be mounted directly onto the plant frame or physically hooked up to power and water lines.
+  - Spare, loose, or uninstalled components stored in the claim yard, in vehicle beds, or in transport boxes are recognized as standby and will never trigger false alerts.
+- **Multilingual Localization Updates**:
+  - Added English and German localization strings for missing parts, suspension springs, repair mode, and conveyor drive belt warnings.
+
+---
+
 ## [1.0.10] - 2026-09-11
 
 ### Added: Equipment Baseline Dumper (JSON) in Diagnostic Inspector (F3)

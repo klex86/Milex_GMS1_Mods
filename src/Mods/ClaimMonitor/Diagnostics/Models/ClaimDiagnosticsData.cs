@@ -70,6 +70,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public float MaxDirt { get; set; }
         public bool HasPower { get; set; }
         public bool IsWorking { get; set; }
+        public bool IsCritical { get; set; }
+        public string SpecificIssue { get; set; }
         public bool IsConnected { get; set; } = true;
         public WashPlantSetupType AssignedSetup { get; set; }
     }
@@ -109,6 +111,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public float Durability { get; set; } // 0.0 to 1.0
         public bool IsDestroyed { get; set; }
         public bool IsInPlace { get; set; }
+        public bool IsMissing { get; set; }
         public bool IsConnected { get; set; } = true;
         public WashPlantSetupType Setup { get; set; }
 
@@ -287,8 +290,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         {
             foreach (var part in WearParts)
             {
-                // Only alert on installed parts belonging to actively monitored setups
-                if (!part.IsInPlace) continue;
+                // Only alert on installed or missing parts belonging to actively monitored setups
+                if (!part.IsInPlace && !part.IsMissing) continue;
 
                 // Only monitor wear on standalone infrastructure (pumps, towers, generators) if connected to cables/hoses
                 if (part.Setup == WashPlantSetupType.None && !part.IsConnected) continue;
@@ -303,7 +306,19 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                 string machine = !string.IsNullOrEmpty(part.ParentMachineName) ? part.ParentMachineName : LocalizationManager.T("equipment.default", "Equipment");
                 string partName = !string.IsNullOrEmpty(part.PartName) ? part.PartName : LocalizationManager.T("equipment.part_default", "Component");
 
-                if (part.IsDestroyed || part.DurabilityPercentage <= 0.5f)
+                if (part.IsMissing)
+                {
+                    ActiveAlerts.Add(new ClaimAlert
+                    {
+                        Severity = AlertSeverity.Critical,
+                        Category = "Maintenance",
+                        Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", setupName, partName),
+                        Description = LocalizationManager.Format("alert.wear.missing.desc", "{0} is missing {1}! Machine cannot operate until installed.", machine, partName),
+                        Position = part.Position,
+                        SourceId = part.InstanceId
+                    });
+                }
+                else if (part.IsDestroyed || part.DurabilityPercentage <= 0.5f)
                 {
                     ActiveAlerts.Add(new ClaimAlert
                     {
@@ -344,7 +359,31 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
 
                 string setupName = GetSetupName(conv.AssignedSetup);
 
-                if (!conv.HasPower && conv.IsConnected)
+                if (conv.IsCritical)
+                {
+                    ActiveAlerts.Add(new ClaimAlert
+                    {
+                        Severity = AlertSeverity.Critical,
+                        Category = "FeedingChain",
+                        Title = LocalizationManager.Format("alert.conveyor.failure.title", "{0}: {1} Failure", setupName, conv.Name),
+                        Description = conv.SpecificIssue ?? LocalizationManager.Format("alert.conveyor.failure.desc", "{0} has suffered a critical failure.", conv.Name),
+                        Position = conv.Position,
+                        SourceId = conv.InstanceId
+                    });
+                }
+                else if (!conv.IsWorking && conv.IsConnected)
+                {
+                    ActiveAlerts.Add(new ClaimAlert
+                    {
+                        Severity = AlertSeverity.Warning,
+                        Category = "FeedingChain",
+                        Title = LocalizationManager.Format("alert.conveyor.issue.title", "{0}: {1} Issue", setupName, conv.Name),
+                        Description = conv.SpecificIssue ?? LocalizationManager.Format("alert.conveyor.issue.desc", "{0} is not operational.", conv.Name),
+                        Position = conv.Position,
+                        SourceId = conv.InstanceId
+                    });
+                }
+                else if (!conv.HasPower && conv.IsConnected)
                 {
                     ActiveAlerts.Add(new ClaimAlert
                     {

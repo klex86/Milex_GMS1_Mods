@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Text;
 using GoldDigger;
@@ -81,22 +82,58 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             // 1. First pass: Locate active Gold Counters to anchor setup positions
             Vector3 stationaryCenter = Vector3.zero;
             bool hasStationaryCenter = false;
+            WashPlantGoldCounter stationaryGoldCounter = null;
+
             Vector3 orangeBeastCenter = Vector3.zero;
             bool hasOrangeBeastCenter = false;
+            OrangeBeastWashPlantGoldCounter orangeBeastGoldCounter = null;
+
+            Vector3 playerPos = Vector3.zero;
+            bool hasPlayerPos = false;
+            if (Singleton<Player>.IsInstanced() && Singleton<Player>.Instance != null)
+            {
+                playerPos = Singleton<Player>.Instance.transform.position;
+                hasPlayerPos = true;
+            }
+            else if (Camera.main != null)
+            {
+                playerPos = Camera.main.transform.position;
+                hasPlayerPos = true;
+            }
+
+            float bestStatScore = float.MinValue;
+            float bestObScore = float.MinValue;
 
             foreach (var mb in allComponents)
             {
                 if (mb == null) continue;
-                string tName = mb.GetType().Name;
-                if (tName == "WashPlantGoldCounter")
+                if (mb is WashPlantGoldCounter wpc)
                 {
-                    stationaryCenter = mb.transform.position;
-                    hasStationaryCenter = true;
+                    bool hasEquipment = wpc.WashPlantShaker != null || wpc.Trommel != null 
+                                     || wpc.WashPlantDuplex != null || wpc.WashPlantDuplex2 != null 
+                                     || wpc.MyHogPan != null || wpc.MyHogPan2 != null;
+                    float dist = hasPlayerPos ? Vector3.Distance(wpc.transform.position, playerPos) : 0f;
+                    float score = (hasEquipment ? 100000f : 0f) - dist;
+                    if (score > bestStatScore)
+                    {
+                        bestStatScore = score;
+                        stationaryGoldCounter = wpc;
+                        stationaryCenter = wpc.transform.position;
+                        hasStationaryCenter = true;
+                    }
                 }
-                else if (tName == "OrangeBeastWashPlantGoldCounter")
+                else if (mb is OrangeBeastWashPlantGoldCounter obc)
                 {
-                    orangeBeastCenter = mb.transform.position;
-                    hasOrangeBeastCenter = true;
+                    bool hasEquipment = obc.WashPlantShaker != null || (obc.AllHolders != null && obc.AllHolders.Length > 0);
+                    float dist = hasPlayerPos ? Vector3.Distance(obc.transform.position, playerPos) : 0f;
+                    float score = (hasEquipment ? 100000f : 0f) - dist;
+                    if (score > bestObScore)
+                    {
+                        bestObScore = score;
+                        orangeBeastGoldCounter = obc;
+                        orangeBeastCenter = obc.transform.position;
+                        hasOrangeBeastCenter = true;
+                    }
                 }
             }
 
@@ -127,7 +164,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 if (IsPlantMachinery(mb))
                 {
                     matchedCount++;
-                    ScanPlantMachinery(mb, hasStationaryCenter, hasOrangeBeastCenter);
+                    ScanPlantMachinery(mb, stationaryGoldCounter, orangeBeastGoldCounter, stationaryCenter, hasStationaryCenter, orangeBeastCenter, hasOrangeBeastCenter);
                     continue;
                 }
 
@@ -260,7 +297,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             });
         }
 
-        private void ScanPlantMachinery(MonoBehaviour comp, bool hasStationaryCenter, bool hasOrangeBeastCenter)
+        private void ScanPlantMachinery(MonoBehaviour comp, WashPlantGoldCounter statGoldCounter, OrangeBeastWashPlantGoldCounter obGoldCounter, Vector3 stationaryCenter, bool hasStationaryCenter, Vector3 orangeBeastCenter, bool hasOrangeBeastCenter)
         {
             var go = comp.gameObject;
             int goId = go.GetInstanceID();
@@ -281,7 +318,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                               || typeName == "OrangeBeastWashPlantGoldCounter";
 
             // If Orange Beast is NOT installed on this claim, ignore all Orange Beast components
-            if (isOrangeBeast && !hasOrangeBeastCenter)
+            if (isOrangeBeast && (obGoldCounter == null && !hasOrangeBeastCenter))
                 return;
 
             // Only allow ONE Orange Beast Shaker in the list
@@ -290,6 +327,69 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 for (int i = 0; i < CurrentData.PlantComponents.Count; i++)
                 {
                     if (CurrentData.PlantComponents[i].Setup == WashPlantSetupType.Setup3_OrangeBeast)
+                        return;
+                }
+            }
+
+            bool isMobilePlant = comp is MobileWashplant || comp is MiniWashplant || typeName == "MobileWashplant" || typeName == "MiniWashplant";
+
+            // CRITICAL SETUP ISOLATION FILTER:
+            // Strictly exclude loose, uninstalled, or spare machinery standing in the yard or on trailers,
+            // but ALWAYS monitor machinery installed on or near the active washplant scaffold!
+            if (!isOrangeBeast && !isMobilePlant)
+            {
+                if (statGoldCounter == null && !hasStationaryCenter)
+                    return;
+
+                Vector3 statPos = statGoldCounter != null ? statGoldCounter.transform.position : stationaryCenter;
+                float distToPlant = statPos != Vector3.zero ? Vector3.Distance(comp.transform.position, statPos) : float.MaxValue;
+
+                // Check if mounted in any scaffold / plant holder
+                var sh = comp.GetComponent<ShovelHoldable>() ?? comp.GetComponentInParent<ShovelHoldable>();
+                bool isHolderMounted = sh != null && sh.MyHolder != null;
+
+                if (comp is WashplantShakerBase || typeName.Contains("Shaker") || typeName == "GlacierCreek" || typeName == "DeRocker")
+                {
+                    bool isMounted = isHolderMounted || distToPlant <= 30f ||
+                                     (statGoldCounter != null && (statGoldCounter.WashPlantShaker == comp || 
+                                                                  IsInHolders(statGoldCounter.WashplantShakerHolders, comp) ||
+                                                                  IsInHolders(statGoldCounter.AllHolders, comp)));
+                    if (!isMounted && !IsConnectedAndNear(comp, statPos, 60f))
+                        return;
+                }
+                else if (comp is WashplantTrommelBase || typeName.Contains("Trommel"))
+                {
+                    bool isMounted = isHolderMounted || distToPlant <= 30f ||
+                                     (statGoldCounter != null && (statGoldCounter.Trommel == comp || 
+                                                                  IsInHolders(statGoldCounter.TrommelHolders, comp) ||
+                                                                  IsInHolders(statGoldCounter.AllHolders, comp)));
+                    if (!isMounted && !IsConnectedAndNear(comp, statPos, 60f))
+                        return;
+                }
+                else if (comp is GravelPump || typeName == "GravelPump")
+                {
+                    bool isMounted = isHolderMounted || distToPlant <= 50f;
+                    if (!isMounted && !IsConnectedAndNear(comp, statPos, 75f))
+                        return;
+                }
+                else if (comp is WashplantDuplexJigBase || typeName.Contains("Duplex"))
+                {
+                    bool isMounted = isHolderMounted || distToPlant <= 30f ||
+                                     (statGoldCounter != null && (statGoldCounter.WashPlantDuplex == comp 
+                                                               || statGoldCounter.WashPlantDuplex2 == comp 
+                                                               || IsInHolders(statGoldCounter.WashplantDuplexHolders, comp) 
+                                                               || IsInHolders(statGoldCounter.WashplantDuplexHolders2, comp) 
+                                                               || IsInHolders(statGoldCounter.AllHolders, comp)));
+                    if (!isMounted && !IsConnectedAndNear(comp, statPos, 60f))
+                        return;
+                }
+                else if (comp is HogPanDirtBox || typeName == "HogPanDirtBox" || goName.Contains("HogPanMud") || comp is HogPan || typeName == "HogPan")
+                {
+                    HogPan parentHog = comp is HogPan hComp ? hComp : comp.GetComponentInParent<HogPan>();
+                    bool isMounted = distToPlant <= 40f ||
+                                     (statGoldCounter != null && parentHog != null &&
+                                      (parentHog == statGoldCounter.MyHogPan || parentHog == statGoldCounter.MyHogPan2));
+                    if (!isMounted && !IsConnectedAndNear(comp, statPos, 60f))
                         return;
                 }
             }
@@ -309,7 +409,62 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 hasPower = CheckPowerState(comp);
                 hasWater = CheckWaterState(comp);
 
-                if (!hasPower)
+                CheckAndRepair[] requiredParts = GetFieldValue<CheckAndRepair[]>(comp, type, "MyCheckAndRepair") ?? comp.GetComponentsInChildren<CheckAndRepair>(true);
+                Repairable rep = comp.GetComponent<Repairable>() ?? GetFieldValue<Repairable>(comp, type, "repairable");
+                string missingPart = null;
+                string brokenPart = null;
+
+                if (requiredParts != null)
+                {
+                    for (int p = 0; p < requiredParts.Length; p++)
+                    {
+                        var cr = requiredParts[p];
+                        if (cr == null) continue;
+                        if (!IsCheckAndRepairAttached(cr))
+                        {
+                            if (missingPart == null)
+                            {
+                                string rawName = !string.IsNullOrEmpty(cr.Name) ? cr.Name : cr.gameObject.name.Replace("(Clone)", "").Trim();
+                                missingPart = LocalizationManager.ResolveGameText(rawName);
+                            }
+                        }
+                        else if (cr.IsDestroyed && brokenPart == null)
+                        {
+                            string rawName = !string.IsNullOrEmpty(cr.Name) ? cr.Name : cr.gameObject.name.Replace("(Clone)", "").Trim();
+                            brokenPart = LocalizationManager.ResolveGameText(rawName);
+                        }
+                    }
+                }
+
+                int obMissingSprings = GetMissingSuspensionSpringCount(comp);
+                string obHolderMissing = CheckMissingRepairHolders(comp);
+                if (missingPart == null) missingPart = obHolderMissing;
+
+                if (obMissingSprings > 0)
+                {
+                    isWorking = false;
+                    isCritical = false;
+                    issue = LocalizationManager.Format("issue.machinery.suspension_spring_missing", "{0}: {1} suspension spring(s) missing or unhooked!", displayName, obMissingSprings);
+                }
+                else if (missingPart != null)
+                {
+                    isWorking = false;
+                    isCritical = false;
+                    issue = LocalizationManager.Format("issue.machinery.part_missing", "{0}: Missing {1}!", displayName, missingPart);
+                }
+                else if (brokenPart != null)
+                {
+                    isWorking = false;
+                    isCritical = false;
+                    issue = LocalizationManager.Format("issue.machinery.part_broken", "{0}: {1} broken!", displayName, brokenPart);
+                }
+                else if (rep != null && rep.CheckIfRepairMode())
+                {
+                    isWorking = false;
+                    isCritical = true;
+                    issue = LocalizationManager.Format("issue.machinery.repair_mode", "{0} in repair mode / cover open!", displayName);
+                }
+                else if (!hasPower)
                 {
                     isWorking = false;
                     issue = LocalizationManager.T("issue.shaker.no_power", "Orange Beast Shaker has no electric power.");
@@ -330,7 +485,134 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 hasPower = CheckPowerState(comp);
                 hasWater = CheckWaterState(comp);
 
-                if (stopped)
+                CheckAndRepair[] requiredParts = null;
+                Repairable rep = GetFieldValue<Repairable>(comp, type, "repairable");
+                if (comp is WashplantShakerBase shaker)
+                {
+                    requiredParts = shaker.MyCheckAndRepair;
+                }
+                else
+                {
+                    requiredParts = GetFieldValue<CheckAndRepair[]>(comp, type, "MyCheckAndRepair");
+                }
+
+                if (requiredParts == null || requiredParts.Length == 0)
+                {
+                    requiredParts = comp.GetComponentsInChildren<CheckAndRepair>(true);
+                }
+
+                string missingPart = null;
+                string brokenPart = null;
+                if (requiredParts != null)
+                {
+                    for (int p = 0; p < requiredParts.Length; p++)
+                    {
+                        var cr = requiredParts[p];
+                        if (cr == null) continue;
+                        if (!IsCheckAndRepairAttached(cr))
+                        {
+                            if (missingPart == null)
+                            {
+                                string rawName = !string.IsNullOrEmpty(cr.Name) ? cr.Name : cr.gameObject.name.Replace("(Clone)", "").Trim();
+                                missingPart = LocalizationManager.ResolveGameText(rawName);
+                            }
+                        }
+                        else if (cr.IsDestroyed)
+                        {
+                            if (brokenPart == null)
+                            {
+                                string rawName = !string.IsNullOrEmpty(cr.Name) ? cr.Name : cr.gameObject.name.Replace("(Clone)", "").Trim();
+                                brokenPart = LocalizationManager.ResolveGameText(rawName);
+                            }
+                        }
+                    }
+                }
+
+                bool isGlacier = comp is GlacierCreek || typeName == "GlacierCreek" || goName.Contains("Glacier");
+                var engineRepair = GetFieldValue<CheckAndRepair>(comp, type, "EngineRepair");
+                if (isGlacier)
+                {
+                    bool engineMissing = false;
+                    if (engineRepair == null || !engineRepair.gameObject.activeInHierarchy || !IsCheckAndRepairAttached(engineRepair))
+                    {
+                        engineMissing = true;
+                    }
+
+                    // Also check RepairHolder on Glacier Creek for Engine (HolderType 63 = GlacierCreekEngine, 58 = ElectricEngine)
+                    var rHolders = comp.GetComponentsInChildren<RepairHolder>(true);
+                    if (rHolders != null)
+                    {
+                        for (int rhIdx = 0; rhIdx < rHolders.Length; rhIdx++)
+                        {
+                            var rh = rHolders[rhIdx];
+                            if (rh == null) continue;
+                            if ((int)rh.Type == 63 || (int)rh.Type == 58 || rh.gameObject.name.IndexOf("Engine", StringComparison.OrdinalIgnoreCase) >= 0)
+                            {
+                                if (rh.IsEmpty() || rh.ObjectInHolder == null || !rh.ObjectInHolder.gameObject.activeSelf)
+                                {
+                                    engineMissing = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+
+                    if (engineMissing)
+                    {
+                        if (missingPart == null)
+                            missingPart = LocalizationManager.T("equipment.glacier_creek_engine", "Glacier Creek Engine");
+                    }
+                    else if (engineRepair != null && engineRepair.IsDestroyed && brokenPart == null)
+                    {
+                        string rawName = !string.IsNullOrEmpty(engineRepair.Name) ? engineRepair.Name : "Glacier Creek Engine";
+                        brokenPart = LocalizationManager.ResolveGameText(rawName);
+                    }
+                }
+                else if (engineRepair != null)
+                {
+                    if (!IsCheckAndRepairAttached(engineRepair))
+                    {
+                        string rawName = !string.IsNullOrEmpty(engineRepair.Name) ? engineRepair.Name : "Engine";
+                        if (missingPart == null) missingPart = LocalizationManager.ResolveGameText(rawName);
+                    }
+                    else if (engineRepair.IsDestroyed && brokenPart == null)
+                    {
+                        string rawName = !string.IsNullOrEmpty(engineRepair.Name) ? engineRepair.Name : "Engine";
+                        brokenPart = LocalizationManager.ResolveGameText(rawName);
+                    }
+                }
+
+                int missingSprings = GetMissingSuspensionSpringCount(comp);
+                string holderMissing = CheckMissingRepairHolders(comp);
+                if (missingPart == null) missingPart = holderMissing;
+
+                bool inRepairMode = rep != null && rep.CheckIfRepairMode();
+
+                if (missingSprings > 0)
+                {
+                    isWorking = false;
+                    isCritical = false;
+                    issue = LocalizationManager.Format("issue.machinery.suspension_spring_missing", "{0}: {1} suspension spring(s) missing or unhooked!", displayName, missingSprings);
+                }
+                else if (missingPart != null)
+                {
+                    isWorking = false;
+                    isCritical = false;
+                    issue = LocalizationManager.Format("issue.machinery.part_missing", "{0}: Missing {1}!", displayName, missingPart);
+                }
+                else if (brokenPart != null)
+                {
+                    isWorking = false;
+                    isCritical = false;
+                    issue = LocalizationManager.Format("issue.machinery.part_broken", "{0}: {1} broken!", displayName, brokenPart);
+                }
+                else if (inRepairMode)
+                {
+                    isWorking = false;
+                    isCritical = true;
+                    issue = LocalizationManager.Format("issue.machinery.repair_mode", "{0} in repair mode / cover open!", displayName);
+                }
+                else if (stopped)
                 {
                     isWorking = false;
                     issue = LocalizationManager.Format("issue.machinery.stopped", "{0} is stopped.", displayName);
@@ -338,23 +620,27 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 else if (!hasPower)
                 {
                     isWorking = false;
+                    isCritical = true;
                     issue = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", displayName);
                 }
                 else if (!hasWater)
                 {
                     isWorking = false;
-                    if (comp is WashplantShakerBase shaker && shaker.Water != null)
+                    isCritical = true;
+                    if (comp is WashplantShakerBase ws && ws.Water != null)
                     {
-                        if (shaker.Water.Producent == null)
+                        if (ws.Water.Producent == null || (ws.Water.WaterIndicator != null && CheckIndicatorInactive(ws.Water.WaterIndicator)))
                             issue = LocalizationManager.Format("issue.machinery.water_hose_disconnected", "{0} water hose disconnected.", displayName);
-                        else if (!shaker.Water.Producent.IsWorking)
+                        else if (!ws.Water.Producent.IsWorking)
                             issue = LocalizationManager.Format("issue.machinery.pump_off", "{0} water pump is turned off.", displayName);
-                        else if (!shaker.Water.Producent.HaveWaterIn)
+                        else if (!ws.Water.Producent.HaveWaterIn)
                             issue = LocalizationManager.Format("issue.machinery.pump_no_water", "{0} water pump has no water.", displayName);
-                        else if (!shaker.Water.Producent.IsEnabled)
+                        else if (!ws.Water.Producent.IsEnabled)
                             issue = LocalizationManager.Format("issue.machinery.pump_disabled", "{0} water pump is disabled.", displayName);
-                        else if (GetFieldValue<bool>(shaker.Water, typeof(WaterConsumer), "_hasBrokenRopes"))
+                        else if (GetFieldValue<bool>(ws.Water, typeof(WaterConsumer), "_hasBrokenRopes"))
                             issue = LocalizationManager.Format("issue.machinery.hose_broken_frozen", "{0} water hose is broken / frozen!", displayName);
+                        else if (!ws.Water.EnabledInProducer())
+                            issue = LocalizationManager.Format("issue.machinery.water_valve_closed", "{0} water valve / splitter valve is closed.", displayName);
                         else
                             issue = LocalizationManager.Format("issue.machinery.no_water", "{0} has no water supply.", displayName);
                     }
@@ -374,20 +660,84 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 setup = WashPlantSetupType.Setup2_Stationary;
                 bool stopped = false;
                 bool chainBroken = false;
+                CheckAndRepair chainCr = null;
+                CheckAndRepair[] trommelParts = null;
+
                 if (comp is WashplantTrommelBase tb)
                 {
                     stopped = tb.TrommelStopped;
                     chainBroken = GetFieldValue<bool>(comp, typeof(WashplantTrommelBase), "_TrommelChainDestroyed");
+                    chainCr = GetFieldValue<CheckAndRepair>(comp, comp.GetType(), "ChainCheckAndRepair");
+                    trommelParts = tb.MyCheckAndRepair;
                 }
                 else
                 {
                     stopped = GetFieldValue<bool>(comp, type, "TrommelStopped");
                     chainBroken = GetFieldValue<bool>(comp, type, "_TrommelChainDestroyed");
+                    chainCr = GetFieldValue<CheckAndRepair>(comp, type, "ChainCheckAndRepair");
+                    trommelParts = GetFieldValue<CheckAndRepair[]>(comp, type, "MyCheckAndRepair");
                 }
-                hasPower = CheckPowerState(comp);
-                hasWater = true; // Trommel does not require or consume water directly
 
-                if (chainBroken)
+                if (trommelParts == null || trommelParts.Length == 0)
+                {
+                    trommelParts = comp.GetComponentsInChildren<CheckAndRepair>(true);
+                }
+
+                hasPower = CheckPowerState(comp);
+                hasWater = true; // Trommel does not consume water directly
+
+                string missingPart = null;
+                string brokenPart = null;
+
+                if (chainCr != null)
+                {
+                    if (!IsCheckAndRepairAttached(chainCr))
+                    {
+                        string rawName = !string.IsNullOrEmpty(chainCr.Name) ? chainCr.Name : chainCr.gameObject.name.Replace("(Clone)", "").Trim();
+                        missingPart = LocalizationManager.ResolveGameText(rawName);
+                    }
+                    else if (chainCr.IsDestroyed || chainBroken)
+                    {
+                        string rawName = !string.IsNullOrEmpty(chainCr.Name) ? chainCr.Name : chainCr.gameObject.name.Replace("(Clone)", "").Trim();
+                        brokenPart = LocalizationManager.ResolveGameText(rawName);
+                    }
+                }
+
+                if (trommelParts != null)
+                {
+                    for (int p = 0; p < trommelParts.Length; p++)
+                    {
+                        var cr = trommelParts[p];
+                        if (cr == null) continue;
+                        if (!IsCheckAndRepairAttached(cr))
+                        {
+                            if (missingPart == null)
+                            {
+                                string rawName = !string.IsNullOrEmpty(cr.Name) ? cr.Name : cr.gameObject.name.Replace("(Clone)", "").Trim();
+                                missingPart = LocalizationManager.ResolveGameText(rawName);
+                            }
+                        }
+                        else if (cr.IsDestroyed)
+                        {
+                            if (brokenPart == null)
+                            {
+                                string rawName = !string.IsNullOrEmpty(cr.Name) ? cr.Name : cr.gameObject.name.Replace("(Clone)", "").Trim();
+                                brokenPart = LocalizationManager.ResolveGameText(rawName);
+                            }
+                        }
+                    }
+                }
+
+                string trommelHolderMissing = CheckMissingRepairHolders(comp);
+                if (missingPart == null) missingPart = trommelHolderMissing;
+
+                if (missingPart != null)
+                {
+                    isWorking = false;
+                    isCritical = true;
+                    issue = LocalizationManager.Format("issue.machinery.part_missing", "{0}: Missing {1}!", displayName, missingPart);
+                }
+                else if (brokenPart != null || chainBroken)
                 {
                     isWorking = false;
                     isCritical = true;
@@ -401,6 +751,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 else if (!hasPower)
                 {
                     isWorking = false;
+                    isCritical = true;
                     issue = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", displayName);
                 }
             }
@@ -411,7 +762,53 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 hasPower = CheckPowerState(comp);
                 hasWater = true; // Duplex Jigs and Gravel Pumps only consume electric power, not water
 
-                // Check Buckets
+                CheckAndRepair[] jigParts = null;
+                if (comp is WashplantDuplexJigBase dj)
+                {
+                    jigParts = dj.MyCheckAndRepair;
+                }
+                else
+                {
+                    jigParts = GetFieldValue<CheckAndRepair[]>(comp, type, "MyCheckAndRepair");
+                }
+
+                if (jigParts == null || jigParts.Length == 0)
+                {
+                    jigParts = comp.GetComponentsInChildren<CheckAndRepair>(true);
+                }
+
+                string missingPart = null;
+                string brokenPart = null;
+
+                if (jigParts != null)
+                {
+                    for (int p = 0; p < jigParts.Length; p++)
+                    {
+                        var cr = jigParts[p];
+                        if (cr == null) continue;
+                        if (!IsCheckAndRepairAttached(cr))
+                        {
+                            if (missingPart == null)
+                            {
+                                string rawName = !string.IsNullOrEmpty(cr.Name) ? cr.Name : cr.gameObject.name.Replace("(Clone)", "").Trim();
+                                missingPart = LocalizationManager.ResolveGameText(rawName);
+                            }
+                        }
+                        else if (cr.IsDestroyed)
+                        {
+                            if (brokenPart == null)
+                            {
+                                string rawName = !string.IsNullOrEmpty(cr.Name) ? cr.Name : cr.gameObject.name.Replace("(Clone)", "").Trim();
+                                brokenPart = LocalizationManager.ResolveGameText(rawName);
+                            }
+                        }
+                    }
+                }
+
+                string jigHolderMissing = CheckMissingRepairHolders(comp);
+                if (missingPart == null) missingPart = jigHolderMissing;
+
+                // Check concentrate buckets
                 object b1 = GetFieldValue<object>(comp, comp.GetType(), "Bucket1");
                 object b2 = GetFieldValue<object>(comp, comp.GetType(), "Bucket2");
                 bool bucketFull = false;
@@ -428,7 +825,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                     if (max2 > 0f && vol2 >= max2 * 0.98f) bucketFull = true;
                 }
 
-                if (pumpBroken)
+                if (missingPart != null)
+                {
+                    isWorking = false;
+                    isCritical = true;
+                    issue = LocalizationManager.Format("issue.machinery.part_missing", "{0}: Missing {1}!", displayName, missingPart);
+                }
+                else if (brokenPart != null || pumpBroken)
                 {
                     isWorking = false;
                     isCritical = true;
@@ -441,7 +844,75 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 else if (!hasPower)
                 {
                     isWorking = false;
+                    isCritical = true;
                     issue = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", displayName);
+                }
+            }
+            else if (comp is HogPanDirtBox || typeName == "HogPanDirtBox" || goName.Contains("HogPanMud") || comp is HogPan || typeName == "HogPan")
+            {
+                if (comp is HogPan)
+                {
+                    // HogPan itself is monitored through its HogPanDirtBox component
+                    return;
+                }
+
+                setup = WashPlantSetupType.Setup2_Stationary;
+                if (obGoldCounter != null && hasOrangeBeastCenter && Vector3.Distance(comp.transform.position, orangeBeastCenter) <= 40f)
+                {
+                    setup = WashPlantSetupType.Setup3_OrangeBeast;
+                }
+
+                HogPan parentHog = comp.GetComponentInParent<HogPan>() ?? GetFieldValue<HogPan>(comp, type, "MyHog");
+                string numSuffix = "";
+                if (parentHog != null)
+                {
+                    if ((statGoldCounter != null && parentHog == statGoldCounter.MyHogPan2) || parentHog.gameObject.name.Contains("2"))
+                        numSuffix = " #2";
+                    else if ((statGoldCounter != null && parentHog == statGoldCounter.MyHogPan) || parentHog.gameObject.name.Contains("1") || parentHog.gameObject.name == "Hog_Pan")
+                        numSuffix = " #1";
+                }
+
+                string baseBoxName = LocalizationManager.T("equipment.hogpan_dirtbox", "Hog Pan Dirt Box");
+                displayName = string.IsNullOrEmpty(numSuffix) ? baseBoxName : $"{baseBoxName}{numSuffix}";
+                hasPower = true;
+                hasWater = true;
+
+                if (comp is HogPanDirtBox dirtBox)
+                {
+                    bool hoseConnected = dirtBox.WaterSocket != null && !dirtBox.WaterSocket.IsEmpty() && dirtBox.WaterSocket.ObjectInHolder != null;
+                    bool waterActive = hoseConnected && dirtBox.MyWaterConsumer != null && dirtBox.MyWaterConsumer.HaveWater && CheckWaterState(dirtBox.MyWaterConsumer);
+
+                    if (!hoseConnected)
+                    {
+                        hasWater = false;
+                        isWorking = false;
+                        isCritical = true;
+                        issue = LocalizationManager.Format("issue.machinery.water_hose_disconnected", "{0} water hose disconnected.", displayName);
+                    }
+                    else if (!waterActive)
+                    {
+                        hasWater = false;
+                        isWorking = false;
+                        isCritical = true;
+                        if (dirtBox.MyWaterConsumer != null && !dirtBox.MyWaterConsumer.EnabledInProducer())
+                        {
+                            issue = LocalizationManager.Format("issue.machinery.water_valve_closed", "{0} water valve / splitter valve is closed.", displayName);
+                        }
+                        else
+                        {
+                            issue = LocalizationManager.Format("issue.hogpan.no_water", "{0}: Hog Pan Dirt Box has no water supply!", displayName);
+                        }
+                    }
+                }
+                else
+                {
+                    hasWater = CheckWaterState(comp);
+                    if (!hasWater)
+                    {
+                        isWorking = false;
+                        isCritical = true;
+                        issue = LocalizationManager.Format("issue.hogpan.no_water", "{0}: Hog Pan Dirt Box has no water supply!", displayName);
+                    }
                 }
             }
             else if (comp is MobileWashplant || comp is MiniWashplant || typeName == "MobileWashplant" || typeName == "MiniWashplant")
@@ -470,14 +941,59 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                     return;
                 }
 
-                bool ready = false;
                 if (comp is MobileWashplant mwp)
                 {
-                    ready = mwp.CheckIfIsReadyToWork() && (mwp.OnOff?.IsOn() ?? false);
                     hasPower = CheckPowerState(comp);
                     hasWater = CheckWaterState(comp);
 
-                    if (!ready)
+                    string missingPart = null;
+                    string brokenPart = null;
+
+                    if (mwp.Engine != null)
+                    {
+                        if (!IsCheckAndRepairAttached(mwp.Engine))
+                        {
+                            string rawName = !string.IsNullOrEmpty(mwp.Engine.Name) ? mwp.Engine.Name : "Engine";
+                            missingPart = LocalizationManager.ResolveGameText(rawName);
+                        }
+                        else if (mwp.Engine.IsDestroyed)
+                        {
+                            string rawName = !string.IsNullOrEmpty(mwp.Engine.Name) ? mwp.Engine.Name : "Engine";
+                            brokenPart = LocalizationManager.ResolveGameText(rawName);
+                        }
+                    }
+                    if (mwp.Pipe != null)
+                    {
+                        if (!IsCheckAndRepairAttached(mwp.Pipe) && missingPart == null)
+                        {
+                            string rawName = !string.IsNullOrEmpty(mwp.Pipe.Name) ? mwp.Pipe.Name : "Pipe";
+                            missingPart = LocalizationManager.ResolveGameText(rawName);
+                        }
+                        else if (mwp.Pipe.IsDestroyed && brokenPart == null)
+                        {
+                            string rawName = !string.IsNullOrEmpty(mwp.Pipe.Name) ? mwp.Pipe.Name : "Pipe";
+                            brokenPart = LocalizationManager.ResolveGameText(rawName);
+                        }
+                    }
+
+                    string mwpHolderMissing = CheckMissingRepairHolders(comp);
+                    if (missingPart == null) missingPart = mwpHolderMissing;
+
+                    bool isOn = mwp.OnOff?.IsOn() ?? false;
+
+                    if (missingPart != null)
+                    {
+                        isWorking = false;
+                        isCritical = true;
+                        issue = LocalizationManager.Format("issue.machinery.part_missing", "{0}: Missing {1}!", displayName, missingPart);
+                    }
+                    else if (brokenPart != null)
+                    {
+                        isWorking = false;
+                        isCritical = true;
+                        issue = LocalizationManager.Format("issue.machinery.part_broken", "{0}: {1} broken!", displayName, brokenPart);
+                    }
+                    else if (!isOn)
                     {
                         isWorking = false;
                         issue = LocalizationManager.Format("issue.machinery.turned_off", "{0} is turned off.", displayName);
@@ -495,9 +1011,41 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 }
                 else if (comp is MiniWashplant minip)
                 {
-                    ready = minip.IsOn;
                     hasPower = true; // Internal diesel engine
                     hasWater = CheckWaterState(comp);
+
+                    string missingPart = null;
+                    string brokenPart = null;
+
+                    if (minip.Pipes_RepairComp_01 != null)
+                    {
+                        if (!IsCheckAndRepairAttached(minip.Pipes_RepairComp_01))
+                        {
+                            string rawName = !string.IsNullOrEmpty(minip.Pipes_RepairComp_01.Name) ? minip.Pipes_RepairComp_01.Name : "Pipe";
+                            missingPart = LocalizationManager.ResolveGameText(rawName);
+                        }
+                        else if (minip.Pipes_RepairComp_01.IsDestroyed)
+                        {
+                            string rawName = !string.IsNullOrEmpty(minip.Pipes_RepairComp_01.Name) ? minip.Pipes_RepairComp_01.Name : "Pipe";
+                            brokenPart = LocalizationManager.ResolveGameText(rawName);
+                        }
+                    }
+                    if (minip.Pipes_RepairComp_02 != null)
+                    {
+                        if (!IsCheckAndRepairAttached(minip.Pipes_RepairComp_02) && missingPart == null)
+                        {
+                            string rawName = !string.IsNullOrEmpty(minip.Pipes_RepairComp_02.Name) ? minip.Pipes_RepairComp_02.Name : "Pipe";
+                            missingPart = LocalizationManager.ResolveGameText(rawName);
+                        }
+                        else if (minip.Pipes_RepairComp_02.IsDestroyed && brokenPart == null)
+                        {
+                            string rawName = !string.IsNullOrEmpty(minip.Pipes_RepairComp_02.Name) ? minip.Pipes_RepairComp_02.Name : "Pipe";
+                            brokenPart = LocalizationManager.ResolveGameText(rawName);
+                        }
+                    }
+
+                    string minipHolderMissing = CheckMissingRepairHolders(comp);
+                    if (missingPart == null) missingPart = minipHolderMissing;
 
                     bool hasFuel = true;
                     if (minip._FuelController != null)
@@ -505,7 +1053,19 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                         hasFuel = minip._FuelController.HaveFuel && minip._FuelController.CurrentCapacity > 0.1f;
                     }
 
-                    if (!ready)
+                    if (missingPart != null)
+                    {
+                        isWorking = false;
+                        isCritical = true;
+                        issue = LocalizationManager.Format("issue.machinery.part_missing", "{0}: Missing {1}!", displayName, missingPart);
+                    }
+                    else if (brokenPart != null)
+                    {
+                        isWorking = false;
+                        isCritical = true;
+                        issue = LocalizationManager.Format("issue.machinery.part_broken", "{0}: {1} broken!", displayName, brokenPart);
+                    }
+                    else if (!minip.IsOn)
                     {
                         isWorking = false;
                         issue = LocalizationManager.Format("issue.machinery.turned_off", "{0} is turned off.", displayName);
@@ -520,28 +1080,6 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                     {
                         isWorking = false;
                         issue = LocalizationManager.Format("issue.machinery.no_water_pressure", "{0} has no water pressure.", displayName);
-                    }
-                }
-                else
-                {
-                    ready = GetFieldValue<bool>(comp, type, "IsReadyToWork") || GetFieldValue<bool>(comp, type, "IsOn");
-                    hasPower = typeName == "MiniWashplant" ? true : CheckPowerState(comp);
-                    hasWater = CheckWaterState(comp);
-
-                    if (!ready)
-                    {
-                        isWorking = false;
-                        issue = LocalizationManager.Format("issue.machinery.turned_off", "{0} is turned off.", displayName);
-                    }
-                    else if (!hasWater)
-                    {
-                        isWorking = false;
-                        issue = LocalizationManager.Format("issue.machinery.no_water_pressure", "{0} has no water pressure.", displayName);
-                    }
-                    else if (!hasPower)
-                    {
-                        isWorking = false;
-                        issue = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", displayName);
                     }
                 }
             }
@@ -563,8 +1101,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
             CurrentData.PlantComponents.Add(status);
 
-            // Scan all installed wear-and-tear parts (CheckAndRepair) belonging to this machinery
-            ScanEquipmentWear(go, setup, displayName);
+            // Scan all installed and missing wear-and-tear parts (CheckAndRepair) belonging to this machinery
+            ScanEquipmentWear(comp, go, setup, displayName);
 
             string details = $"Setup: {setup}, Name: {displayName}, Working: {isWorking}, Power: {hasPower}, Water: {hasWater}, Issue: {issue ?? "None"}";
             string debugCat = "Setup 1 (Mobile)";
@@ -645,18 +1183,57 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 }
             }
 
+            string cleanName = go.name.Replace("(Clone)", "").Trim();
+            bool isCritical = false;
+            string issue = null;
+
             if (typeName == "ConveyorGround")
             {
                 currentDirt = GetFieldValue<float>(comp, type, "DirtVolume");
                 maxDirt = GetFieldValue<float>(comp, type, "MaxDirt");
                 float speed = GetFieldValue<float>(comp, type, "Speed");
                 isWorking = hasPower && speed > 0.01f;
+
+                CheckAndRepair belt = GetFieldValue<CheckAndRepair>(comp, type, "EngineBelt") ?? comp.GetComponentInChildren<CheckAndRepair>();
+                bool isBroken = GetFieldValue<bool>(comp, type, "_IsBroken");
+
+                if (belt != null && !IsCheckAndRepairAttached(belt))
+                {
+                    isWorking = false;
+                    isCritical = false;
+                    issue = LocalizationManager.Format("issue.conveyor.belt_missing", "{0}: Missing drive belt!", cleanName);
+                }
+                else if (belt != null && belt.IsDestroyed)
+                {
+                    isWorking = false;
+                    isCritical = false;
+                    issue = LocalizationManager.Format("issue.conveyor.belt_broken", "{0}: Drive belt broken!", cleanName);
+                }
+                else if (isBroken)
+                {
+                    isWorking = false;
+                    isCritical = true;
+                    issue = LocalizationManager.Format("issue.conveyor.broken", "{0} is broken!", cleanName);
+                }
             }
             else if (typeName == "ConveyorElevator")
             {
                 maxDirt = GetFieldValue<float>(comp, type, "BucketCapacity");
                 float speed = GetFieldValue<float>(comp, type, "TrackSpeed") + GetFieldValue<float>(comp, type, "speed");
                 isWorking = hasPower && speed > 0.01f;
+
+                ConveyorGround cg = GetFieldValue<ConveyorGround>(comp, type, "MyConveyorGround");
+                if (cg == null)
+                {
+                    isWorking = false;
+                    issue = LocalizationManager.Format("issue.conveyor.no_feeder", "{0}: No connected hopper feeder.", cleanName);
+                }
+                else if (cg.GetIsBroken())
+                {
+                    isWorking = false;
+                    isCritical = false;
+                    issue = LocalizationManager.Format("issue.conveyor.feeder_broken", "{0}: Feeder hopper is broken / stopped!", cleanName);
+                }
             }
 
             // Associate with nearest setup ONLY if that setup actually exists on the claim!
@@ -682,12 +1259,14 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             var status = new ConveyorStatus
             {
                 InstanceId = go.GetInstanceID(),
-                Name = go.name.Replace("(Clone)", "").Trim(),
+                Name = cleanName,
                 Position = go.transform.position,
                 CurrentDirt = currentDirt,
                 MaxDirt = maxDirt,
                 HasPower = hasPower,
                 IsWorking = isWorking,
+                IsCritical = isCritical,
+                SpecificIssue = issue,
                 IsConnected = isConnected,
                 AssignedSetup = assigned
             };
@@ -699,7 +1278,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                                 || (assigned == WashPlantSetupType.Setup3_OrangeBeast && Config.Setup3IncludeFeedingChain.Value));
             if (monitorConveyor)
             {
-                ScanEquipmentWear(go, assigned, go.name.Replace("(Clone)", "").Trim(), isConnected);
+                ScanEquipmentWear(comp, go, assigned, cleanName, isConnected);
             }
 
             string details = $"Setup: {assigned}, Power: {hasPower}, Working: {isWorking}, Dirt: {currentDirt:F1}/{maxDirt:F1} m³";
@@ -779,10 +1358,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
             CurrentData.Utilities.Add(status);
 
-            // Scan filters and wear parts on water pumps, towers, and generators ONLY IF CONNECTED!
-            if (isConnected && (uType == "WaterPump" || uType == "WaterTower" || uType == "Generator"))
+            // Scan filters and wear parts on water pumps and generators ONLY IF CONNECTED!
+            if (isConnected && (uType == "WaterPump" || uType == "Generator"))
             {
-                ScanEquipmentWear(go, WashPlantSetupType.None, status.Name, true);
+                ScanEquipmentWear(comp, go, WashPlantSetupType.None, status.Name, true);
             }
 
             CurrentData.RawInspectionItems.Add(new RawDebugItem
@@ -896,69 +1475,420 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             return true;
         }
 
-        private void ScanEquipmentWear(GameObject rootGo, WashPlantSetupType setup, string equipmentDisplayName, bool isConnected = true)
+        private bool IsInHolders(System.Collections.Generic.IEnumerable<ShovelObjectsHolder> holders, MonoBehaviour target)
+        {
+            if (holders == null || target == null) return false;
+            foreach (var h in holders)
+            {
+                if (h != null && h.ObjectInHolder != null)
+                {
+                    if (h.ObjectInHolder.gameObject == target.gameObject)
+                        return true;
+                    if (h.ObjectInHolder.GetComponentInChildren(target.GetType()) == target)
+                        return true;
+                }
+            }
+            return false;
+        }
+
+        private bool IsConnectedAndNear(MonoBehaviour comp, Vector3 center, float maxDist)
+        {
+            if (comp == null) return false;
+            if (center != Vector3.zero && Vector3.Distance(comp.transform.position, center) > maxDist) return false;
+
+            var pc = comp.GetComponent<PowerConsumer>() ?? comp.GetComponentInChildren<PowerConsumer>();
+            if (pc != null)
+            {
+                if (pc.HavePower) return true;
+                var ropes = GetFieldValue<System.Collections.IList>(pc, typeof(PowerConsumer), "MyRopes");
+                if (ropes != null && ropes.Count > 0) return true;
+            }
+
+            var wc = comp.GetComponent<WaterConsumer>() ?? comp.GetComponentInChildren<WaterConsumer>();
+            if (wc != null && IsWaterConsumerConnected(wc, comp)) return true;
+
+            return false;
+        }
+
+        private void ScanEquipmentWear(MonoBehaviour comp, GameObject rootGo, WashPlantSetupType setup, string equipmentDisplayName, bool isConnected = true)
         {
             if (rootGo == null) return;
 
-            var wearComponents = rootGo.GetComponentsInChildren<CheckAndRepair>(true);
-            if (wearComponents == null || wearComponents.Length == 0) return;
-
-            for (int i = 0; i < wearComponents.Length; i++)
+            var partsList = new List<CheckAndRepair>();
+            var childParts = rootGo.GetComponentsInChildren<CheckAndRepair>(true);
+            if (childParts != null)
             {
-                var cr = wearComponents[i];
-                if (cr == null) continue;
-
-                // CRITICAL REQUIREMENT: Only consider parts that are physically installed on the machine!
-                // Disassembled/abandoned parts lying loose in the claim world must be completely ignored.
-                if (!cr.IsInPlace) continue;
-
-                // Generator breaker/switch buttons: ignored by default to prevent HUD spam unless enabled in config
-                bool isGenSwitchButton = cr.gameObject.name.Contains("Switch_Button")
-                                      || cr.gameObject.name.Contains("Power_Generator_Switch")
-                                      || (!string.IsNullOrEmpty(cr.Name) && cr.Name.Contains("SWITCH_BUTTON"));
-                if (isGenSwitchButton && (Config == null || !Config.MonitorGeneratorSwitchButtons.Value))
+                for (int i = 0; i < childParts.Length; i++)
                 {
-                    continue;
+                    if (childParts[i] != null && !partsList.Contains(childParts[i]))
+                        partsList.Add(childParts[i]);
+                }
+            }
+
+            if (comp != null)
+            {
+                var type = comp.GetType();
+                var repArray = GetFieldValue<CheckAndRepair[]>(comp, type, "MyCheckAndRepair");
+                if (repArray != null)
+                {
+                    for (int i = 0; i < repArray.Length; i++)
+                    {
+                        if (repArray[i] != null && !partsList.Contains(repArray[i]))
+                            partsList.Add(repArray[i]);
+                    }
+                }
+                var singleBelt = GetFieldValue<CheckAndRepair>(comp, type, "EngineBelt");
+                if (singleBelt != null && !partsList.Contains(singleBelt)) partsList.Add(singleBelt);
+                var singleChain = GetFieldValue<CheckAndRepair>(comp, type, "ChainCheckAndRepair");
+                if (singleChain != null && !partsList.Contains(singleChain)) partsList.Add(singleChain);
+                var singleEngine = GetFieldValue<CheckAndRepair>(comp, type, "Engine") ?? GetFieldValue<CheckAndRepair>(comp, type, "EngineRepair");
+                if (singleEngine != null && !partsList.Contains(singleEngine)) partsList.Add(singleEngine);
+                var singlePipe = GetFieldValue<CheckAndRepair>(comp, type, "Pipe");
+                if (singlePipe != null && !partsList.Contains(singlePipe)) partsList.Add(singlePipe);
+                var p1 = GetFieldValue<CheckAndRepair>(comp, type, "Pipes_RepairComp_01");
+                if (p1 != null && !partsList.Contains(p1)) partsList.Add(p1);
+                var p2 = GetFieldValue<CheckAndRepair>(comp, type, "Pipes_RepairComp_02");
+                if (p2 != null && !partsList.Contains(p2)) partsList.Add(p2);
+            }
+
+            // Also search for CheckAndRepair components referenced by CrowbarComponent (e.g. Shaker suspension springs)
+            // or mounted in Holder instances of type ShakerSpring
+            var wearScanTargets = new List<GameObject>();
+            wearScanTargets.Add(rootGo);
+
+            for (int tIdx = 0; tIdx < wearScanTargets.Count; tIdx++)
+            {
+                var target = wearScanTargets[tIdx];
+                if (target == null) continue;
+
+                var crowbars = target.GetComponentsInChildren<CrowbarComponent>(true);
+                if (crowbars != null)
+                {
+                    for (int c = 0; c < crowbars.Length; c++)
+                    {
+                        var cb = crowbars[c];
+                        if (cb != null && cb.RepairObject != null && !partsList.Contains(cb.RepairObject))
+                        {
+                            partsList.Add(cb.RepairObject);
+                        }
+                    }
                 }
 
-                string rawPartName = !string.IsNullOrEmpty(cr.Name) ? cr.Name : cr.gameObject.name.Replace("(Clone)", "").Trim();
-                string partName = LocalizationManager.ResolveGameText(rawPartName);
-
-                string internalMachineName = GetFieldValue<string>(cr, typeof(CheckAndRepair), "MyMachineName");
-                string rawMachine = !string.IsNullOrEmpty(equipmentDisplayName) ? equipmentDisplayName : internalMachineName;
-                string machine = LocalizationManager.ResolveGameText(rawMachine);
-
-                var wearStatus = new EquipmentWearStatus
+                var holders = target.GetComponentsInChildren<Holder>(true);
+                if (holders != null)
                 {
-                    InstanceId = cr.GetInstanceID(),
-                    PartName = partName,
-                    ParentMachineName = machine,
-                    Position = cr.transform.position,
-                    Durability = cr.Durability,
-                    IsDestroyed = cr.IsDestroyed,
-                    IsInPlace = cr.IsInPlace,
-                    IsConnected = isConnected,
-                    Setup = setup
-                };
+                    for (int h = 0; h < holders.Length; h++)
+                    {
+                        var holder = holders[h];
+                        if (holder == null || holder is ShovelRopeHolder) continue;
 
-                CurrentData.WearParts.Add(wearStatus);
+                        bool isSpringHolder = (int)holder.Type == 30 ||
+                                              holder.Type.ToString().IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                              holder.gameObject.name.IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0;
 
-                string wearCat = "Utilities";
-                if (setup == WashPlantSetupType.Setup1_Mobile) wearCat = "Setup 1 (Mobile)";
-                else if (setup == WashPlantSetupType.Setup2_Stationary) wearCat = "Setup 2 (Stationary)";
-                else if (setup == WashPlantSetupType.Setup3_OrangeBeast) wearCat = "Setup 3 (Orange Beast)";
-
-                CurrentData.RawInspectionItems.Add(new RawDebugItem
-                {
-                    Category = wearCat,
-                    TypeName = "CheckAndRepair",
-                    GameObjectName = cr.gameObject.name,
-                    InstanceId = cr.GetInstanceID(),
-                    Position = cr.transform.position,
-                    Details = $"{machine} -> {partName}: Durability={cr.Durability * 100f:F0}%, Destroyed={cr.IsDestroyed}, InPlace={cr.IsInPlace}, Connected={isConnected}",
-                    Setup = setup
-                });
+                        if (isSpringHolder && holder.ObjectInHolder != null)
+                        {
+                            var cr = holder.ObjectInHolder.GetComponent<CheckAndRepair>() ?? holder.ObjectInHolder.GetComponentInChildren<CheckAndRepair>(true);
+                            if (cr != null && !partsList.Contains(cr))
+                            {
+                                partsList.Add(cr);
+                            }
+                        }
+                    }
+                }
             }
+
+            if (partsList.Count > 0)
+            {
+                for (int i = 0; i < partsList.Count; i++)
+                {
+                    var cr = partsList[i];
+                    if (cr == null) continue;
+
+                    // Generator breaker/switch buttons: ignored by default to prevent HUD spam unless enabled in config
+                    bool isGenSwitchButton = cr.gameObject.name.Contains("Switch_Button")
+                                          || cr.gameObject.name.Contains("Power_Generator_Switch")
+                                          || (!string.IsNullOrEmpty(cr.Name) && cr.Name.Contains("SWITCH_BUTTON"));
+                    if (isGenSwitchButton && (Config == null || !Config.MonitorGeneratorSwitchButtons.Value))
+                    {
+                        continue;
+                    }
+
+                    bool isAttached = IsCheckAndRepairAttached(cr);
+                    bool isMissing = !isAttached;
+
+                    string rawPartName = !string.IsNullOrEmpty(cr.Name) ? cr.Name : cr.gameObject.name.Replace("(Clone)", "").Trim();
+                    string partName = LocalizationManager.ResolveGameText(rawPartName);
+
+                    string internalMachineName = GetFieldValue<string>(cr, typeof(CheckAndRepair), "MyMachineName");
+                    string rawMachine = !string.IsNullOrEmpty(equipmentDisplayName) ? equipmentDisplayName : internalMachineName;
+                    string machine = LocalizationManager.ResolveGameText(rawMachine);
+
+                    var wearStatus = new EquipmentWearStatus
+                    {
+                        InstanceId = cr.GetInstanceID(),
+                        PartName = partName,
+                        ParentMachineName = machine,
+                        Position = cr.transform.position,
+                        Durability = isMissing ? 0f : cr.Durability,
+                        IsDestroyed = !isMissing && cr.IsDestroyed,
+                        IsInPlace = isAttached,
+                        IsMissing = isMissing,
+                        IsConnected = isConnected,
+                        Setup = setup
+                    };
+
+                    CurrentData.WearParts.Add(wearStatus);
+
+                    string wearCat = "Utilities";
+                    if (setup == WashPlantSetupType.Setup1_Mobile) wearCat = "Setup 1 (Mobile)";
+                    else if (setup == WashPlantSetupType.Setup2_Stationary) wearCat = "Setup 2 (Stationary)";
+                    else if (setup == WashPlantSetupType.Setup3_OrangeBeast) wearCat = "Setup 3 (Orange Beast)";
+
+                    CurrentData.RawInspectionItems.Add(new RawDebugItem
+                    {
+                        Category = wearCat,
+                        TypeName = "CheckAndRepair",
+                        GameObjectName = cr.gameObject.name,
+                        InstanceId = cr.GetInstanceID(),
+                        Position = cr.transform.position,
+                        Details = $"{machine} -> {partName}: Durability={cr.Durability * 100f:F0}%, Destroyed={cr.IsDestroyed}, Attached={isAttached}, Missing={isMissing}, Connected={isConnected}",
+                        Setup = setup
+                    });
+                }
+            }
+
+            // Also check for unhooked / missing suspension springs on Shakers
+            if (comp != null)
+            {
+                int missingSprings = GetMissingSuspensionSpringCount(comp);
+                if (missingSprings > 0)
+                {
+                    // Check if the missing spring is already recorded in WearParts (via CheckAndRepair)
+                    bool alreadyTracked = false;
+                    for (int w = 0; w < CurrentData.WearParts.Count; w++)
+                    {
+                        var wp = CurrentData.WearParts[w];
+                        if (wp.IsMissing && (wp.PartName.IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                             wp.PartName.IndexOf("Feder", StringComparison.OrdinalIgnoreCase) >= 0))
+                        {
+                            alreadyTracked = true;
+                            break;
+                        }
+                    }
+
+                    if (!alreadyTracked)
+                    {
+                        string springPartName = LocalizationManager.T("equipment.suspension_spring", "Suspension Spring");
+                        string machine = LocalizationManager.ResolveGameText(equipmentDisplayName);
+                        CurrentData.WearParts.Add(new EquipmentWearStatus
+                        {
+                            InstanceId = comp.GetInstanceID() ^ 0x5052,
+                            PartName = missingSprings > 1 ? $"{springPartName} ({missingSprings}x)" : springPartName,
+                            ParentMachineName = machine,
+                            Position = comp.transform.position,
+                            Durability = 0f,
+                            IsDestroyed = false,
+                            IsInPlace = false,
+                            IsMissing = true,
+                            IsConnected = isConnected,
+                            Setup = setup
+                        });
+                    }
+                }
+
+                // Check for detached wear parts whose CheckAndRepair component was completely removed
+                var holders = comp.GetComponentsInChildren<RepairHolder>(true);
+                if (holders != null)
+                {
+                    for (int hIdx = 0; hIdx < holders.Length; hIdx++)
+                    {
+                        var h = holders[hIdx];
+                        if (h == null) continue;
+                        string hName = h.gameObject.name;
+                        if (hName.Contains("Moss") || hName.Contains("Grille") || hName.Contains("Grate") || hName.Contains("Miner_Moss") || hName.Contains("Spring"))
+                            continue;
+
+                        if (h.IsEmpty() || h.ObjectInHolder == null)
+                        {
+                            string rawItemName = GetRepairHolderItemName(h);
+                            string partName = LocalizationManager.ResolveGameText(rawItemName);
+                            string machine = LocalizationManager.ResolveGameText(equipmentDisplayName);
+
+                            // De-duplicate: check if this missing part is already tracked in WearParts for this parent machine
+                            bool alreadyPresent = false;
+                            for (int w = 0; w < CurrentData.WearParts.Count; w++)
+                            {
+                                var wp = CurrentData.WearParts[w];
+                                if (wp.ParentMachineName == machine && wp.IsMissing)
+                                {
+                                    if (wp.PartName.Equals(partName, StringComparison.OrdinalIgnoreCase) ||
+                                        IsMatchingWearPart(wp.PartName, partName, rawItemName))
+                                    {
+                                        alreadyPresent = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (!alreadyPresent)
+                            {
+                                CurrentData.WearParts.Add(new EquipmentWearStatus
+                                {
+                                    InstanceId = h.GetInstanceID(),
+                                    PartName = partName,
+                                    ParentMachineName = machine,
+                                    Position = h.transform.position,
+                                    Durability = 0f,
+                                    IsDestroyed = false,
+                                    IsInPlace = false,
+                                    IsMissing = true,
+                                    IsConnected = isConnected,
+                                    Setup = setup
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        private bool IsCheckAndRepairAttached(CheckAndRepair cr)
+        {
+            if (cr == null) return false;
+            var rh = GetFieldValue<RepairHoldable>(cr, typeof(CheckAndRepair), "_myRepairHoldable") ?? cr.GetComponent<RepairHoldable>();
+            if (rh != null)
+            {
+                // Detachable wear part: must be active and mounted in a holder
+                return rh.MyHolder != null && cr.gameObject.activeSelf;
+            }
+            // Fixed / built-in machine part: present as long as active in hierarchy
+            return cr.gameObject.activeInHierarchy;
+        }
+
+        private int GetMissingSuspensionSpringCount(MonoBehaviour comp)
+        {
+            if (comp == null) return 0;
+
+            // Only Shakers have suspension springs (T3 Shaker, T4 DeRocker, T5 Glacier Creek, T6 Orange Beast Shaker).
+            // NOTE: ShovelRopeHolder / ShovelRopeHolderWashplant are excavator rigging hooks for lifting cables,
+            // NOT suspension springs. They must NEVER be treated as suspension springs.
+            string typeName = comp.GetType().Name;
+            string goName = comp.gameObject.name;
+            bool isShaker = comp is WashplantShakerBase ||
+                            typeName.Contains("Shaker") ||
+                            typeName == "GlacierCreek" ||
+                            typeName == "DeRocker" ||
+                            goName.Contains("Glacier") ||
+                            goName.Contains("DeRocker") ||
+                            goName.Contains("Shaker");
+
+            if (!isShaker) return 0;
+
+            int emptySpringHolders = 0;
+            var processedHolders = new HashSet<int>();
+
+            // Search for Holder components of type ShakerSpring (value 30) or with "Spring" in name
+            var holders = comp.GetComponentsInChildren<Holder>(true);
+            if (holders != null)
+            {
+                for (int hIdx = 0; hIdx < holders.Length; hIdx++)
+                {
+                    var h = holders[hIdx];
+                    if (h == null) continue;
+                    if (h is ShovelRopeHolder) continue; // Excavator transport rope hooks are not springs!
+
+                    int id = h.GetInstanceID();
+                    if (processedHolders.Contains(id)) continue;
+
+                    bool isSpringHolder = (int)h.Type == 30 ||
+                                          h.Type.ToString().IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                          h.gameObject.name.IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    if (isSpringHolder)
+                    {
+                        processedHolders.Add(id);
+                        if (h.IsEmpty() || h.ObjectInHolder == null || !h.ObjectInHolder.gameObject.activeInHierarchy)
+                        {
+                            emptySpringHolders++;
+                        }
+                    }
+                }
+            }
+
+            return Mathf.Clamp(emptySpringHolders, 0, 2);
+        }
+
+        private bool IsMatchingWearPart(string existingPartName, string newPartName, string rawItemName)
+        {
+            if (string.IsNullOrEmpty(existingPartName)) return false;
+
+            // Check for drive belt matches (e.g. "Waschanlagen-Antriebsriemen" vs "ConveyorEngineBelt" / "Drive Belt")
+            bool isBelt = (existingPartName.IndexOf("Belt", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                           existingPartName.IndexOf("Riemen", StringComparison.OrdinalIgnoreCase) >= 0) &&
+                          (newPartName.IndexOf("Belt", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                           newPartName.IndexOf("Riemen", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                           rawItemName.IndexOf("Belt", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (isBelt) return true;
+
+            // Check for bucket matches (e.g. "Förderbandeimer" vs "ConveyorBeltBucket" / "Bucket")
+            bool isBucket = (existingPartName.IndexOf("Bucket", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             existingPartName.IndexOf("Eimer", StringComparison.OrdinalIgnoreCase) >= 0) &&
+                            (newPartName.IndexOf("Bucket", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             newPartName.IndexOf("Eimer", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             rawItemName.IndexOf("Bucket", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (isBucket) return true;
+
+            // Check for engine / motor matches
+            bool isEngine = (existingPartName.IndexOf("Engine", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             existingPartName.IndexOf("Motor", StringComparison.OrdinalIgnoreCase) >= 0) &&
+                            (newPartName.IndexOf("Engine", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             newPartName.IndexOf("Motor", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             rawItemName.IndexOf("Engine", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (isEngine) return true;
+
+            // Check for spring matches
+            bool isSpring = (existingPartName.IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             existingPartName.IndexOf("Feder", StringComparison.OrdinalIgnoreCase) >= 0) &&
+                            (newPartName.IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             newPartName.IndexOf("Feder", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                             rawItemName.IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0);
+            if (isSpring) return true;
+
+            return false;
+        }
+
+        private string CheckMissingRepairHolders(MonoBehaviour comp)
+        {
+            if (comp == null) return null;
+            var holders = comp.GetComponentsInChildren<RepairHolder>(true);
+            if (holders == null || holders.Length == 0) return null;
+
+            for (int i = 0; i < holders.Length; i++)
+            {
+                var h = holders[i];
+                if (h == null) continue;
+                string hName = h.gameObject.name;
+                // Sluice moss and grilles have their own dedicated checking in SluiceBoxDirt
+                if (hName.Contains("Moss") || hName.Contains("Grille") || hName.Contains("Grate") || hName.Contains("Miner_Moss") || hName.Contains("Spring"))
+                    continue;
+
+                if (h.IsEmpty() || h.ObjectInHolder == null)
+                {
+                    string rawName = GetRepairHolderItemName(h);
+                    return LocalizationManager.ResolveGameText(rawName);
+                }
+            }
+            return null;
+        }
+
+        private string GetRepairHolderItemName(RepairHolder h)
+        {
+            if (h == null) return "Part";
+            string itemName = GetFieldValue<string>(h, typeof(RepairHolder), "_itemName");
+            if (!string.IsNullOrEmpty(itemName)) return itemName;
+            if (h.HoldablePrefab != null && !string.IsNullOrEmpty(h.HoldablePrefab.name)) return h.HoldablePrefab.name;
+            return h.gameObject.name.Replace("(Clone)", "").Trim();
         }
 
         private bool IsWaterConsumerConnected(WaterConsumer wc, MonoBehaviour comp = null)
@@ -1020,6 +1950,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 || comp is WashplantTrommelBase || name == "WashPlantTrommel" || name == "WashplantTrommelBase"
                 || comp is WashplantDuplexJigBase || name == "WashPlantDuplex" || name == "WashplantDuplexJigBase"
                 || comp is GravelPump || name == "GravelPump"
+                || comp is HogPanDirtBox || name == "HogPanDirtBox" || goName.Contains("HogPanMud")
+                || comp is HogPan || name == "HogPan"
                 || comp is MobileWashplant || name == "MobileWashplant"
                 || comp is MiniWashplant || name == "MiniWashplant")
             {
@@ -1135,7 +2067,11 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             {
                 if (shaker.Water != null)
                 {
-                    return shaker.Water.HaveWater || shaker.Water.CheckHasWater();
+                    if (shaker.Water.WaterIndicator != null && !CheckIndicatorActive(shaker.Water.WaterIndicator))
+                        return false;
+                    if (shaker.Water.Producent == null || !shaker.Water.Producent.IsEnabled || !shaker.Water.Producent.IsWorking || !shaker.Water.Producent.HaveWaterIn)
+                        return false;
+                    return shaker.Water.HaveWater && shaker.Water.CheckHasWater();
                 }
                 return GetFieldValue<bool>(comp, typeof(WashplantShakerBase), "_hasWater");
             }
@@ -1145,7 +2081,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             {
                 if (mwp._WaterConsumer != null)
                 {
-                    return mwp._WaterConsumer.HaveWater || mwp._WaterConsumer.CheckHasWater();
+                    if (mwp._WaterConsumer.WaterIndicator != null && !CheckIndicatorActive(mwp._WaterConsumer.WaterIndicator))
+                        return false;
+                    return mwp._WaterConsumer.HaveWater && mwp._WaterConsumer.CheckHasWater();
                 }
                 return GetFieldValue<bool>(comp, typeof(MobileWashplant), "_HasWater");
             }
@@ -1155,7 +2093,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             {
                 if (minip._WaterConsumer != null)
                 {
-                    return minip._WaterConsumer.HaveWater || minip._WaterConsumer.CheckHasWater();
+                    if (minip._WaterConsumer.WaterIndicator != null && !CheckIndicatorActive(minip._WaterConsumer.WaterIndicator))
+                        return false;
+                    return minip._WaterConsumer.HaveWater && minip._WaterConsumer.CheckHasWater();
                 }
                 return GetFieldValue<bool>(comp, typeof(MiniWashplant), "_HasWater");
             }
@@ -1167,7 +2107,11 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
             if (wc != null)
             {
-                return wc.HaveWater || wc.CheckHasWater();
+                if (wc.WaterIndicator != null && !CheckIndicatorActive(wc.WaterIndicator))
+                    return false;
+                if (wc.Producent == null || !wc.Producent.IsEnabled || !wc.Producent.IsWorking || !wc.Producent.HaveWaterIn)
+                    return false;
+                return wc.HaveWater && wc.CheckHasWater();
             }
 
             // 5. Reflection fallback for _hasWater or HasWater field/property
@@ -1267,6 +2211,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
         {
             string goName = comp?.gameObject?.name ?? "";
             
+            if (comp is HogPanDirtBox || typeName == "HogPanDirtBox" || goName.Contains("HogPanDirtBox") || goName.Contains("HogPanMud") || comp is HogPan || typeName == "HogPan")
+                return LocalizationManager.T("equipment.hogpan_dirtbox", "Hog Pan Dirt Box");
             if (comp is GravelPump || typeName == "GravelPump" || goName.Contains("GravelPump"))
                 return LocalizationManager.T("equipment.gravel_pump", "Gravel Pump");
             if (comp is WashplantDuplexJigBase || typeName == "WashPlantDuplex" || typeName == "WashplantDuplexJigBase" || goName.Contains("Duplex"))

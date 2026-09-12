@@ -3,6 +3,68 @@
 All notable changes and releases for this mod collection are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.8.25] - 2026-09-12
+
+### Claim Monitor: Glacier Creek Springs, Water Detection, Conveyor Alarm De-duplication & T5 HogPan Water Monitoring
+
+- **Claim Monitor v1.0.13 — Suspension Spring False Alarm & De-duplication Fix**:
+  - Resolved an issue where `GetMissingSuspensionSpringCount` inspected `CrowbarComponent._IsUnscrew` (which is `true` in normal gameplay for assembled springs), causing the Warning HUD to falsely report missing suspension springs when fully installed.
+  - Spring detection strictly counts empty `ShakerSpring` holders, eliminating false alarms and multiplying alerts upon disassembly.
+  - Fixed localization format parameters and suppressed duplicate machinery critical failure cards when wear parts are already flagged.
+- **Claim Monitor v1.0.13 — Glacier Creek Water Valve & Hose Shutoff Detection**:
+  - Restored water detection on Glacier Creek that was previously shadowed by the permanent spring failure state.
+  - Added specific diagnosis for closed water valves / splitter manifolds (`EnabledInProducer()`).
+- **Claim Monitor v1.0.13 — Conveyor Hopper Belt Cascade & Alarm Storm Elimination**:
+  - Reduced a 4-alarm cascade on hopper belt removal down to a single, accurate wear part alert.
+  - De-duplicated detached `CheckAndRepair` items against empty `RepairHolder`s in `ScanEquipmentWear`.
+  - Converted Conveyor Elevator feeder stoppage into an operational pause (`isCritical = false`).
+- **Claim Monitor v1.0.13 — Active Claim Setup Anchoring & T5 HogPan Water Monitoring**:
+  - Implemented intelligent setup scoring in `ForceScan()`, anchoring telemetry to the player's active wash plant rather than an empty allotment 366 meters away.
+  - Added `HogPan` to `IsPlantMachinery()` and verified physical `WaterSocket` connection and water flow on `HogPanDirtBox`.
+  - Added clear numbering (`#1`, `#2`) for dual HogPan setups.
+
+---
+
+## [1.8.24] - 2026-09-12
+
+### Claim Monitor: Scoping Parent Pollution Removal, Plant Membership Isolation & Offline Machine Detection
+
+- **Claim Monitor v1.0.12 — Elimination of Duplicate Wear & Missing Part Warnings**:
+  - Fixed parent hierarchy pollution where scanning `rootGo.transform.parent` caused missing wear parts (such as detached Conveyor Hopper belts, missing conveyor buckets, or removed suspension springs) to be attributed to every sibling machine on the claim (Power Generator, Electric Water Pump, Conveyor Elevator).
+  - Wear scanning strictly targets the machine itself (`rootGo`), completely eliminating spurious multi-machine duplicate alerts.
+- **Claim Monitor v1.0.12 — Persistent Wash Plant Membership & Power Loss Alarms**:
+  - Machinery is now persistently recognized as part of the active stationary wash plant if mounted in scaffold holders or located within the plant perimeter (<= 30 m; <= 50 m for Gravel Pump).
+  - Unplugging electric power cables now immediately raises a prominent `[CRITICAL]` alert on the Warning HUD instead of causing the machine to be discarded from monitoring.
+- **Claim Monitor v1.0.12 — Closed Water Valve Detection (`CheckWaterState`)**:
+  - Evaluates live game indicators (`WaterConsumer.WaterIndicator`) and flow states: closed valves on water manifolds and splitters are immediately detected as lack of water supply and reported as critical failures.
+- **Claim Monitor v1.0.12 — Glacier Creek Engine Detachment Monitoring**:
+  - Explicitly verifies the engine presence on Glacier Creek via `EngineRepair` and `RepairHolder` (type 63 `GlacierCreekEngine` / type 58 `ElectricEngine`).
+  - Removing the engine immediately triggers `[CRITICAL] Glacier Creek Engine Missing!`.
+- **Claim Monitor v1.0.12 — Hog Pan Dirt Box Monitoring (Tier 4 & Tier 5 Setups)**:
+  - Added support for `HogPanDirtBox` in the wash plant scanner.
+  - Automatically associates dirt boxes with the active wash plant setup and detects disconnected water hoses or dry supply lines.
+
+---
+
+## [1.8.23] - 2026-09-12
+
+### Claim Monitor: Missing & Broken Part Detection, Active Setup Isolation & Conveyor Drive Belt Tracking
+
+- **Claim Monitor v1.0.11 — Missing & Detached Component Detection on Wash Plants**:
+  - Resolved an issue where removing mechanical parts from a wash plant (such as suspension springs, engines, or drive chains on Glacier Creek or shakers) left the plant non-functional while Claim Monitor falsely reported "All Systems Operational".
+  - Corrected suspension spring detection: Wash plant shakers (T3 Shaker, T4 DeRocker, T5 Glacier Creek, T6 Orange Beast Shaker) feature exactly 2 suspension springs. Excavator rigging hooks (`ShovelRopeHolder` / `ShovelRopeHolderWashplant`) used for crane transport are no longer misidentified as springs.
+  - Physical springs are tracked via `ShakerSpring` holders, `CrowbarComponent`, and `CheckAndRepair` wear items. Detaching a spring with the crowbar or running it to 0% durability (broken) triggers an immediate `[CRITICAL]` maintenance alarm.
+  - Scans all installed machinery parts for physical attachment (`IsAttached()`) and detects unbolted parts and open maintenance covers (`CheckIfRepairMode()`) so players immediately know why a wash plant cannot be switched on.
+- **Claim Monitor v1.0.11 — Feeding Chain Drive Belt & Hopper Failure Tracking**:
+  - Added dedicated monitoring for Conveyor Belt drive belts (`EngineBelt`), alerting if the drive belt is broken or missing.
+  - Monitors the hopper feeder connection and mechanical health so earth supply stoppages are spotted immediately.
+- **Claim Monitor v1.0.11 — Smart Active Setup Isolation (Zero False Standby Warnings)**:
+  - Equipment monitoring for wash plant setups strictly isolates active, installed setup components.
+  - Machinery must be mounted inside the wash plant frame or physically connected to power and water lines.
+  - Spare, loose, or uninstalled components stored in the claim yard, in vehicle beds, or in transport boxes are recognized as standby and will never trigger false alerts.
+
+---
+
 ## [1.8.22] - 2026-09-12
 
 ### Production Tuner: Airborne / Teleportation Spawning Immunity (Anti-Hover Protection)

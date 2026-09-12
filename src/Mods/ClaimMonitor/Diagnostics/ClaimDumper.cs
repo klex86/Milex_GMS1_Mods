@@ -58,6 +58,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                    name.Contains("Wash") ||
                    name.Contains("Trommel") ||
                    name.Contains("Shaker") ||
+                   name.Contains("Glacier") ||
+                   name.Contains("DeRocker") ||
                    name.Contains("Conveyor") ||
                    name.Contains("Fuel") ||
                    name.Contains("Trailer") ||
@@ -72,7 +74,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                    name.Contains("HogPan") ||
                    name.Contains("Bucket") ||
                    name.Contains("GoldPan") ||
-                   name.Contains("Shovel");
+                   name.Contains("Shovel") ||
+                   name.Contains("CheckAndRepair") ||
+                   name.Contains("Repair") ||
+                   name.Contains("Holder") ||
+                   name.Contains("Spring") ||
+                   name.Contains("Crowbar") ||
+                   name.Contains("Cover");
         }
 
         private static void DumpComponentHierarchy(StringBuilder sb, MonoBehaviour comp, Type initialType)

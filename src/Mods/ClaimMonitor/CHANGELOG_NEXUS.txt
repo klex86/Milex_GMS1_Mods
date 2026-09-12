@@ -1,0 +1,51 @@
+Milex GMS1 Claim Monitor - Version History
+
+v1.0.11:
+- Added missing, detached, and unbolted part detection: The Warning HUD now immediately alerts you with a critical alarm if a part is missing, unbolted, or broken on your wash plant (e.g. Glacier Creek suspension springs, drive belts, chains, motors).
+- Smart setup isolation: Only machinery actively mounted and connected to your running wash plant setup is monitored. Spare, loose, or stored parts lying in your yard or vehicles will never trigger false warnings.
+- Added feeder hopper and conveyor drive belt failure tracking to prevent unnoticed gravel feed stoppages.
+
+v1.0.10:
+- Optimized background claim scanning performance and memory efficiency while working on large claims.
+
+v1.0.9:
+- HUD and claim scanner now automatically sleep during loading screens and main menus to preserve system performance.
+
+v1.0.8:
+- Improved conveyor monitoring: disconnected or unused conveyors on new claims no longer trigger false warnings.
+- Improved window height handling on smaller screen resolutions.
+
+v1.0.7:
+- Added intelligent connection detection for water pumps and generators (disconnected spare equipment on standby will never trigger false alarms).
+- Filtered individual power generator breaker buttons from spamming wear warnings.
+- Added dynamic window auto-height in both compact and normal modes to fit active alerts tightly without text cutoff.
+- Added diesel fuel monitoring for Mini Wash Plant engines.
+
+v1.0.6:
+- Added comprehensive wear and breakdown early-warning system for all physical wear parts (nozzles, belts, chains, filters, pump mechanisms).
+- Added configurable wear warning threshold (default 20%) to alert you before parts break down.
+
+v1.0.5:
+- Overhauled water supply detection on stationary wash plants (Glacier Creek, Derocker) with specific reasons for water failure.
+
+v1.0.4:
+- Fixed generator and pump running state validation so unpowered machines are accurately reported.
+- Corrected requirement profiles for Duplex Jigs and Gravel Pumps (electric only, no water required).
+
+v1.0.3:
+- Positioned vehicle fuel status indicators in front of each vehicle card in the vehicle quick-switcher.
+- Added Orange Beast setup presence detection to prevent ghost warnings on claims without Tier 6 equipment.
+
+v1.0.2:
+- Added support for Tier 6 Orange Beast wash plants, power cables, and water supply lines.
+- Added vehicle quick-switcher fuel status overlay.
+
+v1.0.1:
+- Added Tier 5 Gravel Pump support alongside Tier 4 Duplex Jigs.
+- Added configurable scan interval setting (default 3.0s).
+
+v1.0.0:
+- Initial release featuring the live tactical Warning HUD (Nominal / Warning / Critical).
+- Real-time Sluice Box Miner's Moss mat fill tracking with early warning at 90% and urgent alarm at 100%.
+- Machinery wear, generator fuel, water pump, and vehicle fleet monitoring.
+- Support for full card view, compact badge view, and "Warnings Only" mode.

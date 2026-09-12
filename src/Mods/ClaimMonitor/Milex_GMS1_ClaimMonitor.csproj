@@ -2,7 +2,7 @@
   <PropertyGroup>
     <RootNamespace>Milex.GMS1.Mods.ClaimMonitor</RootNamespace>
     <AssemblyName>Milex_GMS1_ClaimMonitor</AssemblyName>
-    <Version>1.0.10</Version>
+    <Version>1.0.13</Version>
     <Authors>Milex</Authors>
     <Product>Milex GMS1 Claim Monitor</Product>
     <Description>Live telemetry and status monitoring for wash plants, mats and feeding chains.</Description>

@@ -1,12 +1,12 @@
 # Milex GMS1 Claim Monitor
 
-- **Version:** `1.0.10` ([View Changelog](CHANGELOG.md))
+- **Version:** `1.0.11` ([View Changelog](CHANGELOG.md))
 - **Mod Name:** Milex GMS1 Claim Monitor
 - **Author:** Milex
 - **Assembly File:** `Milex_GMS1_ClaimMonitor.dll`
 - **Dependencies:** `Milex_GMS1_CoreMod.dll`, `BepInEx 5.4.21+`
 
-The **Claim Monitor** is a real-time tactical warning HUD for *Gold Mining Simulator* (*Gold Rush: The Game*). It actively scans your claim and monitors wash plants, sluice box mats, water pumps, power generators, and vehicles. It warns you before equipment breaks down, alerts you when Miner's Moss mats reach capacity, and notifies you when machinery runs low on fuel or water.
+The **Claim Monitor** is a real-time tactical warning HUD for *Gold Mining Simulator* (*Gold Rush: The Game*). It actively scans your claim and monitors wash plants, sluice box mats, water pumps, power generators, and vehicles. It warns you before equipment breaks down, alerts you when Miner's Moss mats reach capacity, and notifies you when machinery runs low on fuel, water, or required mechanical components.
 
 ---
 
@@ -37,16 +37,16 @@ The Warning HUD operates with three severity tiers: **Critical** (Red), **Warnin
 
 - **Setup 1: Mobile Wash Plants (Tier 2)**:
   - Monitors the **Mini Wash Plant** (including its internal diesel engine fuel) and the **Mobile Wash Plant**.
-  - Tracks Hog Pan hopper dirt level, water flow, and Miner's Moss mats.
+  - Tracks Hog Pan hopper dirt level, water flow, Miner's Moss mats, and essential drive belts / wear parts.
 - **Setup 2: Stationary Plant (Tier 3 to Tier 5)**:
-  - **Large Shaker**: Alerts if power fails, the motor stops, or water pressure drops.
-  - **Trommel** (Standard, Reinforced, and Old Arnold): Alerts immediately if the drive chain snaps.
-  - **Duplex Jig & Gravel Pump**: Alerts if the jig mechanism breaks or if concentrate collection buckets are full and need replacement.
+  - **Large Shaker & Glacier Creek**: Alerts if power fails, the motor stops, water pressure drops, suspension springs or engines are missing, or open repair covers leave the plant in repair mode.
+  - **Trommel** (Standard, Reinforced, and Old Arnold): Alerts immediately if the drive chain is broken or missing.
+  - **Duplex Jig & Gravel Pump**: Alerts if the jig mechanism breaks, parts are unbolted, or concentrate collection buckets are full and need replacement.
   - **Sluice Boxes & Miner's Moss**: Warns when mats reach your chosen fill threshold (default: 90%) and triggers an urgent alarm upon overflow (100%).
 - **Setup 3: Giant Setup (Tier 6 / Orange Beast)**:
   - Tracks the giant Orange Beast shaker, trommel, nugget traps, and extended sluice rows.
 - **Feeding Chain (Optional)**:
-  - Can be toggled on to monitor Feeder Hoppers and Conveyor Belts for earth jams, motor stoppages, and power disconnects.
+  - Can be toggled on to monitor Feeder Hoppers and Conveyor Belts for earth jams, motor stoppages, missing drive belts, and power disconnects.
 - **Vehicle & Machine Fuel**:
   - Monitors fuel tanks across all your vehicles: Pickup, Small Excavator, Large Excavator, Wheel Loader, Dump Truck, Backhoe Loader, and Bulldozer.
   - Triggers an early warning when fuel dips below 15% and a critical alarm when empty.
@@ -54,9 +54,9 @@ The Warning HUD operates with three severity tiers: **Critical** (Red), **Warnin
   - Monitors fuel levels in the large diesel generator and fuel tanks.
   - Monitors water flow from small and large water pumps as well as water towers.
 
-### 2. Smart Standby & Parked Machine Protection
+### 2. Smart Active Setup Isolation & Parked Machine Protection
 The Claim Monitor understands how you work on your claim:
-- Unconnected, parked, or spare equipment (pumps without hoses, generators without cables, or unhooked mobile wash plants) is recognized as **standby** and will never trigger annoying false alarms.
+- **Active Setup Isolation**: Only machinery actively mounted inside the wash plant frame or connected to power and water lines is monitored. Loose, unmounted, or spare components lying in your claim yard, on trailers, or in store boxes are recognized as standby and will never trigger false alarms.
 - The 10 individual switch buttons on the large generator can be excluded from wear alerts (`MonitorGeneratorSwitchButtons = false`) to keep your HUD clean.
 - During loading screens and in the main menu, background scanning and HUD rendering are fully paused to save CPU cycles.
 
