@@ -225,7 +225,7 @@ namespace Milex.GMS1.Core.UI.Modern
 
         // ---- Element Creators ----
 
-        public static GameObject CreatePanel(Transform parent, string name, Color color, Sprite sprite = null, Image.Type imageType = Image.Type.Sliced, bool raycastTarget = true)
+        public static GameObject CreatePanel(Transform parent, string name, Color color, Sprite sprite = null, Image.Type imageType = Image.Type.Sliced, bool raycastTarget = false)
         {
             var go = new GameObject(name, typeof(RectTransform), typeof(Image));
             go.transform.SetParent(parent, false);
@@ -320,7 +320,7 @@ namespace Milex.GMS1.Core.UI.Modern
             sliderRt.sizeDelta = new Vector2(200, 18);
 
             // Background Track
-            var bgObj = CreatePanel(sliderObj.transform, "Background", new Color(0.12f, 0.14f, 0.19f, 1f), PillSprite);
+            var bgObj = CreatePanel(sliderObj.transform, "Background", new Color(0.12f, 0.14f, 0.19f, 1f), PillSprite, raycastTarget: false);
             var bgRt = bgObj.GetComponent<RectTransform>();
             bgRt.anchorMin = new Vector2(0, 0.32f);
             bgRt.anchorMax = new Vector2(1, 0.68f);
@@ -336,7 +336,7 @@ namespace Milex.GMS1.Core.UI.Modern
             fillAreaRt.offsetMin = new Vector2(2, 0);
             fillAreaRt.offsetMax = new Vector2(-2, 0);
 
-            var fillObj = CreatePanel(fillArea.transform, "Fill", new Color(0.88f, 0.65f, 0.18f, 1f), PillSprite);
+            var fillObj = CreatePanel(fillArea.transform, "Fill", new Color(0.88f, 0.65f, 0.18f, 1f), PillSprite, raycastTarget: false);
             var fillRt = fillObj.GetComponent<RectTransform>();
             fillRt.sizeDelta = Vector2.zero;
             slider.fillRect = fillRt;
@@ -350,7 +350,7 @@ namespace Milex.GMS1.Core.UI.Modern
             handleAreaRt.offsetMin = new Vector2(8, 0);
             handleAreaRt.offsetMax = new Vector2(-8, 0);
 
-            var handleObj = CreatePanel(handleArea.transform, "Handle", new Color(0.95f, 0.95f, 0.95f, 1f), CircleSprite, Image.Type.Simple);
+            var handleObj = CreatePanel(handleArea.transform, "Handle", new Color(0.95f, 0.95f, 0.95f, 1f), CircleSprite, Image.Type.Simple, raycastTarget: true);
             var handleRt = handleObj.GetComponent<RectTransform>();
             handleRt.sizeDelta = new Vector2(16, 16);
             slider.handleRect = handleRt;
@@ -385,7 +385,7 @@ namespace Milex.GMS1.Core.UI.Modern
             // Background Pill
             Color onColor = new Color(0.20f, 0.68f, 0.38f, 1f);
             Color offColor = new Color(0.20f, 0.23f, 0.30f, 1f);
-            var bgObj = CreatePanel(toggleObj.transform, "Background", isOn ? onColor : offColor, PillSprite);
+            var bgObj = CreatePanel(toggleObj.transform, "Background", isOn ? onColor : offColor, PillSprite, raycastTarget: true);
             var bgRt = bgObj.GetComponent<RectTransform>();
             bgRt.anchorMin = Vector2.zero;
             bgRt.anchorMax = Vector2.one;
@@ -394,7 +394,7 @@ namespace Milex.GMS1.Core.UI.Modern
             var bgImg = bgObj.GetComponent<Image>();
 
             // Handle Dot
-            var handleObj = CreatePanel(toggleObj.transform, "Checkmark", Color.white, CircleSprite, Image.Type.Simple);
+            var handleObj = CreatePanel(toggleObj.transform, "Checkmark", Color.white, CircleSprite, Image.Type.Simple, raycastTarget: false);
             var handleRt = handleObj.GetComponent<RectTransform>();
             handleRt.sizeDelta = new Vector2(16, 16);
             handleRt.anchorMin = new Vector2(0, 0.5f);
@@ -402,7 +402,7 @@ namespace Milex.GMS1.Core.UI.Modern
             handleRt.anchoredPosition = isOn ? new Vector2(33, 0) : new Vector2(11, 0);
 
             var handleImg = handleObj.GetComponent<Image>();
-            toggle.targetGraphic = handleImg;
+            toggle.targetGraphic = bgImg; // Target the clickable background pill
             toggle.graphic = handleImg;
             toggle.isOn = isOn;
 

@@ -21,6 +21,9 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
   - Bypasses cooldown when clicked manually.
 - **Cooldown Guard**:
   - Configurable cooldown timer (`MemoryCleanCooldownSeconds`, default 60s) prevents redundant GC or asset unload sweeps during rapid quicksaving or laptop toggling.
+- **Modern Canvas High-Refresh Rendering Optimization**:
+  - Disabled `Canvas.pixelPerfect` (`false`), eliminating continuous per-frame vertex-snapping calculations across hundreds of UI glyphs and panels on high-refresh-rate displays (e.g. 165 Hz).
+  - Stripped `raycastTarget = true` from all decorative background containers, card panels, backdrops, and accents in `UIFactory`, restricting pointer collision testing strictly to interactive inputs (Buttons, Sliders, Toggles, InputFields).
 - **New Configuration Options**:
   - `[Performance] EnableMemoryCleaner` (default: `true`)
   - `[Performance] MemoryCleanCooldownSeconds` (default: `60.0`)

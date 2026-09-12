@@ -81,7 +81,7 @@ namespace Milex.GMS1.Core.UI.Modern
             _canvas = _canvasRoot.GetComponent<Canvas>();
             _canvas.renderMode = RenderMode.ScreenSpaceOverlay;
             _canvas.sortingOrder = 32760;
-            _canvas.pixelPerfect = true; // Pixel-perfect rendering prevents blurry font rasterization
+            _canvas.pixelPerfect = false; // Disabled pixel-perfect vertex snapping to prevent high-refresh frame drops
 
             _scaler = _canvasRoot.GetComponent<CanvasScaler>();
             _scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -94,8 +94,8 @@ namespace Milex.GMS1.Core.UI.Modern
             _raycaster.blockingObjects = GraphicRaycaster.BlockingObjects.None;
             _raycaster.ignoreReversedGraphics = true;
 
-            // Modal Dim Backdrop (semi-transparent, visual only)
-            var backdrop = UIFactory.CreatePanel(_canvasRoot.transform, "Backdrop", new Color(0.04f, 0.05f, 0.08f, 0.55f));
+            // Modal Dim Backdrop (semi-transparent, visual only, no raycasting)
+            var backdrop = UIFactory.CreatePanel(_canvasRoot.transform, "Backdrop", new Color(0.04f, 0.05f, 0.08f, 0.55f), raycastTarget: false);
             var bdRt = backdrop.GetComponent<RectTransform>();
             bdRt.anchorMin = Vector2.zero;
             bdRt.anchorMax = Vector2.one;
@@ -164,7 +164,7 @@ namespace Milex.GMS1.Core.UI.Modern
 
         private void BuildHeader(Transform window)
         {
-            var header = UIFactory.CreatePanel(window, "HeaderBar", new Color(0.14f, 0.16f, 0.22f, 1f), UIFactory.RoundedBoxSprite);
+            var header = UIFactory.CreatePanel(window, "HeaderBar", new Color(0.14f, 0.16f, 0.22f, 1f), UIFactory.RoundedBoxSprite, raycastTarget: true);
             var headerRt = header.GetComponent<RectTransform>();
             headerRt.anchorMin = new Vector2(0, 1);
             headerRt.anchorMax = new Vector2(1, 1);

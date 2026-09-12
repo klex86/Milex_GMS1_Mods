@@ -19,6 +19,9 @@ This format is based on [Keep a Changelog](https://keepachangelog.com/).
   - Added a dedicated action card in both the Modern Canvas Dashboard and Classic IMGUI Menu under `[Performance]`.
   - Displays real-time status: time elapsed since last sweep, trigger source, and megabytes of RAM freed.
   - Cooldown guard (`MemoryCleanCooldownSeconds`, default 60s) prevents stutter from rapid player triggers while allowing manual button override at any time.
+- **Modern Canvas High-Refresh Rendering Optimization**:
+  - Disabled `Canvas.pixelPerfect` (`false`) to eliminate continuous per-frame vertex-snapping calculations across UI glyphs on high-refresh-rate displays (165 Hz).
+  - Stripped `raycastTarget = true` from all decorative background containers, card panels, backdrops, and accents, restricting pointer collision checks strictly to interactive controls.
 
 ---
 
