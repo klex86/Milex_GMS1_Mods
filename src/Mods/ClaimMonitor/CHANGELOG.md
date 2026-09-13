@@ -3,6 +3,21 @@
 All notable changes to the `Milex GMS1 Claim Monitor` mod are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.0.14] - 2026-09-13
+
+### Fixed: Orange Beast Shaker Spring Detection & Inverted Durability Heuristic
+
+- **Orange Beast Shaker 4-Holder False Alarm Fix (`GetMissingSuspensionSpringCount`)**:
+  - Resolved an issue on `Washplant_Shaker_Beast` where the 3D model hierarchy contains 4 corner spring holders (`Spring_FL`, `Spring_FR`, `Spring_RL`, `Spring_RR`), but in Gold Rush all shakers (T3 to T6) only utilize 2 suspension springs mounted diagonally.
+  - Re-architected `GetMissingSuspensionSpringCount` to evaluate the actual number of installed and attached springs across both active holders (`!h.IsEmpty() && h.ObjectInHolder != null && h.ObjectInHolder.gameObject.activeInHierarchy`) and attached machine parts (`IsCheckAndRepairAttached(cr)`).
+  - Missing spring count is now calculated as `Mathf.Clamp(2 - totalAttachedSprings, 0, 2)`, completely eliminating false missing spring alerts on fully equipped Orange Beast Shakers while reliably detecting when 1 or both springs are unhooked.
+- **Spring Durability Inversion & Wear Heuristic Guard (`GetPartDurability`)**:
+  - Implemented `GetPartDurability(CheckAndRepair cr)` to guard against wear/durability inversion.
+  - In Gold Rush, `CheckAndRepair.Durability` returns `CurrLifetime / MaxLifetime`. If an active part is in `State.Working` (neither destroyed nor close to destruction), but its raw durability reports `<= 20%` (e.g. `0.03 = 3%`), it directly contradicts the engine's internal state machine (`State.Working` requires durability above the warning threshold).
+  - In such cases where lifetime tracks wear or is inverted relative to remaining health, `GetPartDurability` computes `1f - rawDurability` (reporting `97%` remaining health instead of `3%`), preventing erroneous low-durability warnings.
+
+---
+
 ## [1.0.13] - 2026-09-12
 
 ### Fixed: Glacier Creek Springs, Water Detection, Conveyor Alarm De-duplication & T5 HogPan Water Monitoring

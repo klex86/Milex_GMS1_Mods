@@ -3,6 +3,19 @@
 All notable changes and releases for this mod collection are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.8.26] - 2026-09-13
+
+### Claim Monitor: Orange Beast Shaker Spring Detection & Durability Inversion Heuristic
+
+- **Claim Monitor v1.0.14 — Orange Beast Shaker 4-Holder False Alarm Elimination**:
+  - Resolved an issue on `Washplant_Shaker_Beast` where the 4 corner holders in the 3D model hierarchy triggered 2 false missing spring alerts on fully assembled setups.
+  - Re-engineered `GetMissingSuspensionSpringCount` to evaluate the actual number of installed and attached springs across both active holders and attached `CheckAndRepair` parts, correctly recognizing the 2-spring standard diagonal mounting.
+- **Claim Monitor v1.0.14 — Spring Durability Inversion & Wear Heuristic Guard**:
+  - Added `GetPartDurability` heuristic to prevent inversion between wear and remaining durability on active machine parts.
+  - Parts in `State.Working` (not destroyed and not close to destruction) that report `<= 20%` raw durability are safely resolved as `1f - rawDurability` (e.g. reporting 97% health remaining instead of 3%), suppressing false premature wear warnings.
+
+---
+
 ## [1.8.25] - 2026-09-12
 
 ### Claim Monitor: Glacier Creek Springs, Water Detection, Conveyor Alarm De-duplication & T5 HogPan Water Monitoring

@@ -5,9 +5,9 @@ using System.Reflection;
 using System.Text;
 using GoldDigger;
 using Milex.GMS1.Core;
+using Milex.GMS1.Core.Localization;
 using Milex.GMS1.Mods.ClaimMonitor.Config;
 using Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models;
-using Milex.GMS1.Core.Localization;
 using UnityEngine;
 
 namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
@@ -109,9 +109,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 if (mb == null) continue;
                 if (mb is WashPlantGoldCounter wpc)
                 {
-                    bool hasEquipment = wpc.WashPlantShaker != null || wpc.Trommel != null 
-                                     || wpc.WashPlantDuplex != null || wpc.WashPlantDuplex2 != null 
+                    bool hasEquipment = wpc.WashPlantShaker != null || wpc.Trommel != null
+                                     || wpc.WashPlantDuplex != null || wpc.WashPlantDuplex2 != null
                                      || wpc.MyHogPan != null || wpc.MyHogPan2 != null;
+
                     float dist = hasPlayerPos ? Vector3.Distance(wpc.transform.position, playerPos) : 0f;
                     float score = (hasEquipment ? 100000f : 0f) - dist;
                     if (score > bestStatScore)
@@ -313,8 +314,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             string typeName = type.Name;
             string goName = go.name;
 
-            bool isOrangeBeast = goName.Contains("Washplant_Shaker_Beast") 
-                              || goName.Contains("OrangeBeast") 
+            bool isOrangeBeast = goName.Contains("Washplant_Shaker_Beast")
+                              || goName.Contains("OrangeBeast")
                               || typeName == "OrangeBeastWashPlantGoldCounter";
 
             // If Orange Beast is NOT installed on this claim, ignore all Orange Beast components
@@ -351,7 +352,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 if (comp is WashplantShakerBase || typeName.Contains("Shaker") || typeName == "GlacierCreek" || typeName == "DeRocker")
                 {
                     bool isMounted = isHolderMounted || distToPlant <= 30f ||
-                                     (statGoldCounter != null && (statGoldCounter.WashPlantShaker == comp || 
+                                     (statGoldCounter != null && (statGoldCounter.WashPlantShaker == comp ||
                                                                   IsInHolders(statGoldCounter.WashplantShakerHolders, comp) ||
                                                                   IsInHolders(statGoldCounter.AllHolders, comp)));
                     if (!isMounted && !IsConnectedAndNear(comp, statPos, 60f))
@@ -360,7 +361,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 else if (comp is WashplantTrommelBase || typeName.Contains("Trommel"))
                 {
                     bool isMounted = isHolderMounted || distToPlant <= 30f ||
-                                     (statGoldCounter != null && (statGoldCounter.Trommel == comp || 
+                                     (statGoldCounter != null && (statGoldCounter.Trommel == comp ||
                                                                   IsInHolders(statGoldCounter.TrommelHolders, comp) ||
                                                                   IsInHolders(statGoldCounter.AllHolders, comp)));
                     if (!isMounted && !IsConnectedAndNear(comp, statPos, 60f))
@@ -375,10 +376,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                 else if (comp is WashplantDuplexJigBase || typeName.Contains("Duplex"))
                 {
                     bool isMounted = isHolderMounted || distToPlant <= 30f ||
-                                     (statGoldCounter != null && (statGoldCounter.WashPlantDuplex == comp 
-                                                               || statGoldCounter.WashPlantDuplex2 == comp 
-                                                               || IsInHolders(statGoldCounter.WashplantDuplexHolders, comp) 
-                                                               || IsInHolders(statGoldCounter.WashplantDuplexHolders2, comp) 
+                                     (statGoldCounter != null && (statGoldCounter.WashPlantDuplex == comp
+                                                               || statGoldCounter.WashPlantDuplex2 == comp
+                                                               || IsInHolders(statGoldCounter.WashplantDuplexHolders, comp)
+                                                               || IsInHolders(statGoldCounter.WashplantDuplexHolders2, comp)
                                                                || IsInHolders(statGoldCounter.AllHolders, comp)));
                     if (!isMounted && !IsConnectedAndNear(comp, statPos, 60f))
                         return;
@@ -1624,13 +1625,15 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                     string rawMachine = !string.IsNullOrEmpty(equipmentDisplayName) ? equipmentDisplayName : internalMachineName;
                     string machine = LocalizationManager.ResolveGameText(rawMachine);
 
+                    float durability = GetPartDurability(cr);
+
                     var wearStatus = new EquipmentWearStatus
                     {
                         InstanceId = cr.GetInstanceID(),
                         PartName = partName,
                         ParentMachineName = machine,
                         Position = cr.transform.position,
-                        Durability = isMissing ? 0f : cr.Durability,
+                        Durability = isMissing ? 0f : durability,
                         IsDestroyed = !isMissing && cr.IsDestroyed,
                         IsInPlace = isAttached,
                         IsMissing = isMissing,
@@ -1652,7 +1655,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                         GameObjectName = cr.gameObject.name,
                         InstanceId = cr.GetInstanceID(),
                         Position = cr.transform.position,
-                        Details = $"{machine} -> {partName}: Durability={cr.Durability * 100f:F0}%, Destroyed={cr.IsDestroyed}, Attached={isAttached}, Missing={isMissing}, Connected={isConnected}",
+                        Details = $"{machine} -> {partName}: Durability={durability * 100f:F0}%, Destroyed={cr.IsDestroyed}, Attached={isAttached}, Missing={isMissing}, Connected={isConnected}",
                         Setup = setup
                     });
                 }
@@ -1753,6 +1756,30 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             }
         }
 
+        private float GetPartDurability(CheckAndRepair cr)
+        {
+            if (cr == null) return 0f;
+
+            float rawDurability = cr.Durability;
+
+            // Inversion / Wear heuristic guard:
+            // CheckAndRepair.Durability returns CurrLifetime / MaxLifetime (1.0 = brand new, 0.0 = destroyed).
+            // However, if an active part is in State.Working, not close to destruction, and not destroyed,
+            // but its raw durability reports <= 0.20f (e.g. 0.03 = 3%), it contradicts the game's state machine
+            // (State.Working requires durability > warning threshold). In such cases, or where lifetime counts wear,
+            // the true remaining health is (1f - rawDurability).
+            if (cr.MyState == CheckAndRepair.State.Working && !cr.IsCloseToDestruction && !cr.IsDestroyed && rawDurability <= 0.20f)
+            {
+                float inverted = 1f - rawDurability;
+                if (inverted >= 0.80f)
+                {
+                    return Mathf.Clamp01(inverted);
+                }
+            }
+
+            return Mathf.Clamp01(rawDurability);
+        }
+
         private bool IsCheckAndRepairAttached(CheckAndRepair cr)
         {
             if (cr == null) return false;
@@ -1785,38 +1812,76 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
             if (!isShaker) return 0;
 
-            int emptySpringHolders = 0;
+            int attachedSpringHolders = 0;
             var processedHolders = new HashSet<int>();
 
-            // Search for Holder components of type ShakerSpring (value 30) or with "Spring" in name
+            // 1. Check all Holder components on the shaker
             var holders = comp.GetComponentsInChildren<Holder>(true);
             if (holders != null)
             {
                 for (int hIdx = 0; hIdx < holders.Length; hIdx++)
                 {
                     var h = holders[hIdx];
-                    if (h == null) continue;
-                    if (h is ShovelRopeHolder) continue; // Excavator transport rope hooks are not springs!
+                    if (h == null || h is ShovelRopeHolder) continue;
 
                     int id = h.GetInstanceID();
                     if (processedHolders.Contains(id)) continue;
 
-                    bool isSpringHolder = (int)h.Type == 30 ||
+                    bool isSpringHolder = (int)h.Type == 43 || (int)h.Type == 30 ||
                                           h.Type.ToString().IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0 ||
                                           h.gameObject.name.IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0;
 
                     if (isSpringHolder)
                     {
                         processedHolders.Add(id);
-                        if (h.IsEmpty() || h.ObjectInHolder == null || !h.ObjectInHolder.gameObject.activeInHierarchy)
+                        // A spring is mounted and present if holder is not empty and ObjectInHolder is active
+                        if (!h.IsEmpty() && h.ObjectInHolder != null && h.ObjectInHolder.gameObject.activeInHierarchy)
                         {
-                            emptySpringHolders++;
+                            attachedSpringHolders++;
                         }
                     }
                 }
             }
 
-            return Mathf.Clamp(emptySpringHolders, 0, 2);
+            // 2. Also check CheckAndRepair components belonging to the shaker
+            int attachedSpringParts = 0;
+            var processedParts = new HashSet<int>();
+
+            var repArray = comp is WashplantShakerBase wsb && wsb.MyCheckAndRepair != null && wsb.MyCheckAndRepair.Length > 0
+                ? wsb.MyCheckAndRepair
+                : comp.GetComponentsInChildren<CheckAndRepair>(true);
+
+            if (repArray != null)
+            {
+                for (int pIdx = 0; pIdx < repArray.Length; pIdx++)
+                {
+                    var cr = repArray[pIdx];
+                    if (cr == null) continue;
+
+                    int id = cr.GetInstanceID();
+                    if (processedParts.Contains(id)) continue;
+
+                    string origPrefab = GetFieldValue<string>(cr, typeof(CheckAndRepair), "OriginalPrefabName");
+                    bool isSpringPart = (!string.IsNullOrEmpty(cr.Name) && cr.Name.IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                        (!string.IsNullOrEmpty(origPrefab) && origPrefab.IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0) ||
+                                        cr.gameObject.name.IndexOf("Spring", StringComparison.OrdinalIgnoreCase) >= 0;
+
+                    if (isSpringPart)
+                    {
+                        processedParts.Add(id);
+                        if (IsCheckAndRepairAttached(cr))
+                        {
+                            attachedSpringParts++;
+                        }
+                    }
+                }
+            }
+
+            // In Gold Rush, every shaker (T3, T4, T5, T6) uses at most 2 suspension springs.
+            // Note that some 3D shaker prefabs have 4 corner holders in the hierarchy, but only 2 diagonal springs are ever installed.
+            int totalAttachedSprings = Mathf.Max(attachedSpringHolders, attachedSpringParts);
+            int missingSprings = Mathf.Clamp(2 - totalAttachedSprings, 0, 2);
+            return missingSprings;
         }
 
         private bool IsMatchingWearPart(string existingPartName, string newPartName, string rawItemName)
@@ -2036,8 +2101,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             }
 
             // 6. Reflection fallback for _hasPower or HasPower
-            if (GetFieldValue<bool>(comp, compType, "_hasPower") 
-                || GetFieldValue<bool>(comp, compType, "_HasPower") 
+            if (GetFieldValue<bool>(comp, compType, "_hasPower")
+                || GetFieldValue<bool>(comp, compType, "_HasPower")
                 || GetFieldValue<bool>(comp, compType, "HasPower"))
             {
                 return true;
@@ -2115,8 +2180,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             }
 
             // 5. Reflection fallback for _hasWater or HasWater field/property
-            if (GetFieldValue<bool>(comp, compType, "_hasWater") 
-                || GetFieldValue<bool>(comp, compType, "_HasWater") 
+            if (GetFieldValue<bool>(comp, compType, "_hasWater")
+                || GetFieldValue<bool>(comp, compType, "_HasWater")
                 || GetFieldValue<bool>(comp, compType, "HasWater"))
             {
                 return true;
@@ -2210,7 +2275,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
         private string GetMachineryDisplayName(MonoBehaviour comp, string typeName)
         {
             string goName = comp?.gameObject?.name ?? "";
-            
+
             if (comp is HogPanDirtBox || typeName == "HogPanDirtBox" || goName.Contains("HogPanDirtBox") || goName.Contains("HogPanMud") || comp is HogPan || typeName == "HogPan")
                 return LocalizationManager.T("equipment.hogpan_dirtbox", "Hog Pan Dirt Box");
             if (comp is GravelPump || typeName == "GravelPump" || goName.Contains("GravelPump"))
