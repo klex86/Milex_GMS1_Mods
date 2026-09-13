@@ -12,7 +12,7 @@ using UnityEngine;
 
 namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 {
-    public class ClaimScanner : MonoBehaviour
+    public class ClaimScanner : MonoBehaviour, IClaimScanner
     {
         public static ClaimScanner Instance { get; private set; }
         public ClaimDiagnosticsData CurrentData { get; } = new ClaimDiagnosticsData();
@@ -20,6 +20,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
         private Coroutine _scanRoutine;
         private const BindingFlags FieldFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+        public List<ClaimAlert> ActiveAlerts => CurrentData?.ActiveAlerts ?? new List<ClaimAlert>();
+    public int PlantCount => CurrentData?.PlantComponents.Count ?? 0;
+    public int MatCount => CurrentData?.Mats.Count ?? 0;
+    public int VehicleCount => CurrentData?.Vehicles.Count ?? 0;
 
         private void Awake()
         {

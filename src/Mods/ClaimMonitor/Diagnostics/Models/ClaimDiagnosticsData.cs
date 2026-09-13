@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using Milex.GMS1.Mods.ClaimMonitor.Config;
 using Milex.GMS1.Core.Localization;
+using Milex.GMS1.Mods.ClaimMonitor.Config;
 using UnityEngine;
 
 namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
@@ -14,22 +14,6 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         Setup3_OrangeBeast  // Tier 5/6: Orange Beast Wash Plant
     }
 
-    public enum AlertSeverity
-    {
-        Info,
-        Warning,
-        Critical
-    }
-
-    public class ClaimAlert
-    {
-        public AlertSeverity Severity { get; set; }
-        public string Category { get; set; }
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public Vector3 Position { get; set; }
-        public int SourceId { get; set; }
-    }
 
     public class MatStatus
     {
@@ -487,5 +471,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                 default: return LocalizationManager.T("setup.name.default", "Wash Plant");
             }
         }
+    }
+
+    public class ClaimDiagnosticsSnapshotV2
+    {
+        public List<WashPlantStatusV2> WashPlants { get; set; } = new List<WashPlantStatusV2>();
     }
 }

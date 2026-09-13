@@ -2,6 +2,7 @@ using BepInEx;
 using Milex.GMS1.Core;
 using Milex.GMS1.Mods.ClaimMonitor.Config;
 using Milex.GMS1.Mods.ClaimMonitor.Diagnostics;
+using Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners;
 using Milex.GMS1.Mods.ClaimMonitor.UI;
 using UnityEngine;
 
@@ -22,7 +23,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor
         public static ClaimMonitorPlugin Instance { get; private set; }
         public MonitorConfig MonitorConfig { get; private set; }
 
-        public ClaimScanner Scanner { get; private set; }
+        public ClaimScannerV2 Scanner { get; private set; }
+        //public ClaimScannerV2 ScannerV2 { get; private set; } // Oder ClaimScannerV2
         public WarningHUD Hud { get; private set; }
         public DebugOverlay DebugOverlay { get; private set; }
 
@@ -39,11 +41,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor
             LogInfo("ClaimMonitorPlugin initializing components...");
 
             // 3. Attach Scanner, Warning HUD, and Debug Inspector
-            Scanner = gameObject.AddComponent<ClaimScanner>();
+            //Scanner = gameObject.AddComponent<ClaimScanner>();
+            Scanner = gameObject.AddComponent<ClaimScannerV2>();
             Scanner.Config = MonitorConfig;
 
             Hud = gameObject.AddComponent<WarningHUD>();
             Hud.Config = MonitorConfig;
+            Hud.Scanner = Scanner;
 
             DebugOverlay = gameObject.AddComponent<DebugOverlay>();
             DebugOverlay.Config = MonitorConfig;

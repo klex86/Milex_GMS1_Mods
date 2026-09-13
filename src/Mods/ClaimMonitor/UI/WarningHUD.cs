@@ -13,6 +13,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
     {
         public MonitorConfig Config { get; set; }
 
+        public IClaimScanner Scanner { get; set; }
+
         private Rect _windowRect;
         private Vector2 _scrollPos = Vector2.zero;
         private float _lastSaveTime = 0f;
@@ -134,9 +136,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
 
             InitStyles();
 
-            var data = ClaimScanner.Instance?.CurrentData;
-            var alerts = data?.ActiveAlerts;
-            bool hasAlerts = alerts != null && alerts.Count > 0;
+            var alerts = Scanner?.ActiveAlerts;
+        bool hasAlerts = alerts != null && alerts.Count > 0;
 
             // Optional setting: Only show HUD if alerts exist
             if (Config.HudOnlyShowWarnings.Value && !hasAlerts)
@@ -251,8 +252,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
 
         private void DrawWindow(int windowId)
         {
-            var data = ClaimScanner.Instance?.CurrentData;
-            var alerts = data?.ActiveAlerts;
+            var alerts = Scanner?.ActiveAlerts;
             bool hasAlerts = alerts != null && alerts.Count > 0;
             bool isCompact = Config?.HudCompactMode?.Value ?? false;
 
@@ -281,9 +281,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             }
 
             // Overview Summary (Full Window View)
-            int matCount = data?.Mats.Count ?? 0;
-            int plantCount = data?.PlantComponents.Count ?? 0;
-            int vehicleCount = data?.Vehicles.Count ?? 0;
+            // Header Summary
+            int matCount = Scanner?.MatCount ?? 0;
+            int plantCount = Scanner?.PlantCount ?? 0;
+            int vehicleCount = Scanner?.VehicleCount ?? 0;
 
             GUILayout.BeginHorizontal();
             GUILayout.Label(LocalizationManager.Format("hud.equipment_summary", "<color=#D4AF37>Equipment:</color> {0} Plants | {1} Mats | {2} Vehicles", plantCount, matCount, vehicleCount), _descStyle);
