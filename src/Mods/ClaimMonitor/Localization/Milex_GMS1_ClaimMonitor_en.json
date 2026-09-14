@@ -2,21 +2,21 @@
   "config.general.section": "General Settings",
   "config.general.scanintervalseconds.name": "Scan Interval (Seconds)",
   "config.general.scanintervalseconds.desc": "Interval in seconds between background equipment scans and warning evaluations.",
-
   "config.setups.section": "Wash Plant Setups",
-  "config.setups.monitorsetup1.name": "Monitor Mobile Plants (Tier 2)",
-  "config.setups.monitorsetup1.desc": "Enables warnings for detected mobile wash plants in the Warning HUD.",
-  "config.setups.monitorsetup2.name": "Monitor Setup T3-T5",
-  "config.setups.monitorsetup2.desc": "Enables warnings for the stationary setup (Shakers, Trommels, Duplex Jigs / Gravel Pumps).",
-  "config.setups.setup2includefeedingchain.name": "T3-T5: Monitor Feeding Chain",
-  "config.setups.setup2includefeedingchain.desc": "Includes automatically assigned hoppers and conveyors into Setup T3-T5 overall status.",
-  "config.setups.monitorsetup3.name": "Monitor Setup T6 (Orange Beast)",
-  "config.setups.monitorsetup3.desc": "Enables warnings for the Orange Beast in the Warning HUD.",
-  "config.setups.setup3includefeedingchain.name": "T6: Monitor Feeding Chain",
-  "config.setups.setup3includefeedingchain.desc": "Includes automatically assigned hoppers and conveyors into Orange Beast overall status.",
+  "config.setups.monitorsetup1.name": "Monitor HogPan Setup",
+  "config.setups.monitorsetup1.desc": "Enables warnings for HogPan setups in the Warning HUD.",
+  "config.setups.monitorsetup2.name": "Monitor Mobile Plants (Tier 2)",
+  "config.setups.monitorsetup2.desc": "Enables warnings for detected mobile wash plants in the Warning HUD.",
+  "config.setups.monitorsetup3.name": "Monitor Setup T3-T5",
+  "config.setups.monitorsetup3.desc": "Enables warnings for the stationary setup (Shakers, Trommels, Duplex Jigs / Gravel Pumps).",
+  "config.setups.setup3includefeedingchain.name": "T3-T5: Monitor Feeding Chain",
+  "config.setups.setup3includefeedingchain.desc": "Includes automatically assigned hoppers and conveyors into Setup T3-T5 overall status.",
+  "config.setups.monitorsetup4.name": "Monitor Setup T6 (Orange Beast)",
+  "config.setups.monitorsetup4.desc": "Enables warnings for the Orange Beast in the Warning HUD.",
+  "config.setups.setup4includefeedingchain.name": "T6: Monitor Feeding Chain",
+  "config.setups.setup4includefeedingchain.desc": "Includes automatically assigned hoppers and conveyors into Orange Beast overall status.",
   "config.setups.monitorgeneratorswitchbuttons.name": "Monitor Generator Switch Buttons",
   "config.setups.monitorgeneratorswitchbuttons.desc": "Include individual socket breaker buttons on the big power generator in wear and breakdown alerts. Disabled by default to prevent HUD clutter.",
-
   "config.thresholds.section": "Alert Thresholds",
   "config.thresholds.matwarningthreshold.name": "Mat Warning Threshold (%)",
   "config.thresholds.matwarningthreshold.desc": "Mat fill percentage threshold to trigger an attention warning.",
@@ -24,7 +24,6 @@
   "config.thresholds.vehiclelowfuelthreshold.desc": "Fuel percentage threshold to trigger a low fuel warning for active machines.",
   "config.thresholds.componentwearwarningthreshold.name": "Part Wear Warning Threshold (%)",
   "config.thresholds.componentwearwarningthreshold.desc": "Equipment part durability threshold to trigger an early wear warning before total breakdown.",
-
   "config.warninghud.section": "Warning HUD",
   "config.warninghud.hudenabled.name": "Enable Warning HUD",
   "config.warninghud.hudenabled.desc": "Toggles the on-screen overlay for plant and equipment warnings.",
@@ -36,19 +35,15 @@
   "config.warninghud.hudmaxwidth.desc": "Maximum width of the warning HUD window.",
   "config.warninghud.hudmaxheight.name": "HUD Maximum Height",
   "config.warninghud.hudmaxheight.desc": "Maximum height of the warning HUD window.",
-
   "config.fuel.section": "Fuel & Vehicle Telemetry",
   "config.fuel.showfuelinvehicleswitcher.name": "Fuel in Vehicle Switcher",
   "config.fuel.showfuelinvehicleswitcher.desc": "Displays fuel fill percentage directly inside the vehicle quick-switching bar.",
-
   "config.debug.section": "Diagnostics & Inspection",
   "config.debug.enabledebuggroup.name": "Enable Diagnostic Inspector",
   "config.debug.enabledebuggroup.desc": "Enables detailed raw object inspection and claim dumping (toggle with F3).",
-
   "log.ready": "Claim Monitor loaded and ready.",
   "log.enabled": "Claim Monitor enabled.",
   "log.disabled": "Claim Monitor disabled.",
-
   "hud.title": "Claim Monitor",
   "hud.header.warnings": "Claim Warnings {0}",
   "hud.header.monitor": "Claim Monitor {0}",
@@ -65,13 +60,11 @@
   "hud.tag.warn": "WARN",
   "hud.critical": "CRITICAL",
   "hud.warning": "WARNING",
-
   "setup.name.mobile": "Mobile Plant",
   "setup.name.stationary": "Setup T3-T5",
   "setup.name.orange_beast": "Orange Beast",
   "setup.name.infrastructure": "Infrastructure",
   "setup.name.default": "Wash Plant",
-
   "equipment.orange_beast_shaker": "Orange Beast Shaker",
   "equipment.gravel_pump": "Gravel Pump",
   "equipment.duplex_jig": "Duplex Jig",
@@ -93,7 +86,6 @@
   "equipment.suspension_spring": "Suspension Spring",
   "equipment.glacier_creek_engine": "Glacier Creek Engine",
   "equipment.hogpan_dirtbox": "Hog Pan Dirt Box",
-
   "SHOP_ITEM_PARTS_GLACIER_CREEK_ENGINE_NAME": "Glacier Creek Engine",
   "SHOP_ITEM_PARTS_PLANTER_WATERPUMPFUSE_NAME": "Water Pump Fuse",
   "SHOP_ITEM_PARTS_PLANTER_WATERPUMPFILTER_NAME": "Water Pump Filter",
@@ -103,7 +95,6 @@
   "ConveyorEngineBelt": "Conveyor Drive Belt",
   "ConveyorBeltBucket": "Conveyor Belt Bucket",
   "SpringGlacierCreek": "Suspension Spring",
-
   "vehicle.small_excavator": "Small Excavator",
   "vehicle.large_excavator": "Large Excavator",
   "vehicle.wheel_loader": "Wheel Loader",
@@ -111,7 +102,6 @@
   "vehicle.dump_truck": "Dump Truck",
   "vehicle.bulldozer": "Bulldozer",
   "vehicle.drill_rig": "Drill Rig",
-
   "issue.shaker.no_power": "Orange Beast Shaker has no electric power.",
   "issue.shaker.no_water": "Orange Beast Shaker has no water supply.",
   "issue.machinery.stopped": "{0} is stopped.",
@@ -139,7 +129,6 @@
   "issue.conveyor.no_feeder": "Hopper feeder is missing!",
   "issue.conveyor.feeder_broken": "Hopper feeder is broken!",
   "issue.hogpan.no_water": "{0}: Hog Pan Dirt Box has no water supply!",
-
   "alert.cat.mats": "Mats",
   "alert.cat.washplant": "Wash Plant",
   "alert.cat.maintenance": "Maintenance",
@@ -147,24 +136,20 @@
   "alert.cat.fuel": "Fuel",
   "alert.cat.water": "Water",
   "alert.cat.power": "Power",
-
   "alert.mats.overflow.title": "{0}: Sluice Mats Overflowing!",
   "alert.mats.overflow.desc": "{0} mat(s) at 100% capacity! Clean immediately to prevent gold loss.",
   "alert.mats.near_full.title": "{0}: Sluice Mats Nearly Full",
   "alert.mats.near_full.desc": "{0} mat(s) above {1:F0}% (Highest: {2:F1}%).",
-
   "alert.machinery.failure.title": "{0}: {1} Failure",
   "alert.machinery.failure.desc": "{0} has suffered a critical failure.",
   "alert.machinery.issue.title": "{0}: {1} Issue",
   "alert.machinery.issue.desc": "{0} is not operational.",
-
   "alert.wear.missing.title": "{0}: {1} Missing!",
   "alert.wear.missing.desc": "{0} {1} is missing or not installed!",
   "alert.wear.broken.title": "{0}: {1} Broken!",
   "alert.wear.broken.desc": "{0} {1} is destroyed and must be replaced immediately.",
   "alert.wear.high.title": "{0}: {1} Wear High",
   "alert.wear.high.desc": "{0} {1} durability low ({2:F0}% remaining). Prepare replacement.",
-
   "alert.conveyor.failure.title": "{0}: Conveyor Failure",
   "alert.conveyor.failure.desc": "{0}: {1}",
   "alert.conveyor.issue.title": "{0}: Conveyor Issue",
@@ -173,17 +158,14 @@
   "alert.conveyor.power_loss.desc": "'{0}' has no electric power supply.",
   "alert.conveyor.backlog.title": "{0}: Hopper Backlog",
   "alert.conveyor.backlog.desc": "'{0}' is full ({1:F1}/{2:F1} m\u00b3).",
-
   "alert.fuel.empty.title": "Vehicle Out of Fuel: {0}",
   "alert.fuel.empty.desc": "Fuel tank is completely empty. Refueling required.",
   "alert.fuel.low.title": "Low Fuel: {0}",
   "alert.fuel.low.desc": "Fuel level is at {0:F1}% ({1:F1} L).",
-
   "alert.utility.water_tower.title": "Water Tower Depleted",
   "alert.utility.water_tower.desc": "Water tower reservoir is empty. Pumps or delivery required.",
   "alert.utility.generator.title": "Power Generator Inactive: {0}",
   "alert.utility.generator.desc": "Generator is stopped or disconnected.",
-
   "debug.window.title": "Claim Monitor - Diagnostic Inspector (Toggle: F3)",
   "debug.button.rescan": "Force Rescan",
   "debug.button.dump": "Dump All to File",

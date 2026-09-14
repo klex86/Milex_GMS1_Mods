@@ -21,9 +21,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
         private Coroutine _scanRoutine;
         private const BindingFlags FieldFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
         public List<ClaimAlert> ActiveAlerts => CurrentData?.ActiveAlerts ?? new List<ClaimAlert>();
-    public int PlantCount => CurrentData?.PlantComponents.Count ?? 0;
-    public int MatCount => CurrentData?.Mats.Count ?? 0;
-    public int VehicleCount => CurrentData?.Vehicles.Count ?? 0;
+        public int PlantCount => CurrentData?.PlantComponents.Count ?? 0;
+        public int MatCount => CurrentData?.Mats.Count ?? 0;
+        public int VehicleCount => CurrentData?.Vehicles.Count ?? 0;
 
         private void Awake()
         {
@@ -204,27 +204,27 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             string drawerKey = GetFieldValue<string>(comp, type, "MaxGroundVolumePropertyDrawerKey") ?? "";
 
             // Deduce wash plant setup
-            WashPlantSetupType setup = WashPlantSetupType.Setup2_Stationary;
+            WashPlantSetupType setup = WashPlantSetupType.Setup3_Stationary;
             if (drawerKey.Contains("OBMATS") || comp.name.Contains("OB") || comp.name.Contains("Orange"))
             {
-                setup = WashPlantSetupType.Setup3_OrangeBeast;
+                setup = WashPlantSetupType.Setup4_OrangeBeast;
             }
             else if (drawerKey.Contains("HOGPAN") || comp.name.Contains("HogPan") || comp.name.Contains("Mini"))
             {
-                setup = WashPlantSetupType.Setup1_Mobile;
+                setup = WashPlantSetupType.Setup1_HogPan;
             }
             else if (drawerKey.Contains("WASHPLANT"))
             {
-                setup = WashPlantSetupType.Setup2_Stationary;
+                setup = WashPlantSetupType.Setup3_Stationary;
             }
             else
             {
                 // Fallback check on parent hierarchy
                 if (comp.GetComponentInParent(Type.GetType("GoldDigger.OrangeBeastWashPlantGoldCounter, Assembly-CSharp")) != null)
-                    setup = WashPlantSetupType.Setup3_OrangeBeast;
+                    setup = WashPlantSetupType.Setup4_OrangeBeast;
                 else if (comp.GetComponentInParent(Type.GetType("GoldDigger.MobileWashplantGoldCounter, Assembly-CSharp")) != null ||
                          comp.GetComponentInParent(Type.GetType("GoldDigger.MiniWashplantGoldCounter, Assembly-CSharp")) != null)
-                    setup = WashPlantSetupType.Setup1_Mobile;
+                    setup = WashPlantSetupType.Setup2_Mobile;
             }
 
             var status = new MatStatus
@@ -331,7 +331,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             {
                 for (int i = 0; i < CurrentData.PlantComponents.Count; i++)
                 {
-                    if (CurrentData.PlantComponents[i].Setup == WashPlantSetupType.Setup3_OrangeBeast)
+                    if (CurrentData.PlantComponents[i].Setup == WashPlantSetupType.Setup4_OrangeBeast)
                         return;
                 }
             }
@@ -405,11 +405,11 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             bool hasPower = true;
             bool hasWater = true;
             string issue = null;
-            WashPlantSetupType setup = WashPlantSetupType.Setup2_Stationary;
+            WashPlantSetupType setup = WashPlantSetupType.Setup3_Stationary;
 
             if (isOrangeBeast)
             {
-                setup = WashPlantSetupType.Setup3_OrangeBeast;
+                setup = WashPlantSetupType.Setup4_OrangeBeast;
                 displayName = LocalizationManager.T("equipment.orange_beast_shaker", "Orange Beast Shaker");
                 hasPower = CheckPowerState(comp);
                 hasWater = CheckWaterState(comp);
@@ -482,7 +482,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             }
             else if (comp is WashplantShakerBase || typeName.Contains("Shaker") || typeName == "GlacierCreek" || typeName == "DeRocker")
             {
-                setup = WashPlantSetupType.Setup2_Stationary;
+                setup = WashPlantSetupType.Setup3_Stationary;
                 bool stopped = false;
                 if (comp is WashPlantShaker wps) stopped = wps.ShakerStopped;
                 else stopped = GetFieldValue<bool>(comp, type, "ShakerStopped");
@@ -662,7 +662,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                     // Ignore internal drum of mobile wash plant!
                     return;
                 }
-                setup = WashPlantSetupType.Setup2_Stationary;
+                setup = WashPlantSetupType.Setup3_Stationary;
                 bool stopped = false;
                 bool chainBroken = false;
                 CheckAndRepair chainCr = null;
@@ -762,7 +762,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             }
             else if (comp is WashplantDuplexJigBase || comp is GravelPump || typeName.Contains("Duplex") || typeName == "GravelPump")
             {
-                setup = WashPlantSetupType.Setup2_Stationary;
+                setup = WashPlantSetupType.Setup3_Stationary;
                 bool pumpBroken = GetFieldValue<bool>(comp, comp.GetType(), "_DuplexJigBroken");
                 hasPower = CheckPowerState(comp);
                 hasWater = true; // Duplex Jigs and Gravel Pumps only consume electric power, not water
@@ -861,10 +861,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                     return;
                 }
 
-                setup = WashPlantSetupType.Setup2_Stationary;
+                setup = WashPlantSetupType.Setup3_Stationary;
                 if (obGoldCounter != null && hasOrangeBeastCenter && Vector3.Distance(comp.transform.position, orangeBeastCenter) <= 40f)
                 {
-                    setup = WashPlantSetupType.Setup3_OrangeBeast;
+                    setup = WashPlantSetupType.Setup4_OrangeBeast;
                 }
 
                 HogPan parentHog = comp.GetComponentInParent<HogPan>() ?? GetFieldValue<HogPan>(comp, type, "MyHog");
@@ -922,7 +922,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             }
             else if (comp is MobileWashplant || comp is MiniWashplant || typeName == "MobileWashplant" || typeName == "MiniWashplant")
             {
-                setup = WashPlantSetupType.Setup1_Mobile;
+                setup = WashPlantSetupType.Setup2_Mobile;
 
                 // 1. Water connection verification: Both mobile wash plants require a connected water supply to be active
                 WaterConsumer wc = (comp is MobileWashplant m1) ? m1._WaterConsumer
@@ -935,13 +935,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                     // But record in RawInspectionItems so diagnostic inspector (F3) clearly indicates it is disconnected
                     CurrentData.RawInspectionItems.Add(new RawDebugItem
                     {
-                        Category = "Setup 1 (Mobile)",
+                        Category = "Setup 2 (Mobile)",
                         TypeName = typeName,
                         GameObjectName = go.name,
                         InstanceId = goId,
                         Position = go.transform.position,
-                        Details = $"Setup: Setup1_Mobile, Name: {displayName}, Connected: False (No water hose connected)",
-                        Setup = WashPlantSetupType.Setup1_Mobile
+                        Details = $"Setup: Setup2_Mobile, Name: {displayName}, Connected: False (No water hose connected)",
+                        Setup = WashPlantSetupType.Setup2_Mobile
                     });
                     return;
                 }
@@ -1110,9 +1110,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             ScanEquipmentWear(comp, go, setup, displayName);
 
             string details = $"Setup: {setup}, Name: {displayName}, Working: {isWorking}, Power: {hasPower}, Water: {hasWater}, Issue: {issue ?? "None"}";
-            string debugCat = "Setup 1 (Mobile)";
-            if (setup == WashPlantSetupType.Setup2_Stationary) debugCat = "Setup 2 (Stationary)";
-            else if (setup == WashPlantSetupType.Setup3_OrangeBeast) debugCat = "Setup 3 (Orange Beast)";
+            string debugCat = "Setup 2 (Mobile)";
+            if (setup == WashPlantSetupType.Setup3_Stationary) debugCat = "Setup 3 (Stationary)";
+            else if (setup == WashPlantSetupType.Setup4_OrangeBeast) debugCat = "Setup 4 (Orange Beast)";
 
             CurrentData.RawInspectionItems.Add(new RawDebugItem
             {
@@ -1242,16 +1242,16 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             }
 
             // Associate with nearest setup ONLY if that setup actually exists on the claim!
-            WashPlantSetupType assigned = WashPlantSetupType.Setup2_Stationary;
+            WashPlantSetupType assigned = WashPlantSetupType.Setup3_Stationary;
             bool setupExists = false;
             if (hasOb && (!hasStat || Vector3.Distance(go.transform.position, obPos) < Vector3.Distance(go.transform.position, statPos)))
             {
-                assigned = WashPlantSetupType.Setup3_OrangeBeast;
+                assigned = WashPlantSetupType.Setup4_OrangeBeast;
                 setupExists = true;
             }
             else if (hasStat)
             {
-                assigned = WashPlantSetupType.Setup2_Stationary;
+                assigned = WashPlantSetupType.Setup3_Stationary;
                 setupExists = true;
             }
 
@@ -1279,8 +1279,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             CurrentData.Conveyors.Add(status);
 
             // Scan wear parts on conveyors (motor belt, buckets, rollers)
-            bool monitorConveyor = setupExists && isConnected && ((assigned == WashPlantSetupType.Setup2_Stationary && Config.Setup2IncludeFeedingChain.Value)
-                                || (assigned == WashPlantSetupType.Setup3_OrangeBeast && Config.Setup3IncludeFeedingChain.Value));
+            bool monitorConveyor = setupExists && isConnected && ((assigned == WashPlantSetupType.Setup3_Stationary && Config.Setup3IncludeFeedingChain.Value)
+                                || (assigned == WashPlantSetupType.Setup4_OrangeBeast && Config.Setup3IncludeFeedingChain.Value));
             if (monitorConveyor)
             {
                 ScanEquipmentWear(comp, go, assigned, cleanName, isConnected);
@@ -1648,9 +1648,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                     CurrentData.WearParts.Add(wearStatus);
 
                     string wearCat = "Utilities";
-                    if (setup == WashPlantSetupType.Setup1_Mobile) wearCat = "Setup 1 (Mobile)";
-                    else if (setup == WashPlantSetupType.Setup2_Stationary) wearCat = "Setup 2 (Stationary)";
-                    else if (setup == WashPlantSetupType.Setup3_OrangeBeast) wearCat = "Setup 3 (Orange Beast)";
+                    if (setup == WashPlantSetupType.Setup2_Mobile) wearCat = "Setup 2 (Mobile)";
+                    else if (setup == WashPlantSetupType.Setup3_Stationary) wearCat = "Setup 3 (Stationary)";
+                    else if (setup == WashPlantSetupType.Setup4_OrangeBeast) wearCat = "Setup 4 (Orange Beast)";
 
                     CurrentData.RawInspectionItems.Add(new RawDebugItem
                     {
@@ -2342,9 +2342,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
         {
             switch (setup)
             {
-                case WashPlantSetupType.Setup1_Mobile: return LocalizationManager.T("setup.name.mobile", "Mobile Plant");
-                case WashPlantSetupType.Setup2_Stationary: return LocalizationManager.T("setup.name.stationary", "Setup T3-T5");
-                case WashPlantSetupType.Setup3_OrangeBeast: return LocalizationManager.T("setup.name.orange_beast", "Orange Beast");
+                case WashPlantSetupType.Setup2_Mobile: return LocalizationManager.T("setup.name.mobile", "Mobile Plant");
+                case WashPlantSetupType.Setup3_Stationary: return LocalizationManager.T("setup.name.stationary", "Setup T3-T5");
+                case WashPlantSetupType.Setup4_OrangeBeast: return LocalizationManager.T("setup.name.orange_beast", "Orange Beast");
                 default: return LocalizationManager.T("setup.name.default", "Wash Plant");
             }
         }

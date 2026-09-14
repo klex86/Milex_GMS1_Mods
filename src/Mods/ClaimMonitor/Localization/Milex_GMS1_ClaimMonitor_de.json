@@ -2,21 +2,21 @@
   "config.general.section": "Allgemeine Einstellungen",
   "config.general.scanintervalseconds.name": "Aktualisierungsintervall (Sekunden)",
   "config.general.scanintervalseconds.desc": "Intervall in Sekunden zwischen den Hintergrund-Scans der Ausrüstung und Warnungs-Auswertungen.",
-
   "config.setups.section": "Waschanlagen-Setups",
-  "config.setups.monitorsetup1.name": "Mobile Anlagen überwachen (Stufe 2)",
-  "config.setups.monitorsetup1.desc": "Aktiviert Warnungen für gefundene mobile Waschanlagen im Warning-HUD.",
-  "config.setups.monitorsetup2.name": "Setup T3-T5 überwachen",
-  "config.setups.monitorsetup2.desc": "Aktiviert Warnungen für das stationäre Setup (Rüttler, Trommeln, Duplex Jigs / Kiespumpen).",
-  "config.setups.setup2includefeedingchain.name": "T3-T5: Zufuhrkette überwachen",
-  "config.setups.setup2includefeedingchain.desc": "Zieht automatisch zugeordnete Trichter und Förderbänder in den Gesamtstatus von Setup T3-T5 mit ein.",
-  "config.setups.monitorsetup3.name": "Setup T6 (Orange Beast) überwachen",
-  "config.setups.monitorsetup3.desc": "Aktiviert Warnungen für das Orange Beast im Warning-HUD.",
-  "config.setups.setup3includefeedingchain.name": "T6: Zufuhrkette überwachen",
-  "config.setups.setup3includefeedingchain.desc": "Zieht automatisch zugeordnete Trichter und Förderbänder in den Gesamtstatus des Orange Beast mit ein.",
+  "config.setups.monitorsetup1.name": "HogPan überwachen",
+  "config.setups.monitorsetup1.desc": "Aktiviert Warnungen für HogPan im Warning-HUD.",
+  "config.setups.monitorsetup2.name": "Mobile Anlagen überwachen (Stufe 2)",
+  "config.setups.monitorsetup2.desc": "Aktiviert Warnungen für gefundene mobile Waschanlagen im Warning-HUD.",
+  "config.setups.monitorsetup3.name": "Setup T3-T5 überwachen",
+  "config.setups.monitorsetup3.desc": "Aktiviert Warnungen für das stationäre Setup (Rüttler, Trommeln, Duplex Jigs / Kiespumpen).",
+  "config.setups.setup3includefeedingchain.name": "T3-T5: Zufuhrkette überwachen",
+  "config.setups.setup3includefeedingchain.desc": "Zieht automatisch zugeordnete Trichter und Förderbänder in den Gesamtstatus von Setup T3-T5 mit ein.",
+  "config.setups.monitorsetup4.name": "Setup T6 (Orange Beast) überwachen",
+  "config.setups.monitorsetup4.desc": "Aktiviert Warnungen für das Orange Beast im Warning-HUD.",
+  "config.setups.setup4includefeedingchain.name": "T6: Zufuhrkette überwachen",
+  "config.setups.setup4includefeedingchain.desc": "Zieht automatisch zugeordnete Trichter und Förderbänder in den Gesamtstatus des Orange Beast mit ein.",
   "config.setups.monitorgeneratorswitchbuttons.name": "Generator-Schalterknöpfe überwachen",
   "config.setups.monitorgeneratorswitchbuttons.desc": "Überwacht den Verschleiß der einzelnen Steckdosen-Schutzschalter am großen Generator. Standardmäßig deaktiviert, um das Warnungs-HUD nicht zu überfluten.",
-
   "config.thresholds.section": "Warnschwellen",
   "config.thresholds.matwarningthreshold.name": "Matten-Warnschwelle (%)",
   "config.thresholds.matwarningthreshold.desc": "Füllstand der Matten in Prozent, ab dem eine Vorwarnung im HUD erscheint.",
@@ -24,7 +24,6 @@
   "config.thresholds.vehiclelowfuelthreshold.desc": "Füllstand des Tanks in Prozent, ab dem für aktive Fahrzeuge gewarnt wird.",
   "config.thresholds.componentwearwarningthreshold.name": "Teile-Verschleißschwelle (%)",
   "config.thresholds.componentwearwarningthreshold.desc": "Zustand von Anlagenteilen in Prozent, ab dem vor drohendem Ausfall gewarnt wird.",
-
   "config.warninghud.section": "Warning-HUD",
   "config.warninghud.hudenabled.name": "Warning-HUD aktivieren",
   "config.warninghud.hudenabled.desc": "Schaltet das Bildschirm-Overlay für Anlagen- und Mattenwarnungen ein oder aus.",
@@ -36,19 +35,15 @@
   "config.warninghud.hudmaxwidth.desc": "Maximale Breite des Warning-HUD-Fensters in Pixeln.",
   "config.warninghud.hudmaxheight.name": "Maximale HUD-Höhe",
   "config.warninghud.hudmaxheight.desc": "Maximale Höhe des Warning-HUD-Fensters in Pixeln.",
-
   "config.fuel.section": "Kraftstoff & Telemetrie",
   "config.fuel.showfuelinvehicleswitcher.name": "Tankstand in Fahrzeugleiste",
   "config.fuel.showfuelinvehicleswitcher.desc": "Zeigt den aktuellen Tankfüllstand in Prozent direkt in der Schnellwechselleiste an.",
-
   "config.debug.section": "Diagnose & Inspektion",
   "config.debug.enabledebuggroup.name": "Diagnose-Inspektor aktivieren",
   "config.debug.enabledebuggroup.desc": "Schaltet detaillierte Rohdaten und Claim-Dumps frei (Umschalten mit F3).",
-
   "log.ready": "Claim Monitor initialisiert und einsatzbereit.",
   "log.enabled": "Claim Monitor aktiviert.",
   "log.disabled": "Claim Monitor deaktiviert.",
-
   "hud.title": "Claim Monitor",
   "hud.header.warnings": "Claim-Warnungen {0}",
   "hud.header.monitor": "Claim-Monitor {0}",
@@ -65,13 +60,11 @@
   "hud.tag.warn": "WARNUNG",
   "hud.critical": "KRITISCH",
   "hud.warning": "WARNUNG",
-
   "setup.name.mobile": "Mobile Anlage",
   "setup.name.stationary": "Setup T3-T5",
   "setup.name.orange_beast": "Orange Beast",
   "setup.name.infrastructure": "Infrastruktur",
   "setup.name.default": "Waschanlage",
-
   "equipment.orange_beast_shaker": "Orange Beast Rüttler",
   "equipment.gravel_pump": "Kiespumpe",
   "equipment.duplex_jig": "Duplex Jig",
@@ -93,7 +86,6 @@
   "equipment.suspension_spring": "Aufhängefeder",
   "equipment.glacier_creek_engine": "Glacier Creek Motor",
   "equipment.hogpan_dirtbox": "Hog-Pan-Schlammkasten",
-
   "SHOP_ITEM_PARTS_GLACIER_CREEK_ENGINE_NAME": "Glacier Creek Motor",
   "SHOP_ITEM_PARTS_PLANTER_WATERPUMPFUSE_NAME": "Wasserpumpen-Sicherung",
   "SHOP_ITEM_PARTS_PLANTER_WATERPUMPFILTER_NAME": "Wasserpumpen-Filter",
@@ -103,7 +95,6 @@
   "ConveyorEngineBelt": "Waschanlagen-Antriebsriemen",
   "ConveyorBeltBucket": "Förderbandeimer",
   "SpringGlacierCreek": "Aufhängefeder",
-
   "vehicle.small_excavator": "Minibagger",
   "vehicle.large_excavator": "Großer Bagger",
   "vehicle.wheel_loader": "Radlader",
@@ -111,7 +102,6 @@
   "vehicle.dump_truck": "Dumper",
   "vehicle.bulldozer": "Planierraupe",
   "vehicle.drill_rig": "Bohrgerät",
-
   "issue.shaker.no_power": "Orange Beast Rüttler hat keinen Strom.",
   "issue.shaker.no_water": "Orange Beast Rüttler hat keine Wasserzufuhr.",
   "issue.machinery.stopped": "{0} ist gestoppt.",
@@ -139,7 +129,6 @@
   "issue.conveyor.no_feeder": "Zuführtrichter fehlt!",
   "issue.conveyor.feeder_broken": "Zuführtrichter ist defekt!",
   "issue.hogpan.no_water": "{0}: Hog-Pan-Schlammkasten hat keine Wasserzufuhr!",
-
   "alert.cat.mats": "Matten",
   "alert.cat.washplant": "Waschanlage",
   "alert.cat.maintenance": "Wartung",
@@ -147,24 +136,20 @@
   "alert.cat.fuel": "Kraftstoff",
   "alert.cat.water": "Wasser",
   "alert.cat.power": "Strom",
-
   "alert.mats.overflow.title": "{0}: Schleusenmatten laufen über!",
   "alert.mats.overflow.desc": "{0} Matte(n) bei 100 % Kapazität! Sofort auswaschen, um Goldverlust zu vermeiden.",
   "alert.mats.near_full.title": "{0}: Schleusenmatten fast voll",
   "alert.mats.near_full.desc": "{0} Matte(n) über {1:F0} % (Höchste: {2:F1} %).",
-
   "alert.machinery.failure.title": "{0}: {1} Ausfall",
   "alert.machinery.failure.desc": "{0} hat einen kritischen Ausfall erlitten.",
   "alert.machinery.issue.title": "{0}: {1} Störung",
   "alert.machinery.issue.desc": "{0} ist nicht betriebsbereit.",
-
   "alert.wear.missing.title": "{0}: {1} fehlt!",
   "alert.wear.missing.desc": "{0} {1} fehlt oder ist nicht montiert!",
   "alert.wear.broken.title": "{0}: {1} zerstört!",
   "alert.wear.broken.desc": "{0} {1} ist zerstört und muss sofort ersetzt werden.",
   "alert.wear.high.title": "{0}: {1} Verschleiß hoch",
   "alert.wear.high.desc": "{0} {1} Haltbarkeit niedrig ({2:F0} % verbleibend). Ersatzteil vorbereiten.",
-
   "alert.conveyor.failure.title": "{0}: Förderband-Ausfall",
   "alert.conveyor.failure.desc": "{0}: {1}",
   "alert.conveyor.issue.title": "{0}: Förderband-Störung",
@@ -173,17 +158,14 @@
   "alert.conveyor.power_loss.desc": "'{0}' hat keine Stromversorgung.",
   "alert.conveyor.backlog.title": "{0}: Trichter-Rückstau",
   "alert.conveyor.backlog.desc": "'{0}' ist voll ({1:F1}/{2:F1} m³).",
-
   "alert.fuel.empty.title": "Fahrzeug ohne Treibstoff: {0}",
   "alert.fuel.empty.desc": "Tank ist vollkommen leer. Betankung erforderlich.",
   "alert.fuel.low.title": "Wenig Treibstoff: {0}",
   "alert.fuel.low.desc": "Tankfüllstand bei {0:F1} % ({1:F1} L).",
-
   "alert.utility.water_tower.title": "Wasserturm leer",
   "alert.utility.water_tower.desc": "Wassertank-Reservoir ist leer. Pumpenbetrieb oder Nachfüllung erforderlich.",
   "alert.utility.generator.title": "Stromgenerator inaktiv: {0}",
   "alert.utility.generator.desc": "Generator ist gestoppt oder nicht angeschlossen.",
-
   "debug.window.title": "Claim Monitor - Diagnose-Inspektor (Umschalten: F3)",
   "debug.button.rescan": "Neu scannen",
   "debug.button.dump": "Alles in Datei exportieren",

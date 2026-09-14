@@ -1,7 +1,7 @@
+using Milex.GMS1.Core.Localization;
 using Milex.GMS1.Mods.ClaimMonitor.Config;
 using Milex.GMS1.Mods.ClaimMonitor.Diagnostics;
 using Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models;
-using Milex.GMS1.Core.Localization;
 using UnityEngine;
 
 namespace Milex.GMS1.Mods.ClaimMonitor.UI
@@ -121,9 +121,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                 var item = items[i];
                 bool matches = false;
                 if (_selectedCategory == "All") matches = true;
-                else if (_selectedCategory == "Setup 1 (Mobile)") matches = (item.Setup == WashPlantSetupType.Setup1_Mobile || item.Category == "Setup 1 (Mobile)");
-                else if (_selectedCategory == "Setup 2 (Stationary)") matches = (item.Setup == WashPlantSetupType.Setup2_Stationary || item.Category == "Setup 2 (Stationary)");
-                else if (_selectedCategory == "Setup 3 (Orange Beast)") matches = (item.Setup == WashPlantSetupType.Setup3_OrangeBeast || item.Category == "Setup 3 (Orange Beast)");
+                else if (_selectedCategory == "Setup 1 (Mobile)") matches = (item.Setup == WashPlantSetupType.Setup2_Mobile || item.Category == "Setup 1 (Mobile)");
+                else if (_selectedCategory == "Setup 2 (Stationary)") matches = (item.Setup == WashPlantSetupType.Setup3_Stationary || item.Category == "Setup 2 (Stationary)");
+                else if (_selectedCategory == "Setup 3 (Orange Beast)") matches = (item.Setup == WashPlantSetupType.Setup4_OrangeBeast || item.Category == "Setup 3 (Orange Beast)");
                 else if (_selectedCategory == item.Category) matches = true;
 
                 if (!matches) continue;

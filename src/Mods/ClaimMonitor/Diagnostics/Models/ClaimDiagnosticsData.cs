@@ -9,9 +9,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
     public enum WashPlantSetupType
     {
         None,
-        Setup1_Mobile,      // Tier 2: Mini & Mobile Wash Plants
-        Setup2_Stationary,  // Tier 3-5: Stationary Wash Plant (Shaker, Trommel, Duplex Jigs, Sluices)
-        Setup3_OrangeBeast  // Tier 5/6: Orange Beast Wash Plant
+        Setup1_HogPan,      // Tier 2: Mini & Mobile Wash Plants
+        Setup2_Mobile,
+        Setup3_Stationary,  // Tier 3-5: Stationary Wash Plant (Shaker, Trommel, Duplex Jigs, Sluices)
+        Setup4_OrangeBeast  // Tier 5/6: Orange Beast Wash Plant
     }
 
 
@@ -171,20 +172,22 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         private void CompileMatAlerts(MonitorConfig config, float threshold)
         {
             var setupMats = new Dictionary<WashPlantSetupType, List<MatStatus>>();
-            setupMats[WashPlantSetupType.Setup1_Mobile] = new List<MatStatus>();
-            setupMats[WashPlantSetupType.Setup2_Stationary] = new List<MatStatus>();
-            setupMats[WashPlantSetupType.Setup3_OrangeBeast] = new List<MatStatus>();
+            setupMats[WashPlantSetupType.Setup2_Mobile] = new List<MatStatus>();
+            setupMats[WashPlantSetupType.Setup3_Stationary] = new List<MatStatus>();
+            setupMats[WashPlantSetupType.Setup4_OrangeBeast] = new List<MatStatus>();
 
             foreach (var mat in Mats)
             {
                 if (!mat.IsInHolder) continue;
 
-                if (mat.Setup == WashPlantSetupType.Setup1_Mobile && config.MonitorSetup1.Value)
-                    setupMats[WashPlantSetupType.Setup1_Mobile].Add(mat);
-                else if (mat.Setup == WashPlantSetupType.Setup2_Stationary && config.MonitorSetup2.Value)
-                    setupMats[WashPlantSetupType.Setup2_Stationary].Add(mat);
-                else if (mat.Setup == WashPlantSetupType.Setup3_OrangeBeast && config.MonitorSetup3.Value)
-                    setupMats[WashPlantSetupType.Setup3_OrangeBeast].Add(mat);
+                if (mat.Setup == WashPlantSetupType.Setup1_HogPan && config.MonitorSetup1.Value)
+                    setupMats[WashPlantSetupType.Setup1_HogPan].Add(mat);
+                else if (mat.Setup == WashPlantSetupType.Setup2_Mobile && config.MonitorSetup2.Value)
+                    setupMats[WashPlantSetupType.Setup2_Mobile].Add(mat);
+                else if (mat.Setup == WashPlantSetupType.Setup3_Stationary && config.MonitorSetup3.Value)
+                    setupMats[WashPlantSetupType.Setup3_Stationary].Add(mat);
+                else if (mat.Setup == WashPlantSetupType.Setup4_OrangeBeast && config.MonitorSetup4.Value)
+                    setupMats[WashPlantSetupType.Setup4_OrangeBeast].Add(mat);
             }
 
             foreach (var kvp in setupMats)
@@ -236,9 +239,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         {
             foreach (var comp in PlantComponents)
             {
-                if (comp.Setup == WashPlantSetupType.Setup1_Mobile && !config.MonitorSetup1.Value) continue;
-                if (comp.Setup == WashPlantSetupType.Setup2_Stationary && !config.MonitorSetup2.Value) continue;
-                if (comp.Setup == WashPlantSetupType.Setup3_OrangeBeast && !config.MonitorSetup3.Value) continue;
+                if (comp.Setup == WashPlantSetupType.Setup1_HogPan && !config.MonitorSetup1.Value) continue;
+                if (comp.Setup == WashPlantSetupType.Setup2_Mobile && !config.MonitorSetup2.Value) continue;
+                if (comp.Setup == WashPlantSetupType.Setup3_Stationary && !config.MonitorSetup3.Value) continue;
+                if (comp.Setup == WashPlantSetupType.Setup4_OrangeBeast && !config.MonitorSetup4.Value) continue;
 
                 string setupName = GetSetupName(comp.Setup);
                 string name = !string.IsNullOrEmpty(comp.DisplayName) ? comp.DisplayName : comp.TypeName;
@@ -280,9 +284,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                 // Only monitor wear on standalone infrastructure (pumps, towers, generators) if connected to cables/hoses
                 if (part.Setup == WashPlantSetupType.None && !part.IsConnected) continue;
 
-                if (part.Setup == WashPlantSetupType.Setup1_Mobile && !config.MonitorSetup1.Value) continue;
-                if (part.Setup == WashPlantSetupType.Setup2_Stationary && !config.MonitorSetup2.Value) continue;
-                if (part.Setup == WashPlantSetupType.Setup3_OrangeBeast && !config.MonitorSetup3.Value) continue;
+                if (part.Setup == WashPlantSetupType.Setup1_HogPan && !config.MonitorSetup1.Value) continue;
+                if (part.Setup == WashPlantSetupType.Setup2_Mobile && !config.MonitorSetup2.Value) continue;
+                if (part.Setup == WashPlantSetupType.Setup3_Stationary && !config.MonitorSetup3.Value) continue;
+                if (part.Setup == WashPlantSetupType.Setup4_OrangeBeast && !config.MonitorSetup4.Value) continue;
 
                 string setupName = part.Setup == WashPlantSetupType.None
                     ? LocalizationManager.T("setup.name.infrastructure", "Infrastructure")
@@ -334,9 +339,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
             foreach (var conv in Conveyors)
             {
                 bool shouldMonitor = false;
-                if (conv.AssignedSetup == WashPlantSetupType.Setup2_Stationary && config.Setup2IncludeFeedingChain.Value)
+                if (conv.AssignedSetup == WashPlantSetupType.Setup3_Stationary && config.Setup3IncludeFeedingChain.Value)
                     shouldMonitor = true;
-                else if (conv.AssignedSetup == WashPlantSetupType.Setup3_OrangeBeast && config.Setup3IncludeFeedingChain.Value)
+                else if (conv.AssignedSetup == WashPlantSetupType.Setup4_OrangeBeast && config.Setup4IncludeFeedingChain.Value)
                     shouldMonitor = true;
 
                 if (!shouldMonitor) continue;
@@ -465,16 +470,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         {
             switch (type)
             {
-                case WashPlantSetupType.Setup1_Mobile: return LocalizationManager.T("setup.name.mobile", "Mobile Plant");
-                case WashPlantSetupType.Setup2_Stationary: return LocalizationManager.T("setup.name.stationary", "Setup T3-T5");
-                case WashPlantSetupType.Setup3_OrangeBeast: return LocalizationManager.T("setup.name.orange_beast", "Orange Beast");
+                case WashPlantSetupType.Setup1_HogPan: return LocalizationManager.T("setup.name.hogpan", "HogPan");
+                case WashPlantSetupType.Setup2_Mobile: return LocalizationManager.T("setup.name.mobile", "Mobile Plant");
+                case WashPlantSetupType.Setup3_Stationary: return LocalizationManager.T("setup.name.stationary", "Setup T3-T5");
+                case WashPlantSetupType.Setup4_OrangeBeast: return LocalizationManager.T("setup.name.orange_beast", "Orange Beast");
                 default: return LocalizationManager.T("setup.name.default", "Wash Plant");
             }
         }
     }
 
-    public class ClaimDiagnosticsSnapshotV2
-    {
-        public List<WashPlantStatusV2> WashPlants { get; set; } = new List<WashPlantStatusV2>();
-    }
 }

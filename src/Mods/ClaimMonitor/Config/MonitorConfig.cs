@@ -11,10 +11,12 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Config
         public ConfigEntry<bool> MonitorSetup1 { get; private set; }
 
         public ConfigEntry<bool> MonitorSetup2 { get; private set; }
-        public ConfigEntry<bool> Setup2IncludeFeedingChain { get; private set; }
 
         public ConfigEntry<bool> MonitorSetup3 { get; private set; }
         public ConfigEntry<bool> Setup3IncludeFeedingChain { get; private set; }
+
+        public ConfigEntry<bool> MonitorSetup4 { get; private set; }
+        public ConfigEntry<bool> Setup4IncludeFeedingChain { get; private set; }
 
         public ConfigEntry<bool> MonitorGeneratorSwitchButtons { get; private set; }
 
@@ -42,7 +44,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Config
             ScanIntervalSeconds = config.Bind(
                 "General",
                 "ScanIntervalSeconds",
-                3.0f,
+                1.0f,
                 new ConfigDescription("Interval in seconds between background equipment scans and health evaluations.", new AcceptableValueRange<float>(1.0f, 30.0f))
             );
 
@@ -58,26 +60,33 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Config
                 "Setups",
                 "MonitorSetup2",
                 true,
-                "Monitor stationary setup (T3-T5) in the Warning HUD."
-            );
-
-            Setup2IncludeFeedingChain = config.Bind(
-                "Setups",
-                "Setup2IncludeFeedingChain",
-                false,
-                "Setup T3-T5: Include feeding chain (hoppers and conveyors) in health evaluation."
+                "Monitor mobile wash plants in the Warning HUD."
             );
 
             MonitorSetup3 = config.Bind(
                 "Setups",
                 "MonitorSetup3",
                 true,
-                "Monitor Setup T6 (Orange Beast) in the Warning HUD."
+                "Monitor stationary setup (T3-T5) in the Warning HUD."
             );
 
             Setup3IncludeFeedingChain = config.Bind(
                 "Setups",
                 "Setup3IncludeFeedingChain",
+                false,
+                "Setup T3-T5: Include feeding chain (hoppers and conveyors) in health evaluation."
+            );
+
+            MonitorSetup4 = config.Bind(
+                "Setups",
+                "MonitorSetup4",
+                true,
+                "Monitor Setup T6 (Orange Beast) in the Warning HUD."
+            );
+
+            Setup4IncludeFeedingChain = config.Bind(
+                "Setups",
+                "Setup4IncludeFeedingChain",
                 false,
                 "Setup T6: Include feeding chain (hoppers and conveyors) in health evaluation."
             );
