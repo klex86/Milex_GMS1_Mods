@@ -134,6 +134,11 @@ Delete [font=Courier New]Milex_GMS1_ProductionTuner.dll[/font] from [font=Courie
 
 [size=5][b]Changelog[/b][/size]
 
+[b]Version 1.4.15[/b]
+[list]
+[*] Fixed Frankenstein and Cordylus track steering: crawler conveyor machines can now be steered normally left and right in driving mode without breaking their custom physics inertia tensors.
+[/list]
+
 [b]Version 1.4.14[/b]
 [list]
 [*] Added excavator chassis stabilization: parked excavators stay solidly anchored on their tracks and will not roll over while you are away hauling dirt.

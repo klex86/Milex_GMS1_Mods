@@ -33,6 +33,19 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
         {
             if (__instance == null) return;
 
+            // Mobile conveyor crawlers (Frankenstein and Cordylus) feature long compound arm colliders
+            // and rely on engine-preset inertia tensors. Freezing their chassis invalidates their inertia tensors
+            // in Unity PhysX and breaks track steering. They also manage their own anchoring/kinematic states.
+            if (__instance is GoldDigger.FrankensteinExcavator || __instance is GoldDigger.MaximusMachineController)
+            {
+                var trackedRb = __instance.MyRigidbody ?? __instance.GetComponent<Rigidbody>();
+                if (trackedRb != null && trackedRb.constraints != RigidbodyConstraints.None)
+                {
+                    trackedRb.constraints = RigidbodyConstraints.None;
+                }
+                return;
+            }
+
             var rb = __instance.MyRigidbody ?? __instance.GetComponent<Rigidbody>();
             if (rb == null) return;
 
@@ -165,10 +178,13 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.Vehicles
 
             ExcavatorStabilityPatch.MarkTeleported(__instance);
 
-            var rb = __instance.MyRigidbody ?? __instance.GetComponent<Rigidbody>();
-            if (rb != null)
+            if (!(__instance is GoldDigger.FrankensteinExcavator || __instance is GoldDigger.MaximusMachineController))
             {
-                rb.constraints = RigidbodyConstraints.None;
+                var rb = __instance.MyRigidbody ?? __instance.GetComponent<Rigidbody>();
+                if (rb != null)
+                {
+                    rb.constraints = RigidbodyConstraints.None;
+                }
             }
 
             if (__instance is SmallExcavator smallExc)

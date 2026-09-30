@@ -3,6 +3,19 @@
 All notable changes and releases for this mod collection are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.8.27] - 2026-09-30
+
+### Production Tuner: Frankenstein & Cordylus Track Steering & Inertia Tensor Preservation
+
+- **Production Tuner v1.4.15 — Mobile Conveyor Crawler Exemption (`ExcavatorStabilityPatch`)**:
+  - Fixed an issue where the **Frankenstein** mobile conveyor crawler could be driven forward and backward, but could no longer be steered left or right with `[A]` and `[D]` in driving mode (`SteeringMode.Driver`).
+  - Mobile conveyor crawlers (`FrankensteinExcavator` and `MaximusMachineController`) carry massive 25-meter cantilever conveyor booms with compound colliders on their root `Rigidbody`. Freezing their chassis (`RigidbodyConstraints.FreezeAll`) caused Unity PhysX to discard their handcrafted vanilla inertia tensors (`MyRigidbody.inertiaTensor`) upon unfreezing, blowing up rotational inertia around the vertical axis ($I_y$) and locking track steering.
+  - Added an explicit exemption in `ExcavatorStabilityPatch` and `MachineTeleportPatch` for mobile conveyor crawlers, preserving their native inertia tensors, centers of mass, and track steering dynamics 100% intact.
+  - Both machines already handle their own native anchoring and kinematic states in vanilla (`isKinematic` when uncrewed with belt running).
+  - Added a one-time constraint reset guard to immediately unfreeze any mobile conveyor crawlers that were previously frozen by earlier mod versions.
+
+---
+
 ## [1.8.26] - 2026-09-13
 
 ### Claim Monitor: Orange Beast Shaker Spring Detection & Durability Inversion Heuristic

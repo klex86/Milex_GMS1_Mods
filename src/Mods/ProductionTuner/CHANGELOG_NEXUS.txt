@@ -1,5 +1,8 @@
 Milex GMS1 Production Tuner - Version History
 
+v1.4.15:
+- Fixed Frankenstein and Cordylus track steering: crawler conveyors can now be steered normally left and right in driving mode without breaking their custom physics inertia tensors.
+
 v1.4.14:
 - Added excavator chassis stabilization: parked excavators stay solidly anchored on their tracks and will not roll over while you are away hauling dirt.
 - Added in-place upright recovery: entering an overturned vehicle sets it upright on its tracks directly where you were working.

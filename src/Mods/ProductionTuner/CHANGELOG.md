@@ -3,6 +3,27 @@
 All notable changes to this mod are documented in this file.
 This format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [1.4.15] – 2026-09-30
+
+### Fixed: Frankenstein & Cordylus Track Steering & Inertia Tensor Preservation
+
+- **Mobile Conveyor Crawler Exemption (`ExcavatorStabilityPatch`)**:
+  - Fixed an issue where the **Frankenstein** mobile conveyor crawler could be driven forward and backward, but could no longer be steered left or right with `[A]` and `[D]` in driving mode (`SteeringMode.Driver`).
+  - *Root Cause*:
+    - Frankenstein (`FrankensteinExcavator`) and Cordylus (`MaximusMachineController`) inherit from the base tracked vehicle class `TrackMachineController`.
+    - `ExcavatorStabilityPatch` applied chassis freezing (`RigidbodyConstraints.FreezeAll`) when machines were parked or uncrewed to protect boom excavators from toppling on slopes.
+    - Unlike standard excavators with separate jointed arm bodies, mobile conveyor crawlers possess massive 25-meter long cantilever conveyor booms with compound colliders directly attached to their root `Rigidbody`.
+    - In vanilla, the game developers explicitly locked custom inertia tensors in `FrankensteinExcavator.Awake()` (`MyRigidbody.inertiaTensor = MyRigidbody.inertiaTensor;`) to bypass Unity PhysX's automatic inertia tensor calculation.
+    - Whenever Unity toggles `Rigidbody.constraints` to `FreezeAll` and later restores `None`, PhysX discards this custom manual inertia tensor and automatically recalculates it from all attached compound colliders. Due to the 25-meter lever arm of the conveyor boom, the yaw rotational inertia ($I_y$) exploded by several orders of magnitude.
+    - As a result, linear movement ($F = m \cdot a$) remained functional, but the track motor torque was physically incapable of turning the vehicle around its vertical axis, locking steering dead in driving mode.
+  - *Fix*:
+    - Added an explicit exemption in `ExcavatorStabilityPatch` for `FrankensteinExcavator` and `MaximusMachineController`.
+    - Mobile conveyor crawlers are completely bypassed by chassis constraint manipulation, leaving their handcrafted vanilla inertia tensors, centers of mass, and track steering dynamics 100% intact.
+    - Both machines already maintain their own native anchoring and kinematic states in vanilla (`FrankensteinExcavator` sets `isKinematic = true` when uncrewed with belt active; `MaximusMachineController` manages `isGroundingProccesing`).
+    - Added one-time constraint reset guard to immediately unfreeze any mobile conveyor crawlers that were previously frozen by earlier mod versions.
+
+---
+
 ## [1.4.14] – 2026-09-12
 
 ### Fixed: Airborne / Teleportation Spawning Immunity (Anti-Hover Protection)
