@@ -83,20 +83,42 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
 
     }
 
+    public enum MobilePlantType
+    {
+        MobileWashPlant, // Standard electric trailer
+        MiniWashPlant    // DLC diesel trommel trailer
+    }
+
     // Setup 2: Mobile Wash Plants (Trailers / DLC Mini Trommel)
     public class MobileWashPlantStatus
     {
         public int ClaimId { get; set; }
         public string ClaimName { get; set; }
+        public int PlantIndex { get; set; }
+        public MobilePlantType PlantType { get; set; }
         public string VariantName { get; set; }
 
-        public bool HasFuel { get; set; }
-        public float FuelPct { get; set; }
-        public bool HasPower { get; set; }
+        // Operating state filter: hose connected means active
+        public bool IsHoseConnected { get; set; }
+        public bool IsReadyToOperate { get; set; }
+
+        // Water
         public bool HasWater { get; set; }
 
+        // Power (Only MobileWashPlant)
+        public bool RequiresPower { get; set; }
+        public bool HasPower { get; set; }
+
+        // Fuel (Only MiniWashPlant)
+        public bool RequiresFuel { get; set; }
+        public bool HasFuel { get; set; }
+        public float FuelPct { get; set; } // 0.0 to 1.0
+
+        // Intake & Bucket
         public float DirtFillPct { get; set; }
-        public float BucketFillPct { get; set; }
+        public bool BucketMounted { get; set; }
+        public float BucketFillPct { get; set; } // 0.0 to 1.0
+        public float BucketCurrentVolumeM3 { get; set; }
 
         public List<MachinePartStatus> Parts { get; set; } = new List<MachinePartStatus>();
     }
@@ -245,6 +267,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     string matsName = GameLocResolver.Resolve(GameLocResolver.KeyHogPanMat, "Hog Pan Mat");
                     string header = $"{hp.ClaimName ?? $"Claim #{hp.ClaimId}"} ({hogPanName} #{hp.AreaIndex})";
 
+
                     // Check water only if this variant actually requires water
                     if (hp.RequiresWater && !hp.HasWater)
                     {
@@ -253,7 +276,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                             Severity = AlertSeverity.Warning,
                             Category = LocalizationManager.T("alert.cat.water", "Water"),
                             Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", header, LocalizationManager.T("alert.cat.water", "Water")),
-                            Description = LocalizationManager.Format("issue.hogpan.no_water", "{0}: Hog Pan Dirt Box has no water supply!", header)
+                            Description = LocalizationManager.Format("issue.machinery.no_water", "{0} has no water supply.", hogPanName)
                         });
                     }
 
@@ -286,7 +309,93 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
             // ==========================================
             // 2. Setup 2: Mobile Plants (Trailers)
             // ==========================================
-            // (Wird aktiviert, sobald der Trailer-Scanner implementiert ist)
+            if (config.MonitorSetup2?.Value ?? true)
+            {
+                foreach (var mp in MobilePlants)
+                {
+                    // Only monitor if hose is connected (in active operation)
+                    if (!mp.IsHoseConnected) continue;
+
+                    string plantHeader = $"{mp.ClaimName ?? $"Claim #{mp.ClaimId}"} ({mp.VariantName} #{mp.PlantIndex})";
+                    string bucketDisplayName = $"{mp.VariantName} - {GameLocResolver.Resolve(GameLocResolver.KeyBucket, "Bucket")}";
+
+                    // Water Alert (Hose connected, but no water arriving)
+                    if (!mp.HasWater)
+                    {
+                        ActiveAlerts.Add(new ClaimAlert
+                        {
+                            Severity = AlertSeverity.Warning,
+                            Category = LocalizationManager.T("alert.cat.water", "Water"),
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, LocalizationManager.T("alert.cat.water", "Water")),
+                            Description = LocalizationManager.Format("issue.machinery.no_water", "{0} has no water supply.", mp.VariantName)
+                        });
+                    }
+
+                    // Electric Power Alert (MobileWashPlant only)
+                    if (mp.RequiresPower && !mp.HasPower)
+                    {
+                        ActiveAlerts.Add(new ClaimAlert
+                        {
+                            Severity = AlertSeverity.Warning,
+                            Category = LocalizationManager.T("alert.cat.power", "Power"),
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, LocalizationManager.T("alert.cat.power", "Power")),
+                            Description = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", mp.VariantName)
+                        });
+                    }
+
+                    // Diesel Fuel Alert (MiniWashPlant only)
+                    if (mp.RequiresFuel)
+                    {
+                        float fuelThreshold = (config.VehicleLowFuelThreshold?.Value ?? 20.0f) / 100.0f;
+                        if (!mp.HasFuel || mp.FuelPct <= 0.01f)
+                        {
+                            ActiveAlerts.Add(new ClaimAlert
+                            {
+                                Severity = AlertSeverity.Critical,
+                                Category = LocalizationManager.T("alert.cat.fuel", "Fuel"),
+                                Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, LocalizationManager.T("alert.cat.fuel", "Fuel")),
+                                Description = LocalizationManager.Format("issue.miniwashplant.no_fuel", "{0} is out of fuel.", mp.VariantName)
+                            });
+                        }
+                        else if (mp.FuelPct <= fuelThreshold)
+                        {
+                            ActiveAlerts.Add(new ClaimAlert
+                            {
+                                Severity = AlertSeverity.Warning,
+                                Category = LocalizationManager.T("alert.cat.fuel", "Fuel"),
+                                Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, LocalizationManager.T("alert.cat.fuel", "Fuel")),
+                                Description = LocalizationManager.Format("alert.fuel.low.desc", "Fuel level is at {0:F1}% ({1:F1} L).", mp.FuelPct * 100f, 0f)
+                            });
+                        }
+                    }
+
+                    // Bucket Missing
+                    if (!mp.BucketMounted)
+                    {
+                        ActiveAlerts.Add(new ClaimAlert
+                        {
+                            Severity = AlertSeverity.Warning,
+                            Category = LocalizationManager.T("alert.cat.washplant", "Wash Plant"),
+                            Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", plantHeader, bucketDisplayName),
+                            Description = LocalizationManager.Format("issue.machinery.part_missing", "{0} is missing a required part ({1})!", plantHeader, bucketDisplayName)
+                        });
+                    }
+                    // Bucket Nearly Full / Overfill
+                    else if (mp.BucketFillPct >= fillThreshold)
+                    {
+                        ActiveAlerts.Add(new ClaimAlert
+                        {
+                            Severity = AlertSeverity.Warning,
+                            Category = LocalizationManager.T("alert.cat.washplant", "Wash Plant"),
+                            Title = LocalizationManager.Format("alert.bucket.near_full.title", "{0}: Bucket Nearly Full", plantHeader),
+                            Description = LocalizationManager.Format("issue.duplex.bucket_full", "{0} bucket is full (replace bucket).", bucketDisplayName)
+                        });
+                    }
+
+                    // Wear parts evaluation
+                    EvaluateMachineParts(plantHeader, mp.Parts, wearThreshold, monitorButtons);
+                }
+            }
 
             // ==========================================
             // 3. Setup 3: Modular Plant (T3 - T5)
@@ -360,10 +469,32 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     // Duplex Jigs / Concentrator checks
                     string jig1Name = $"{GameLocResolver.Resolve(GameLocResolver.KeyDuplexJig, "Duplex Jig")} 1";
                     string jig2Name = $"{GameLocResolver.Resolve(GameLocResolver.KeyDuplexJig, "Duplex Jig")} 2";
-                    CheckJigAlerts(plantHeader, jig1Name, plant.Jig1Mounted, plant.Jig1HasPower, plant.Jig1Bucket1, 1, fillThreshold);
-                    CheckJigAlerts(plantHeader, jig1Name, plant.Jig1Mounted, plant.Jig1HasPower, plant.Jig1Bucket2, 2, fillThreshold);
-                    CheckJigAlerts(plantHeader, jig2Name, plant.Jig2Mounted, plant.Jig2HasPower, plant.Jig2Bucket1, 1, fillThreshold);
-                    CheckJigAlerts(plantHeader, jig2Name, plant.Jig2Mounted, plant.Jig2HasPower, plant.Jig2Bucket2, 2, fillThreshold);
+
+                    if (plant.Jig1Mounted && !plant.Jig1HasPower)
+                    {
+                        ActiveAlerts.Add(new ClaimAlert
+                        {
+                            Severity = AlertSeverity.Warning,
+                            Category = LocalizationManager.T("alert.cat.power", "Power"),
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, jig1Name),
+                            Description = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", jig1Name)
+                        });
+                    }
+                    CheckJigBucketAlert(plantHeader, jig1Name, plant.Jig1Mounted, plant.Jig1Bucket1, 1, fillThreshold);
+                    CheckJigBucketAlert(plantHeader, jig1Name, plant.Jig1Mounted, plant.Jig1Bucket2, 2, fillThreshold);
+
+                    if (plant.Jig2Mounted && !plant.Jig2HasPower)
+                    {
+                        ActiveAlerts.Add(new ClaimAlert
+                        {
+                            Severity = AlertSeverity.Warning,
+                            Category = LocalizationManager.T("alert.cat.power", "Power"),
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, jig2Name),
+                            Description = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", jig2Name)
+                        });
+                    }
+                    CheckJigBucketAlert(plantHeader, jig2Name, plant.Jig2Mounted, plant.Jig2Bucket1, 1, fillThreshold);
+                    CheckJigBucketAlert(plantHeader, jig2Name, plant.Jig2Mounted, plant.Jig2Bucket2, 2, fillThreshold);
 
                     // Sluice Box 3 Grates Missing
                     string grateName = GameLocResolver.Resolve(GameLocResolver.KeySluiceGrate, "Sluicebox Grate");
@@ -394,22 +525,24 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     string endHogPanName = GameLocResolver.Resolve(GameLocResolver.KeyHogPanContainer, "Hog Pan");
                     if (plant.EndHogPan1Mounted && !plant.EndHogPan1HasWater)
                     {
+                        string targetName = $"{endHogPanName} 1";
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
                             Category = LocalizationManager.T("alert.cat.water", "Water"),
-                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, $"{endHogPanName} 1"),
-                            Description = LocalizationManager.Format("issue.hogpan.no_water", "{0}: Hog Pan Dirt Box has no water supply!", $"{plantHeader} ({endHogPanName} 1)")
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, targetName),
+                            Description = LocalizationManager.Format("issue.machinery.no_water", "{0} has no water supply.", targetName)
                         });
                     }
                     if (plant.EndHogPan2Mounted && !plant.EndHogPan2HasWater)
                     {
+                        string targetName = $"{endHogPanName} 2";
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
                             Category = LocalizationManager.T("alert.cat.water", "Water"),
-                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, $"{endHogPanName} 2"),
-                            Description = LocalizationManager.Format("issue.hogpan.no_water", "{0}: Hog Pan Dirt Box has no water supply!", $"{plantHeader} ({endHogPanName} 2)")
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, targetName),
+                            Description = LocalizationManager.Format("issue.machinery.no_water", "{0} has no water supply.", targetName)
                         });
                     }
 
@@ -547,45 +680,32 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         // Helper Methods for Alert Evaluation
         // ==========================================
 
-        private void CheckJigAlerts(string header, string jigName, bool isMounted, bool hasPower, JigBucketStatus bucket, int slotIndex, float fillThreshold)
+        private void CheckJigBucketAlert(string header, string jigName, bool isMounted, JigBucketStatus bucket, int slotIndex, float fillThreshold)
         {
-            if (!isMounted) return;
+            if (!isMounted || bucket == null || !bucket.HasSlot) return;
 
-            string bucketDisplayName = $"{jigName} - {GameLocResolver.Resolve(GameLocResolver.KeyBucket, "Bucket")} {slotIndex}";
+            string bucketItemName = GameLocResolver.Resolve(GameLocResolver.KeyBucket, "Bucket");
+            string bucketDisplayName = $"{jigName} - {bucketItemName} {slotIndex}";
 
-            if (!hasPower)
+            if (!bucket.IsMounted)
             {
                 ActiveAlerts.Add(new ClaimAlert
                 {
                     Severity = AlertSeverity.Warning,
-                    Category = LocalizationManager.T("alert.cat.power", "Power"),
-                    Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", header, jigName),
-                    Description = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", jigName)
+                    Category = LocalizationManager.T("alert.cat.washplant", "Wash Plant"),
+                    Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", header, bucketDisplayName),
+                    Description = LocalizationManager.Format("issue.machinery.part_missing", "{0} is missing a required part ({1})!", header, bucketDisplayName)
                 });
             }
-
-            if (bucket != null && bucket.HasSlot)
+            else if (bucket.FillPct >= fillThreshold)
             {
-                if (!bucket.IsMounted)
+                ActiveAlerts.Add(new ClaimAlert
                 {
-                    ActiveAlerts.Add(new ClaimAlert
-                    {
-                        Severity = AlertSeverity.Warning,
-                        Category = LocalizationManager.T("alert.cat.washplant", "Wash Plant"),
-                        Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", header, bucketDisplayName),
-                        Description = LocalizationManager.Format("issue.machinery.part_missing", "{0} is missing a required part ({1})!", header, bucketDisplayName)
-                    });
-                }
-                else if (bucket.FillPct >= fillThreshold)
-                {
-                    ActiveAlerts.Add(new ClaimAlert
-                    {
-                        Severity = AlertSeverity.Warning,
-                        Category = LocalizationManager.T("alert.cat.washplant", "Wash Plant"),
-                        Title = LocalizationManager.Format("alert.bucket.near_full.title", "{0}: Bucket Nearly Full", header),
-                        Description = LocalizationManager.Format("issue.duplex.bucket_full", "{0} bucket is full (replace bucket).", bucketDisplayName)
-                    });
-                }
+                    Severity = AlertSeverity.Warning,
+                    Category = LocalizationManager.T("alert.cat.washplant", "Wash Plant"),
+                    Title = LocalizationManager.Format("alert.bucket.near_full.title", "{0}: Bucket Nearly Full", header),
+                    Description = LocalizationManager.Format("issue.duplex.bucket_full", "{0} bucket is full (replace bucket).", bucketDisplayName)
+                });
             }
         }
 
@@ -598,7 +718,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                 if (part == null) continue;
                 if (part.Category == MachinePartCategory.SwitchButton && !monitorButtons) continue;
 
-                string resolvedPartName = LocalizationManager.ResolveGameText(part.Name);
+                string resolvedPartName = GameLocResolver.Resolve(part.Name, part.Name);
                 string source = !string.IsNullOrEmpty(part.SourceComponent) ? $"[{part.SourceComponent}] " : string.Empty;
 
                 if (!part.IsInPlace || part.IsDestroyed)
@@ -660,7 +780,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                 foreach (var part in chain.Parts)
                 {
                     if (part == null) continue;
-                    string resolvedPartName = LocalizationManager.ResolveGameText(part.Name);
+                    string resolvedPartName = GameLocResolver.Resolve(part.Name, part.Name);
                     string source = !string.IsNullOrEmpty(part.SourceComponent) ? $"[{part.SourceComponent}] " : string.Empty;
 
                     if (!part.IsInPlace || part.IsDestroyed)

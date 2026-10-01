@@ -38,10 +38,22 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             public ConveyorHolder ConveyorHolder { get; set; }
         }
 
+        private class MobilePlantTracker
+        {
+            public GoldDigger.MobileWashplant Plant;
+            public MobileWashPlantStatus Status;
+        }
+
+        private class MiniPlantTracker
+        {
+            public GoldDigger.MiniWashplant Plant;
+            public MobileWashPlantStatus Status;
+        }
+
         public ClaimDiagnosticsDataV2 CurrentData { get; } = new ClaimDiagnosticsDataV2();
 
         public List<ClaimAlert> ActiveAlerts => CurrentData.ActiveAlerts;
-        public int PlantCount => CurrentData.ModularPlants.Count + CurrentData.OrangeBeasts.Count;
+        public int PlantCount => CurrentData.ModularPlants.Count + CurrentData.OrangeBeasts.Count + CurrentData.MobilePlants.Count;
 
 
         public int MatCount
@@ -62,6 +74,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
         private readonly List<ModularPlantTracker> _trackedModularPlants = new List<ModularPlantTracker>();
         private readonly List<StandaloneHogPanTracker> _trackedStandalonePans = new List<StandaloneHogPanTracker>();
         private readonly List<OrangeBeastTracker> _trackedBeasts = new List<OrangeBeastTracker>();
+        private readonly List<MobilePlantTracker> _trackedMobilePlants = new List<MobilePlantTracker>();
+        private readonly List<MiniPlantTracker> _trackedMiniPlants = new List<MiniPlantTracker>();
         private readonly HashSet<int> _modularHogPanInstanceIds = new HashSet<int>();
 
         private Coroutine _scanRoutine;
@@ -118,38 +132,65 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
 
         private IEnumerator DiagnosticLoop()
         {
-            // Warten, bis der Ladebildschirm vollständig weg ist
-            while (Singleton<LevelLoadingManager>.IsInstanced() && Singleton<LevelLoadingManager>.Instance.IsLoading())
-            {
-                yield return new WaitForSeconds(0.5f);
-            }
-            yield return new WaitForSeconds(1.0f);
-            ForceScan();
+            string lastSceneName = string.Empty;
 
             while (true)
             {
                 string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-                bool isMainMenu = string.IsNullOrEmpty(sceneName) || sceneName.ToLower().Contains("menu") || sceneName.ToLower().Contains("buffor");
-                bool isLoading = Singleton<LevelLoadingManager>.IsInstanced() && Singleton<LevelLoadingManager>.Instance.IsLoading();
+                bool isMainMenu = string.IsNullOrEmpty(sceneName) ||
+                                  sceneName.ToLower().Contains("menu") ||
+                                  sceneName.ToLower().Contains("buffor");
 
-                if (!isMainMenu && !isLoading)
+                // In main menu: purge tracked data and wait
+                if (isMainMenu)
                 {
-                    // 1. Topology Discovery alle 30s oder wenn Caches leer sind
-                    if (Time.time - _lastTopologyDiscoveryTime >= TopologyIntervalSeconds ||
-                        (_trackedModularPlants.Count == 0 && _trackedStandalonePans.Count == 0 && _trackedBeasts.Count == 0))
+                    if (_trackedModularPlants.Count > 0 || _trackedStandalonePans.Count > 0 || _trackedBeasts.Count > 0)
                     {
-                        DiscoverTopology();
-                        _nextTopologyTime = Time.time + TopologyIntervalSeconds;
+                        CurrentData.Reset();
+                        _trackedModularPlants.Clear();
+                        _trackedStandalonePans.Clear();
+                        _trackedBeasts.Clear();
+                        _trackedMobilePlants.Clear();
+                        _trackedMiniPlants.Clear();
+                        _modularHogPanInstanceIds.Clear();
                     }
-
-                    // 2. Schnelles Polling auf bekannten Referenzen
-                    PollState();
-                    float interval = Mathf.Max(0.5f, Config?.ScanIntervalSeconds?.Value ?? 2.0f);
-                    _nextPollTime = Time.time + interval;
+                    lastSceneName = sceneName;
+                    yield return new WaitForSeconds(1.0f);
+                    continue;
                 }
 
-                float loopInterval = Config?.ScanIntervalSeconds?.Value ?? 2.0f;
-                yield return null;
+                // Scene change to a gameplay scene detected, or level loading is in progress
+                bool sceneChanged = sceneName != lastSceneName;
+                bool isLoading = Singleton<LevelLoadingManager>.IsInstanced() && Singleton<LevelLoadingManager>.Instance.IsLoading();
+
+                if (sceneChanged || isLoading)
+                {
+                    // 1. Wait until loading screen is completely finished
+                    while (Singleton<LevelLoadingManager>.IsInstanced() && Singleton<LevelLoadingManager>.Instance.IsLoading())
+                    {
+                        yield return new WaitForSeconds(0.5f);
+                    }
+
+                    // 2. Allow scene game objects 4 seconds to finish internal setup
+                    yield return new WaitForSeconds(4.0f);
+
+                    lastSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+                    ForceScan();
+                    _nextTopologyTime = Time.time + TopologyIntervalSeconds;
+                }
+
+                // Periodic discovery during active gameplay
+                if (Time.time - _lastTopologyDiscoveryTime >= TopologyIntervalSeconds)
+                {
+                    DiscoverTopology();
+                    _nextTopologyTime = Time.time + TopologyIntervalSeconds;
+                }
+
+                PollState();
+                float interval = Mathf.Max(0.5f, Config?.ScanIntervalSeconds?.Value ?? 2.0f);
+                _nextPollTime = Time.time + interval;
+
+                yield return new WaitForSeconds(interval);
             }
         }
 
@@ -165,11 +206,14 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             _trackedModularPlants.Clear();
             _trackedStandalonePans.Clear();
             _trackedBeasts.Clear();
+            _trackedMobilePlants.Clear();
+            _trackedMiniPlants.Clear();
             _modularHogPanInstanceIds.Clear();
 
             DiscoverOrangeBeasts();
             DiscoverModularPlants();
             DiscoverStandaloneHogPans();
+            DiscoverMobilePlants();
         }
 
         private void DiscoverModularPlants()
@@ -347,6 +391,91 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             }
         }
 
+        private void DiscoverMobilePlants()
+        {
+            if (!(Config?.MonitorSetup2?.Value ?? true)) return;
+
+            int plantIndex = 1;
+
+            // 1. Standard Mobile Wash Plant
+            var mobilePlants = UnityEngine.Object.FindObjectsOfType<GoldDigger.MobileWashplant>();
+            if (mobilePlants != null)
+            {
+                for (int i = 0; i < mobilePlants.Length; i++)
+                {
+                    var plant = mobilePlants[i];
+                    if (plant == null || !plant.gameObject.activeInHierarchy) continue;
+
+                    int claimId = GetFieldValue<int>(plant, plant.GetType(), "MyClaimId");
+                    var lotDesc = GetFieldValue<LotDescriptor>(plant, plant.GetType(), "myLot");
+                    if (lotDesc == null)
+                    {
+                        lotDesc = Singleton<LaptopGlobalManager>.Instance?.FindClosestLotFromAll(plant.transform.position);
+                    }
+                    string rawName = lotDesc != null ? lotDesc.Name.ToString() : null;
+                    string claimName = GameLocResolver.GetClaimName(claimId, rawName);
+                    string variantName = GameLocResolver.Resolve(GameLocResolver.KeyMobileWashPlant, "Mobile Wash Plant");
+
+                    var status = new MobileWashPlantStatus
+                    {
+                        ClaimId = claimId,
+                        ClaimName = claimName,
+                        PlantIndex = plantIndex++,
+                        PlantType = MobilePlantType.MobileWashPlant,
+                        VariantName = variantName,
+                        RequiresPower = true,
+                        RequiresFuel = false
+                    };
+
+                    _trackedMobilePlants.Add(new MobilePlantTracker
+                    {
+                        Plant = plant,
+                        Status = status
+                    });
+                    CurrentData.MobilePlants.Add(status);
+                }
+            }
+
+            // 2. DLC Mini Wash Plant
+            var miniPlants = UnityEngine.Object.FindObjectsOfType<GoldDigger.MiniWashplant>();
+            if (miniPlants != null)
+            {
+                for (int i = 0; i < miniPlants.Length; i++)
+                {
+                    var plant = miniPlants[i];
+                    if (plant == null || !plant.gameObject.activeInHierarchy) continue;
+
+                    int claimId = GetFieldValue<int>(plant, plant.GetType(), "MyClaimId");
+                    var lotDesc = GetFieldValue<LotDescriptor>(plant, plant.GetType(), "myLot");
+                    if (lotDesc == null)
+                    {
+                        lotDesc = Singleton<LaptopGlobalManager>.Instance?.FindClosestLotFromAll(plant.transform.position);
+                    }
+                    string rawName = lotDesc != null ? lotDesc.Name.ToString() : null;
+                    string claimName = GameLocResolver.GetClaimName(claimId, rawName);
+                    string variantName = GameLocResolver.Resolve(GameLocResolver.KeyMiniWashPlant, "Mini Wash Plant");
+
+                    var status = new MobileWashPlantStatus
+                    {
+                        ClaimId = claimId,
+                        ClaimName = claimName,
+                        PlantIndex = plantIndex++,
+                        PlantType = MobilePlantType.MiniWashPlant,
+                        VariantName = variantName,
+                        RequiresPower = false,
+                        RequiresFuel = true
+                    };
+
+                    _trackedMiniPlants.Add(new MiniPlantTracker
+                    {
+                        Plant = plant,
+                        Status = status
+                    });
+                    CurrentData.MobilePlants.Add(status);
+                }
+            }
+        }
+
 
         // ==========================================
         // STAGE 2: State Polling (Ultra-fast, frequent)
@@ -358,6 +487,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             PollModularPlants();
             PollStandaloneHogPans();
             PollOrangeBeasts();
+            PollMobilePlants();
 
             CurrentData.CompileAlerts(Config);
         }
@@ -782,6 +912,130 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             }
         }
 
+        private void PollMobilePlants()
+        {
+            // 1. Standard Mobile Wash Plant
+            for (int i = 0; i < _trackedMobilePlants.Count; i++)
+            {
+                var tracker = _trackedMobilePlants[i];
+                var plant = tracker.Plant;
+                var status = tracker.Status;
+
+                if (plant == null || !plant.gameObject.activeInHierarchy)
+                {
+                    status.IsReadyToOperate = false;
+                    status.IsHoseConnected = false;
+                    continue;
+                }
+
+                // Water and Hose Connection check
+                var waterConsumer = plant._WaterConsumer;
+                bool isHoseConnected = false;
+                bool hasWater = false;
+
+                if (waterConsumer != null)
+                {
+                    hasWater = waterConsumer.HaveWater || plant.ForceWater;
+                    isHoseConnected = waterConsumer.Producent != null;
+                }
+
+                status.IsHoseConnected = isHoseConnected;
+                status.HasWater = hasWater;
+
+                // Power consumer check
+                var powerConsumer = plant._PowerConsumer;
+                bool hasPower = false;
+                if (powerConsumer != null)
+                {
+                    hasPower = GetFieldValue<bool>(powerConsumer, typeof(GoldDigger.PowerConsumer), "_hasPower") || plant.ForcePower;
+                }
+                status.HasPower = hasPower;
+
+                // Dirt fill
+                status.DirtFillPct = plant.MaxFill > 0f ? Mathf.Clamp01(plant.CurrentFill / plant.MaxFill) : 0f;
+
+                // Bucket 1
+                var bucket = plant.Bucket1;
+                bool bucketMounted = bucket != null && bucket.IsAttached();
+                status.BucketMounted = bucketMounted;
+                status.BucketFillPct = (bucketMounted && bucket.MaxVolume > 0f) ? Mathf.Clamp01(bucket.CurrentVolumeM3 / bucket.MaxVolume) : 0f;
+                status.BucketCurrentVolumeM3 = bucketMounted ? bucket.CurrentVolumeM3 : 0f;
+
+                status.IsReadyToOperate = plant.CheckIfIsReadyToWork();
+
+                // Maintenance parts (Engine, Pipe, Wheels, etc.)
+                status.Parts.Clear();
+                var partsArray = GetFieldValue<CheckAndRepair[]>(plant, typeof(GoldDigger.MobileWashplant), "MyCheckAndRepair");
+                if (partsArray != null)
+                {
+                    for (int p = 0; p < partsArray.Length; p++)
+                    {
+                        var part = partsArray[p];
+                        if (part == null) continue;
+                        AddCheckAndRepairPart(part, "Mobile Plant", status.Parts);
+                    }
+                }
+            }
+
+            // 2. DLC Mini Wash Plant
+            for (int i = 0; i < _trackedMiniPlants.Count; i++)
+            {
+                var tracker = _trackedMiniPlants[i];
+                var plant = tracker.Plant;
+                var status = tracker.Status;
+
+                if (plant == null || !plant.gameObject.activeInHierarchy)
+                {
+                    status.IsReadyToOperate = false;
+                    status.IsHoseConnected = false;
+                    continue;
+                }
+
+                // Water and Hose Connection check
+                var waterConsumer = plant._WaterConsumer;
+                bool isHoseConnected = false;
+                bool hasWater = false;
+
+                if (waterConsumer != null)
+                {
+                    hasWater = waterConsumer.HaveWater || plant.ForceWater;
+                    isHoseConnected = waterConsumer.Producent != null;
+                }
+
+                status.IsHoseConnected = isHoseConnected;
+                status.HasWater = hasWater;
+
+                // Fuel controller check
+                var fuelController = plant._FuelController;
+                float fuel = 0f;
+                float maxFuel = 0f;
+                if (fuelController != null)
+                {
+                    fuel = fuelController.CurrentCapacity;
+                    maxFuel = fuelController.MaxCapacity;
+                }
+
+                status.FuelPct = maxFuel > 0f ? Mathf.Clamp01(fuel / maxFuel) : 0f;
+                status.HasFuel = fuel > 0.05f;
+
+                // Dirt fill
+                status.DirtFillPct = plant.MaxFill > 0f ? Mathf.Clamp01(plant.CurrentFill / plant.MaxFill) : 0f;
+
+                // Bucket
+                var bucket = plant.Bucket;
+                bool bucketMounted = bucket != null && bucket.IsAttached();
+                status.BucketMounted = bucketMounted;
+                status.BucketFillPct = (bucketMounted && bucket.MaxVolume > 0f) ? Mathf.Clamp01(bucket.CurrentVolumeM3 / bucket.MaxVolume) : 0f;
+                status.BucketCurrentVolumeM3 = bucketMounted ? bucket.CurrentVolumeM3 : 0f;
+
+                // Pipes repair components
+                status.Parts.Clear();
+                if (plant.Pipes_RepairComp_01 != null) AddCheckAndRepairPart(plant.Pipes_RepairComp_01, "Mini Plant", status.Parts);
+                if (plant.Pipes_RepairComp_02 != null) AddCheckAndRepairPart(plant.Pipes_RepairComp_02, "Mini Plant", status.Parts);
+
+                status.IsReadyToOperate = status.HasWater && status.HasFuel && status.BucketMounted;
+            }
+        }
         // ==========================================
         // Helper Routines
         // ==========================================
@@ -808,28 +1062,52 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
 
             bool isPlanter = jig is Planter;
 
+            // Helper to extract Bucket from a direct reference or through a Holder component
+            Bucket extractBucket(string fieldName)
+            {
+                // 1. Try direct Bucket reference
+                var directBucket = GetFieldValue<Bucket>(jig, typeof(WashplantDuplexJigBase), fieldName)
+                    ?? GetPropertyValue<Bucket>(jig, typeof(WashplantDuplexJigBase), fieldName);
+                if (directBucket != null) return directBucket;
+
+                // 2. Try Holder component reference whose ObjectInHolder contains the Bucket
+                var holder = GetFieldValue<Component>(jig, typeof(WashplantDuplexJigBase), fieldName)
+                    ?? GetPropertyValue<Component>(jig, typeof(WashplantDuplexJigBase), fieldName);
+                if (holder != null)
+                {
+                    var objInHolderProp = holder.GetType().GetProperty("ObjectInHolder", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+                    if (objInHolderProp != null)
+                    {
+                        var val = objInHolderProp.GetValue(holder, null) as MonoBehaviour;
+                        if (val is Bucket b) return b;
+                        if (val != null)
+                        {
+                            var bComp = val.GetComponent<Bucket>();
+                            if (bComp != null) return bComp;
+                        }
+                    }
+                }
+                return null;
+            }
+
             // Bucket 1 (Duplex Jig, Gravel Pump, Planter)
             if (b1Status != null)
             {
-                var b1 = GetFieldValue<Bucket>(jig, typeof(WashplantDuplexJigBase), "Bucket1")
-                    ?? GetPropertyValue<Bucket>(jig, typeof(WashplantDuplexJigBase), "Bucket1");
-
+                var b1 = extractBucket("Bucket1");
                 b1Status.HasSlot = true;
-                b1Status.IsMounted = b1 != null && b1.IsMounted;
+                b1Status.IsMounted = b1 != null && b1.IsAttached();
                 b1Status.CurrentVolumeM3 = b1 != null ? b1.CurrentVolumeM3 : 0f;
                 b1Status.FillPct = b1 != null ? b1.FillPct : 0f;
             }
 
-            // Bucket 2 (Nur Planter besitzt physisch den 2. Slot)
+            // Bucket 2 (Planter only)
             if (b2Status != null)
             {
                 if (isPlanter)
                 {
-                    var b2 = GetFieldValue<Bucket>(jig, typeof(WashplantDuplexJigBase), "Bucket2")
-                        ?? GetPropertyValue<Bucket>(jig, typeof(WashplantDuplexJigBase), "Bucket2");
-
+                    var b2 = extractBucket("Bucket2");
                     b2Status.HasSlot = true;
-                    b2Status.IsMounted = b2 != null && b2.IsMounted;
+                    b2Status.IsMounted = b2 != null && b2.IsAttached();
                     b2Status.CurrentVolumeM3 = b2 != null ? b2.CurrentVolumeM3 : 0f;
                     b2Status.FillPct = b2 != null ? b2.FillPct : 0f;
                 }

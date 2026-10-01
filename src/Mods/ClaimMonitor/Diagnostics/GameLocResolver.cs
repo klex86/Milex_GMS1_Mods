@@ -1,11 +1,15 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
 using Milex.GMS1.Core.Localization;
+using UnityEngine;
 
 namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 {
     public static class GameLocResolver
     {
-
+        private static readonly Dictionary<string, string> _csvCache = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        private static string _cachedLanguage = null;
         // Shakers
         public const string KeyShaker = "Shaker";
         public const string KeyDerocker = "DE_ROCKER_NAME";
@@ -85,7 +89,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
 
             if (key != null)
             {
-                string resolved = LocalizationManager.ResolveGameText(key);
+                string resolved = Resolve(key);
                 if (!string.IsNullOrEmpty(resolved) && resolved != key)
                     return resolved;
             }
@@ -125,12 +129,68 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             return Resolve(KeyTrommel, "Trommel");
         }
 
-        // Resolves game component names
+        // Resolves official game text directly from the matching language CSV
         public static string Resolve(string gameKey, string fallback = "")
         {
             if (string.IsNullOrEmpty(gameKey)) return fallback;
-            string text = LocalizationManager.ResolveGameText(gameKey);
-            return !string.IsNullOrEmpty(text) ? text : fallback;
+
+            EnsureLanguageCacheLoaded();
+
+            if (_csvCache.TryGetValue(gameKey, out string val) && !string.IsNullOrEmpty(val))
+                return val;
+
+            return !string.IsNullOrEmpty(fallback) ? fallback : gameKey;
+        }
+
+        private static void EnsureLanguageCacheLoaded()
+        {
+            string currentLang = LocalizationManager.CurrentLanguage ?? "en";
+
+            // Nur neu laden, wenn sich die Sprache gegenüber dem letzten Stand geändert hat
+            if (_cachedLanguage == currentLang)
+                return;
+
+            _csvCache.Clear();
+            _cachedLanguage = currentLang;
+
+            // <GameRoot>\GoldMiningSimulator_Data\StreamingAssets\local\<lang>.csv
+            string localDir = Path.Combine(Application.streamingAssetsPath, "local");
+            string targetCsvPath = Path.Combine(localDir, $"{currentLang}.csv");
+
+            // Fallback auf en.csv, falls eine Sprache nicht existieren sollte
+            if (!File.Exists(targetCsvPath))
+            {
+                targetCsvPath = Path.Combine(localDir, "en.csv");
+            }
+
+            if (!File.Exists(targetCsvPath))
+            {
+                Debug.LogWarning($"[ClaimMonitor] Game localization CSV not found at: {targetCsvPath}");
+                return;
+            }
+
+            try
+            {
+                using var reader = new StreamReader(targetCsvPath, System.Text.Encoding.UTF8);
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    if (string.IsNullOrWhiteSpace(line)) continue;
+
+                    int commaIdx = line.IndexOf(',');
+                    if (commaIdx <= 0) continue;
+
+                    string key = line.Substring(0, commaIdx).Trim().Trim('"');
+                    string val = line.Substring(commaIdx + 1).Trim().Trim('"');
+
+                    if (!_csvCache.ContainsKey(key))
+                        _csvCache[key] = val;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[ClaimMonitor] Error loading game CSV '{targetCsvPath}': {ex.Message}");
+            }
         }
     }
 }

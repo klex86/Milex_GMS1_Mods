@@ -182,25 +182,61 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
 
         private void DrawHogPanCard(HogPanAreaStatus hp)
         {
-            string hogPanName = GameLocResolver.Resolve(GameLocResolver.KeyHogPanContainer, "Hog Pan");
+            // Name directly from game CSV ("Hog Pan Schüttkasten" in DE, "Hog Pan" in EN)
+            string hogPanItemName = GameLocResolver.Resolve(GameLocResolver.KeyHogPanContainer, "Hog Pan");
+            string matItemName = GameLocResolver.Resolve(GameLocResolver.KeyHogPanMat, "Hog Pan Mat");
+
+            string mountedLabel = LocalizationManager.T("debug.status.mounted", "Mounted");
+            string waterCatLabel = LocalizationManager.T("alert.cat.water", "Water");
             string waterNotReq = LocalizationManager.T("debug.status.not_required", "Not required");
             string waterStr = hp.RequiresWater ? FormatBool(hp.HasWater) : $"<color=grey>{waterNotReq}</color>";
 
+            string fillLabel = LocalizationManager.T("debug.status.fill", "Fill");
+            string maxFillLabel = LocalizationManager.T("debug.status.max_fill", "Max Fill");
+
             GUILayout.BeginVertical("Box");
-            GUILayout.Label($"<b>[Setup 1] {hogPanName} #{hp.AreaIndex}</b> ({hp.ClaimName ?? $"Claim #{hp.ClaimId}"})");
-            GUILayout.Label($"{LocalizationManager.T("debug.status.mounted", "Mounted")}: {FormatBool(hp.IsMounted)} | {LocalizationManager.T("alert.cat.water", "Water")}: {waterStr}");
-            GUILayout.Label($"{LocalizationManager.T("debug.status.dirt_fill", "Dirt Box Fill")}: <b>{Mathf.RoundToInt(hp.DirtFillPct * 100f)}%</b> | {LocalizationManager.T("alert.cat.mats", "Mats")}: <b>{hp.InstalledMats}/{hp.TotalMats}</b> ({LocalizationManager.T("debug.status.max_fill", "Max Fill")}: <b>{Mathf.RoundToInt(hp.MaxMatFillPct * 100f)}%</b>)");
+            GUILayout.Label($"<b>[Setup 1] {hogPanItemName} #{hp.AreaIndex}</b> ({hp.ClaimName ?? $"Claim #{hp.ClaimId}"})");
+            GUILayout.Label($"{mountedLabel}: {FormatBool(hp.IsMounted)} | {waterCatLabel}: {waterStr}");
+            GUILayout.Label($"{hogPanItemName} {fillLabel}: <b>{Mathf.RoundToInt(hp.DirtFillPct * 100f)}%</b> | {matItemName}: <b>{hp.InstalledMats}/{hp.TotalMats}</b> ({maxFillLabel}: <b>{Mathf.RoundToInt(hp.MaxMatFillPct * 100f)}%</b>)");
             GUILayout.EndVertical();
         }
 
         private void DrawMobilePlantCard(MobileWashPlantStatus mp)
         {
-            string plantName = !string.IsNullOrEmpty(mp.VariantName) ? mp.VariantName : GameLocResolver.Resolve(GameLocResolver.KeyMobileWashPlant, "Mobile Wash Plant");
+            if (mp == null) return;
+
+            string plantName = !string.IsNullOrEmpty(mp.VariantName)
+                ? mp.VariantName
+                : GameLocResolver.Resolve(GameLocResolver.KeyMobileWashPlant, "Mobile Wash Plant");
 
             GUILayout.BeginVertical("Box");
-            GUILayout.Label($"<b>[Setup 2] {plantName}</b> ({mp.ClaimName ?? $"Claim #{mp.ClaimId}"})");
-            GUILayout.Label($"{LocalizationManager.T("alert.cat.power", "Power")}: {FormatBool(mp.HasPower)} | {LocalizationManager.T("alert.cat.water", "Water")}: {FormatBool(mp.HasWater)} | {LocalizationManager.T("alert.cat.fuel", "Fuel")}: <b>{Mathf.RoundToInt(mp.FuelPct * 100f)}%</b>");
-            GUILayout.Label($"{LocalizationManager.T("debug.status.intake_fill", "Intake Dirt")}: <b>{Mathf.RoundToInt(mp.DirtFillPct * 100f)}%</b> | {LocalizationManager.T("debug.status.bucket_fill", "Bucket Fill")}: <b>{Mathf.RoundToInt(mp.BucketFillPct * 100f)}%</b>");
+
+            // Hose connection state
+            string hoseStatus = mp.IsHoseConnected
+                ? "<color=#7CFC00>Connected</color>"
+                : "<color=yellow>Disconnected (Idle)</color>";
+            GUILayout.Label($"<b>[Setup 2] {plantName} #{mp.PlantIndex}</b> ({mp.ClaimName ?? $"Claim #{mp.ClaimId}"}) - Hose: {hoseStatus}");
+
+            // Power or Fuel depending on type
+            string powerOrFuelStr = mp.PlantType == MobilePlantType.MobileWashPlant
+                ? $"{LocalizationManager.T("alert.cat.power", "Power")}: {FormatBool(mp.HasPower)}"
+                : $"{LocalizationManager.T("alert.cat.fuel", "Fuel")}: <b>{Mathf.RoundToInt(mp.FuelPct * 100f)}%</b>";
+
+            string waterStr = $"{LocalizationManager.T("alert.cat.water", "Water")}: {FormatBool(mp.HasWater)}";
+            string intakeLabel = LocalizationManager.T("debug.status.intake", "Intake Hopper");
+            string fillLabel = LocalizationManager.T("debug.status.fill", "Fill");
+
+            GUILayout.Label($"{powerOrFuelStr} | {waterStr} | {intakeLabel} {fillLabel}: <b>{Mathf.RoundToInt(mp.DirtFillPct * 100f)}%</b>");
+
+            // Bucket status
+            string bucketItemName = GameLocResolver.Resolve(GameLocResolver.KeyBucket, "Bucket");
+            string missingStr = LocalizationManager.T("debug.status.missing", "Missing");
+            string bucketStr = mp.BucketMounted
+                ? $"{bucketItemName} {fillLabel}: <b>{Mathf.RoundToInt(mp.BucketFillPct * 100f)}%</b>"
+                : $"{bucketItemName}: <color=yellow>{missingStr}</color>";
+
+            GUILayout.Label(bucketStr);
+
             DrawPartsList(mp.Parts);
             GUILayout.EndVertical();
         }
@@ -208,10 +244,12 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
         private void DrawModularPlantCard(ModularWashPlantStatus plant)
         {
             string plantTypeName = LocalizationManager.T("setup.name.stationary", "Modular Wash Plant");
-            GUILayout.BeginVertical("Box");
-            GUILayout.Label($"<b>[Setup 3] {plantTypeName}</b> ({plant.ClaimName ?? $"Claim #{plant.ClaimId}"}) - {LocalizationManager.T("debug.status.ready", "Ready")}: {FormatBool(plant.IsReadyToOperate)}");
+            string readyLabel = LocalizationManager.T("debug.status.ready", "Ready");
 
-            // Modules summary
+            GUILayout.BeginVertical("Box");
+            GUILayout.Label($"<b>[Setup 3] {plantTypeName}</b> ({plant.ClaimName ?? $"Claim #{plant.ClaimId}"}) - {readyLabel}: {FormatBool(plant.IsReadyToOperate)}");
+
+            // Shaker & Trommel Modules
             string mountedTag = LocalizationManager.T("debug.status.mounted", "Mounted");
             string offTag = LocalizationManager.T("debug.status.off", "Off");
             string pwrTag = LocalizationManager.T("alert.cat.power", "Power");
@@ -220,23 +258,30 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             string shakerResolved = GameLocResolver.GetShakerName(plant.ShakerVariant);
             string trommelResolved = GameLocResolver.GetTrommelName(plant.TrommelVariant);
 
-            string shakerStr = plant.ShakerMounted ? $"{shakerResolved} (<color=#7CFC00>{mountedTag}</color>, {pwrTag}: {FormatBool(plant.ShakerHasPower)}, {wtrTag}: {FormatBool(plant.ShakerHasWater)})" : $"{shakerResolved} (<color=red>{offTag}</color>)";
-            string trommelStr = plant.TrommelMounted ? $"{trommelResolved} (<color=#7CFC00>{mountedTag}</color>, {pwrTag}: {FormatBool(plant.TrommelHasPower)})" : $"{trommelResolved} (<color=red>{offTag}</color>)";
+            string shakerStr = plant.ShakerMounted
+                ? $"{shakerResolved} (<color=#7CFC00>{mountedTag}</color>, {pwrTag}: {FormatBool(plant.ShakerHasPower)}, {wtrTag}: {FormatBool(plant.ShakerHasWater)})"
+                : $"{shakerResolved} (<color=red>{offTag}</color>)";
+            string trommelStr = plant.TrommelMounted
+                ? $"{trommelResolved} (<color=#7CFC00>{mountedTag}</color>, {pwrTag}: {FormatBool(plant.TrommelHasPower)})"
+                : $"{trommelResolved} (<color=red>{offTag}</color>)";
             GUILayout.Label($"{shakerStr} | {trommelStr}");
 
-            // Intake & Containers
-            string intakeLabel = LocalizationManager.T("debug.status.intake_fill", "Intake Fill");
-            string cratesLabel = LocalizationManager.T("debug.status.crates_fill", "Crates Fill");
+            // Intake & Sluice Crates (Nugget/Diamond traps)
+            string intakeLabel = LocalizationManager.T("debug.status.intake", "Intake Hopper");
+            string crateItemName = GameLocResolver.Resolve(GameLocResolver.KeySluiceGrate, "Sluice Crates");
+            string fillLabel = LocalizationManager.T("debug.status.fill", "Fill");
             string trapsLabel = LocalizationManager.T("debug.status.traps", "Traps");
-            GUILayout.Label($"{intakeLabel}: <b>{Mathf.RoundToInt(plant.PlantInputFillPct * 100f)}%</b> | {cratesLabel}: <b>{Mathf.RoundToInt(plant.MaxCrateFillPct * 100f)}%</b> ({trapsLabel}: {plant.SluiceGratesInstalled}/{plant.SluiceGratesTotal})");
+
+            GUILayout.Label($"{intakeLabel} {fillLabel}: <b>{Mathf.RoundToInt(plant.PlantInputFillPct * 100f)}%</b> | {crateItemName} {fillLabel}: <b>{Mathf.RoundToInt(plant.MaxCrateFillPct * 100f)}%</b> ({trapsLabel}: {plant.SluiceGratesInstalled}/{plant.SluiceGratesTotal})");
 
             // Mats & Grilles
-            string mainMatsLabel = LocalizationManager.T("debug.status.main_mats", "Main Mats");
-            string grillesLabel = LocalizationManager.T("debug.status.grilles", "Grilles");
-            string matsMaxFillLabel = LocalizationManager.T("debug.status.mats_max_fill", "Mats Max Fill");
-            GUILayout.Label($"{mainMatsLabel}: <b>{plant.SluiceMatsInstalled}/{plant.SluiceMatsTotal}</b> | {grillesLabel}: <b>{plant.SluiceGrillesInstalled}/{plant.SluiceGrillesTotal}</b> | {matsMaxFillLabel}: <b>{Mathf.RoundToInt(plant.MaxMatFillPct * 100f)}%</b>");
+            string mainMatsLabel = GameLocResolver.Resolve(GameLocResolver.KeyMinersMoss, "Miner's Moss");
+            string grillesLabel = GameLocResolver.Resolve(GameLocResolver.KeyMinersGrille, "Miner's Grille");
+            string maxFillLabel = LocalizationManager.T("debug.status.max_fill", "Max Fill");
 
-            // Jigs & Buckets
+            GUILayout.Label($"{mainMatsLabel}: <b>{plant.SluiceMatsInstalled}/{plant.SluiceMatsTotal}</b> | {grillesLabel}: <b>{plant.SluiceGrillesInstalled}/{plant.SluiceGrillesTotal}</b> | {mainMatsLabel} {maxFillLabel}: <b>{Mathf.RoundToInt(plant.MaxMatFillPct * 100f)}%</b>");
+
+            // Duplex Jigs & Buckets
             string jigBaseName = GameLocResolver.Resolve(GameLocResolver.KeyDuplexJig, "Duplex Jig");
             DrawJigSummary($"{jigBaseName} 1", plant.Jig1Mounted, plant.Jig1HasPower, plant.Jig1Bucket1, plant.Jig1Bucket2);
             DrawJigSummary($"{jigBaseName} 2", plant.Jig2Mounted, plant.Jig2HasPower, plant.Jig2Bucket1, plant.Jig2Bucket2);
@@ -247,26 +292,28 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                 DrawFeedingChainSummary(plant.FeedingChain);
             }
 
-            // Maintenance Parts
             DrawPartsList(plant.Parts);
-
             GUILayout.EndVertical();
         }
 
         private void DrawOrangeBeastCard(OrangeBeastStatus beast)
         {
             string beastTypeName = LocalizationManager.T("setup.name.orange_beast", "Orange Beast");
+            string readyLabel = LocalizationManager.T("debug.status.ready", "Ready");
             string pwrTag = LocalizationManager.T("alert.cat.power", "Power");
             string wtrTag = LocalizationManager.T("alert.cat.water", "Water");
-            string intakeLabel = LocalizationManager.T("debug.status.intake_fill", "Intake Fill");
-            string matsLabel = LocalizationManager.T("debug.status.xxl_mats", "XXL Mats");
-            string grillesLabel = LocalizationManager.T("debug.status.grilles", "Grilles");
+
+            string intakeLabel = LocalizationManager.T("debug.status.intake", "Intake Hopper");
+            string fillLabel = LocalizationManager.T("debug.status.fill", "Fill");
             string maxFillLabel = LocalizationManager.T("debug.status.max_fill", "Max Fill");
 
+            string matsName = GameLocResolver.Resolve(GameLocResolver.KeyMinersMoss, "Miner's Moss");
+            string grillesName = GameLocResolver.Resolve(GameLocResolver.KeyMinersGrille, "Miner's Grille");
+
             GUILayout.BeginVertical("Box");
-            GUILayout.Label($"<b>[Setup 4] {beastTypeName} #{beast.BeastIndex}</b> ({beast.ClaimName ?? $"Claim #{beast.ClaimId}"}) - {LocalizationManager.T("debug.status.ready", "Ready")}: {FormatBool(beast.IsReadyToOperate)}");
-            GUILayout.Label($"{pwrTag}: {FormatBool(beast.HasPower)} | {wtrTag}: {FormatBool(beast.HasWater)} | {intakeLabel}: <b>{Mathf.RoundToInt(beast.PlantInputFillPct * 100f)}%</b>");
-            GUILayout.Label($"{matsLabel}: <b>{beast.InstalledMats}/{beast.TotalMats}</b> ({maxFillLabel}: <b>{Mathf.RoundToInt(beast.MaxMatFillPct * 100f)}%</b>) | {grillesLabel}: <b>{beast.InstalledGrilles}/{beast.TotalGrilles}</b>");
+            GUILayout.Label($"<b>[Setup 4] {beastTypeName} #{beast.BeastIndex}</b> ({beast.ClaimName ?? $"Claim #{beast.ClaimId}"}) - {readyLabel}: {FormatBool(beast.IsReadyToOperate)}");
+            GUILayout.Label($"{pwrTag}: {FormatBool(beast.HasPower)} | {wtrTag}: {FormatBool(beast.HasWater)} | {intakeLabel} {fillLabel}: <b>{Mathf.RoundToInt(beast.PlantInputFillPct * 100f)}%</b>");
+            GUILayout.Label($"{matsName}: <b>{beast.InstalledMats}/{beast.TotalMats}</b> ({maxFillLabel}: <b>{Mathf.RoundToInt(beast.MaxMatFillPct * 100f)}%</b>) | {grillesName}: <b>{beast.InstalledGrilles}/{beast.TotalGrilles}</b>");
 
             if (beast.FeedingChain != null && (beast.FeedingChain.HopperMounted || beast.FeedingChain.ConveyorBeltMounted))
             {
@@ -289,14 +336,16 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             string pwr = FormatBool(power);
             string missingStr = LocalizationManager.T("debug.status.missing", "Missing");
             string noneStr = LocalizationManager.T("debug.status.none", "None");
+            string bucketItemName = GameLocResolver.Resolve(GameLocResolver.KeyBucket, "Bucket");
+            string fillLabel = LocalizationManager.T("debug.status.fill", "Fill");
 
             string b1Str = b1 != null && b1.HasSlot
-                ? (b1.IsMounted ? $"B1: {Mathf.RoundToInt(b1.FillPct * 100f)}% ({b1.CurrentVolumeM3:F2}m³)" : $"B1: <color=yellow>{missingStr}</color>")
-                : $"B1: <color=grey>{noneStr}</color>";
+                ? (b1.IsMounted ? $"{bucketItemName} 1 {fillLabel}: {Mathf.RoundToInt(b1.FillPct * 100f)}%" : $"{bucketItemName} 1: <color=yellow>{missingStr}</color>")
+                : $"{bucketItemName} 1: <color=grey>{noneStr}</color>";
 
             string b2Str = b2 != null && b2.HasSlot
-                ? (b2.IsMounted ? $"B2: {Mathf.RoundToInt(b2.FillPct * 100f)}% ({b2.CurrentVolumeM3:F2}m³)" : $"B2: <color=yellow>{missingStr}</color>")
-                : $"B2: <color=grey>{noneStr}</color>";
+                ? (b2.IsMounted ? $"{bucketItemName} 2 {fillLabel}: {Mathf.RoundToInt(b2.FillPct * 100f)}%" : $"{bucketItemName} 2: <color=yellow>{missingStr}</color>")
+                : $"{bucketItemName} 2: <color=grey>{noneStr}</color>";
 
             GUILayout.Label($"{name}: {LocalizationManager.T("alert.cat.power", "Power")}: {pwr} | {b1Str} | {b2Str}");
         }
@@ -304,13 +353,17 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
         private void DrawFeedingChainSummary(FeederChainStatus chain)
         {
             string hopperTitle = GameLocResolver.Resolve(GameLocResolver.KeyConveyorHopper, "Hopper");
-            string elevatorTitle = GameLocResolver.Resolve(GameLocResolver.KeyConveyorBelt, "Elevator");
+            string elevatorTitle = GameLocResolver.Resolve(GameLocResolver.KeyConveyorBelt, "Conveyor Belt");
             string pwrTag = LocalizationManager.T("alert.cat.power", "Power");
             string fillTag = LocalizationManager.T("debug.status.fill", "Fill");
             string offTag = LocalizationManager.T("debug.status.off", "Off");
 
-            string hStr = chain.HopperMounted ? $"{hopperTitle} ({pwrTag}: {FormatBool(chain.HopperHasPower)}, {fillTag}: <b>{Mathf.RoundToInt(chain.HopperFillPct * 100f)}%</b>)" : $"{hopperTitle}: {offTag}";
-            string eStr = chain.ConveyorBeltMounted ? $"{elevatorTitle} ({pwrTag}: {FormatBool(chain.ConveyorBeltHasPower)})" : $"{elevatorTitle}: {offTag}";
+            string hStr = chain.HopperMounted
+                ? $"{hopperTitle} ({pwrTag}: {FormatBool(chain.HopperHasPower)}, {fillTag}: <b>{Mathf.RoundToInt(chain.HopperFillPct * 100f)}%</b>)"
+                : $"{hopperTitle}: {offTag}";
+            string eStr = chain.ConveyorBeltMounted
+                ? $"{elevatorTitle} ({pwrTag}: {FormatBool(chain.ConveyorBeltHasPower)})"
+                : $"{elevatorTitle}: {offTag}";
 
             GUILayout.Label($"<b>{LocalizationManager.T("alert.cat.feeding_chain", "Feeding Chain")}:</b> {hStr} | {eStr}");
             if (chain.Parts != null && chain.Parts.Count > 0)
@@ -336,7 +389,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                 string reinforced = part.IsReinforced ? reinforcedTag : "";
                 string source = !string.IsNullOrEmpty(part.SourceComponent) ? $"[{part.SourceComponent}] " : "";
 
-                string localizedName = LocalizationManager.ResolveGameText(part.Name);
+                string localizedName = GameLocResolver.Resolve(part.Name, part.Name);
 
                 GUILayout.Label($"<color={statusColor}>• {source}{localizedName}: {Mathf.RoundToInt(part.Durability * 100f)}%{reinforced}</color>");
             }
