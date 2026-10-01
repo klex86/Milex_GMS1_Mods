@@ -28,7 +28,7 @@
   "alert.crates.near_full.desc": "{0} reached {1:F0}% capacity.",
   "alert.bucket.near_full.title": "{0}: Bucket Nearly Full",
   "issue.duplex.bucket_full": "{0} bucket is full (replace bucket).",
-  "debug.window.title": "Claim Monitor - Diagnostics Inspector V2 (Toggle: F3)",
+  "debug.window.title": "Claim Monitor - Diagnostics Inspector",
   "debug.button.rescan": "Force Rescan",
   "debug.timer.poll": "Poll Loop",
   "debug.timer.topo": "Topology Discovery",

@@ -24,7 +24,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor
         public MonitorConfig MonitorConfig { get; private set; }
 
         public ClaimScannerV2 Scanner { get; private set; }
-        //public ClaimScannerV2 ScannerV2 { get; private set; } // Oder ClaimScannerV2
+
         public WarningHUD Hud { get; private set; }
         public DebugOverlay DebugOverlay { get; private set; }
 
@@ -58,12 +58,15 @@ namespace Milex.GMS1.Mods.ClaimMonitor
                 {
                     if (MonitorConfig.EnableDebugGroup.Value)
                     {
-                        Core.CorePlugin.RequestCursorUnlock("ClaimMonitor_DebugOverlay");
-                        Scanner?.ForceScan();
-                    }
-                    else
-                    {
-                        Core.CorePlugin.ReleaseCursorUnlock("ClaimMonitor_DebugOverlay");
+                        string scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+                        if (!string.IsNullOrEmpty(scene))
+                        {
+                            string lower = scene.ToLower();
+                            if (!lower.Contains("menu") && !lower.Contains("buffor"))
+                            {
+                                Scanner?.ForceScan();
+                            }
+                        }
                     }
                 };
             }
@@ -82,7 +85,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor
         private void Update()
         {
             // F3 or F8 toggles the diagnostic debug inspector
-            if (Input.GetKeyDown(KeyCode.F3) || Input.GetKeyDown(KeyCode.F8))
+            /*if (Input.GetKeyDown(KeyCode.F3) || Input.GetKeyDown(KeyCode.F8))
             {
                 if (MonitorConfig != null)
                 {
@@ -90,7 +93,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor
                     MonitorConfig.EnableDebugGroup.ConfigFile?.Save();
                     LogInfo($"Diagnostic Inspector toggle pressed: Debug is now {MonitorConfig.EnableDebugGroup.Value}");
                 }
-            }
+            }*/
         }
 
         protected override void OnModEnabled()

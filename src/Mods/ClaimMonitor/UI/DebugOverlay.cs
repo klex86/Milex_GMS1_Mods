@@ -36,7 +36,26 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             _windowRect.width = Mathf.Min(1100f, Screen.width - 40f);
             _windowRect.height = Mathf.Min(700f, Screen.height - 40f);
 
-            _windowRect = GUI.Window(992341, _windowRect, DrawWindow, LocalizationManager.T("debug.window.title", "Claim Monitor - Diagnostics Inspector V2 (Toggle: F3)"), GUI.skin.window);
+            _windowRect = GUI.Window(992341, _windowRect, DrawWindow, LocalizationManager.T("debug.window.title", "Claim Monitor - Diagnostics Inspector"), GUI.skin.window);
+        }
+
+        private void Update()
+        {
+            if (Config != null && Config.EnableDebugGroup.Value)
+            {
+                // Mauszeiger für das Fenster freigeben, OHNE den Game-Input zu sperren
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (!Core.CorePlugin.IsCursorUnlocked)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
         }
 
         private void DrawWindow(int windowId)
@@ -72,6 +91,17 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             }
 
             GUILayout.FlexibleSpace();
+
+            // Schließen-Button oben rechts
+            if (GUILayout.Button("<color=#FF6347><b>X</b></color>", GUILayout.Width(28), GUILayout.Height(24)))
+            {
+                if (Config?.EnableDebugGroup != null)
+                {
+                    Config.EnableDebugGroup.Value = false;
+                    Config.EnableDebugGroup.ConfigFile?.Save();
+                }
+            }
+
             GUILayout.EndHorizontal();
 
             GUILayout.Space(6);

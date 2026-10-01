@@ -60,7 +60,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
         public ClaimDiagnosticsDataV2 CurrentData { get; } = new ClaimDiagnosticsDataV2();
 
         public List<ClaimAlert> ActiveAlerts => CurrentData.ActiveAlerts;
-        public int PlantCount => CurrentData.ModularPlants.Count + CurrentData.OrangeBeasts.Count + CurrentData.MobilePlants.Count;
+        public int PlantCount => CurrentData.ModularPlants.Count + CurrentData.OrangeBeasts.Count + CurrentData.MobilePlants.Count;        
+
+        // Interner Arbeitspuffer für die Scans im Hintergrund
+        private ClaimDiagnosticsDataV2 _workingData = new ClaimDiagnosticsDataV2();
 
 
         public int MatCount
@@ -97,6 +100,43 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
         private void Awake()
         {
             Instance = this;
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded += OnSceneLoaded;
+        }
+
+        private void OnDestroy()
+        {
+            UnityEngine.SceneManagement.SceneManager.sceneLoaded -= OnSceneLoaded;
+        }
+
+        private void PurgeAllData()
+        {
+            CurrentData.Reset();
+            _workingData.Reset();
+            _trackedModularPlants.Clear();
+            _trackedStandalonePans.Clear();
+            _trackedBeasts.Clear();
+            _trackedMobilePlants.Clear();
+            _trackedMiniPlants.Clear();
+            _trackedVehicles.Clear();
+            _modularHogPanInstanceIds.Clear();
+            _nextTopologyTime = 0f;
+            _nextPollTime = 0f;
+        }
+
+        private bool IsMenuScene(string sceneName)
+        {
+            if (string.IsNullOrEmpty(sceneName)) return true;
+            string lower = sceneName.ToLower();
+            return lower.Contains("menu") || lower.Contains("buffor");
+        }
+
+        private void OnSceneLoaded(UnityEngine.SceneManagement.Scene scene, UnityEngine.SceneManagement.LoadSceneMode mode)
+        {
+            // Sobald eine Menü-Szene geladen wird, sofort rigoros alles abräumen
+            if (IsMenuScene(scene.name))
+            {
+                PurgeAllData();
+            }
         }
 
         public void StartScanning()
@@ -118,6 +158,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
 
         public void ForceScan()
         {
+            _nextTopologyTime = Time.time + TopologyIntervalSeconds;
+            float pollInterval = Mathf.Max(0.5f, Config?.ScanIntervalSeconds?.Value ?? 2.0f);
+            _nextPollTime = Time.time + pollInterval;
+
             DiscoverTopology();
             PollState();
         }
@@ -145,61 +189,78 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             while (true)
             {
                 string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
-                bool isMainMenu = string.IsNullOrEmpty(sceneName) ||
-                                  sceneName.ToLower().Contains("menu") ||
-                                  sceneName.ToLower().Contains("buffor");
+                bool isMainMenu = IsMenuScene(sceneName);
 
-                // In main menu: purge tracked data and wait
+                // ========================================================
+                // 1. HAUPTMENÜ / BUFFER: KEIN SCANNING, SOFORT LEEREN
+                // ========================================================
                 if (isMainMenu)
                 {
-                    if (_trackedModularPlants.Count > 0 || _trackedStandalonePans.Count > 0 || _trackedBeasts.Count > 0)
-                    {
-                        CurrentData.Reset();
-                        _trackedModularPlants.Clear();
-                        _trackedStandalonePans.Clear();
-                        _trackedBeasts.Clear();
-                        _trackedMobilePlants.Clear();
-                        _trackedMiniPlants.Clear();
-                        _trackedVehicles.Clear();
-                        _modularHogPanInstanceIds.Clear();
-                    }
-                    lastSceneName = sceneName;
-                    yield return new WaitForSeconds(1.0f);
+                    PurgeAllData();
+                    lastSceneName = string.Empty; // Erzwingt beim nächsten Savegame sauberen Neustart
+
+                    yield return new WaitForSecondsRealtime(0.5f);
                     continue;
                 }
 
-                // Scene change to a gameplay scene detected, or level loading is in progress
+                // ========================================================
+                // 2. SZENENWECHSEL / LADEBILDSCHIRM INS GAMEPLAY
+                // ========================================================
                 bool sceneChanged = sceneName != lastSceneName;
                 bool isLoading = Singleton<LevelLoadingManager>.IsInstanced() && Singleton<LevelLoadingManager>.Instance.IsLoading();
 
                 if (sceneChanged || isLoading)
                 {
-                    // 1. Wait until loading screen is completely finished
                     while (Singleton<LevelLoadingManager>.IsInstanced() && Singleton<LevelLoadingManager>.Instance.IsLoading())
                     {
-                        yield return new WaitForSeconds(0.5f);
+                        yield return new WaitForSecondsRealtime(0.5f);
                     }
 
-                    // 2. Allow scene game objects 4 seconds to finish internal setup
+                    // 4 Sekunden Karenzzeit nach Ladeende
                     yield return new WaitForSeconds(4.0f);
 
                     lastSceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+
+                    // Erster Vollscan für die neue Spielwelt
                     ForceScan();
-                    _nextTopologyTime = Time.time + TopologyIntervalSeconds;
                 }
 
-                // Periodic discovery during active gameplay
-                if (Time.time - _lastTopologyDiscoveryTime >= TopologyIntervalSeconds)
+                // ========================================================
+                // 3. REGULÄRER GAMEPLAY-LOOP (100ms Taktung)
+                // ========================================================
+
+                // Topology Scan: Alle 30 Sekunden
+                if (Time.time >= _nextTopologyTime)
                 {
-                    DiscoverTopology();
                     _nextTopologyTime = Time.time + TopologyIntervalSeconds;
+                    try
+                    {
+                        DiscoverTopology();
+                        PollState();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"[ClaimMonitor] Topology scan error: {ex}");
+                    }
                 }
 
-                PollState();
-                float interval = Mathf.Max(0.5f, Config?.ScanIntervalSeconds?.Value ?? 2.0f);
-                _nextPollTime = Time.time + interval;
+                // Status Poll: Alle Config.ScanIntervalSeconds Sekunden
+                if (Time.time >= _nextPollTime)
+                {
+                    float pollInterval = Mathf.Max(0.5f, Config?.ScanIntervalSeconds?.Value ?? 2.0f);
+                    _nextPollTime = Time.time + pollInterval;
 
-                yield return new WaitForSeconds(interval);
+                    try
+                    {
+                        PollState();
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.LogError($"[ClaimMonitor] Poll error: {ex}");
+                    }
+                }
+
+                yield return new WaitForSeconds(0.1f);
             }
         }
 
@@ -207,10 +268,12 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
         // ==========================================
         // STAGE 1: Topology Discovery (Heavy Scan, infrequent)
         // ==========================================
-        private void DiscoverTopology()
+       private void DiscoverTopology()
         {
             _lastTopologyDiscoveryTime = Time.time;
-            CurrentData.Reset();
+
+            // 1. NUR den Arbeits-Puffer leeren – CurrentData bleibt für das UI unverändert sichtbar!
+            _workingData.Reset();
 
             _trackedModularPlants.Clear();
             _trackedStandalonePans.Clear();
@@ -220,6 +283,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             _trackedVehicles.Clear();
             _modularHogPanInstanceIds.Clear();
 
+            // 2. Deine bestehenden Discovery-Methoden aufrufen (unverändert!)
             DiscoverOrangeBeasts();
             DiscoverModularPlants();
             DiscoverStandaloneHogPans();
@@ -303,7 +367,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 if (plant.MyHogPan2 != null) _modularHogPanInstanceIds.Add(plant.MyHogPan2.GetInstanceID());
 
                 _trackedModularPlants.Add(tracker);
-                CurrentData.ModularPlants.Add(status);
+                _workingData.ModularPlants.Add(status);
             }
         }
 
@@ -344,7 +408,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     Pan = pan,
                     Status = status
                 });
-                CurrentData.HogPanAreas.Add(status);
+                _workingData.HogPanAreas.Add(status);
             }
         }
 
@@ -398,7 +462,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 }
 
                 _trackedBeasts.Add(tracker);
-                CurrentData.OrangeBeasts.Add(status);
+                _workingData.OrangeBeasts.Add(status);
             }
         }
 
@@ -443,7 +507,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                         Plant = plant,
                         Status = status
                     });
-                    CurrentData.MobilePlants.Add(status);
+                    _workingData.MobilePlants.Add(status);
                 }
             }
 
@@ -508,7 +572,17 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 string claimName = GameLocResolver.GetClaimName(claimId, rawName);
                 string displayName = GameLocResolver.GetVehicleName(machine);
 
-                int slot = (int)(machine.GetType().GetField("numberInVehicleSwitchingList", FieldFlags)?.GetValue(machine) ?? -1);
+                int slot = -1;
+                try
+                {
+                    var f = machine.GetType().GetField("numberInVehicleSwitchingList", FieldFlags);
+                    if (f != null)
+                    {
+                        object val = f.GetValue(machine);
+                        if (val is int s) slot = s;
+                    }
+                }
+                catch { }
 
                 var status = new VehicleStatus
                 {
@@ -528,7 +602,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 };
 
                 _trackedVehicles.Add(tracker);
-                CurrentData.Vehicles.Add(status);
+                _workingData.Vehicles.Add(status);
             }
         }
 
@@ -546,7 +620,12 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             PollMobilePlants();
             PollVehicles();
 
-            CurrentData.CompileAlerts(Config);
+            // Alerts im Arbeitspuffer zusammenstellen
+            _workingData.CompileAlerts(Config);
+
+            // JETZT ATOMAR ÜBERTRAGEN:
+            // Das UI merkt überhaupt nicht, dass im Hintergrund gescannt wurde – null Flackern!
+            CurrentData.CopyFrom(_workingData);
         }
 
         private void PollModularPlants()

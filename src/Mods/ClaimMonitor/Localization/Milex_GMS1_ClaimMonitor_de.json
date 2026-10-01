@@ -28,7 +28,7 @@
   "alert.crates.near_full.desc": "{0} haben {1:F0} % Kapazität erreicht.",
   "alert.bucket.near_full.title": "{0}: Eimer fast voll",
   "issue.duplex.bucket_full": "{0} Eimer ist voll (Eimer leeren/austauschen).",
-  "debug.window.title": "Claim Monitor - Diagnose-Inspektor V2 (Umschalten: F3)",
+  "debug.window.title": "Claim Monitor - Diagnose-Inspektor",
   "debug.button.rescan": "Neu scannen",
   "debug.timer.poll": "Abfrage-Schleife",
   "debug.timer.topo": "Topologie-Scan",

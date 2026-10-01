@@ -268,6 +268,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public VehicleConveyorInfo Conveyor { get; set; } = new VehicleConveyorInfo();
     }
 
+
+
     // ==========================================
     // Diagnostics Root Container
     // ==========================================
@@ -281,6 +283,29 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public List<VehicleStatus> Vehicles { get; } = new List<VehicleStatus>();
 
         public List<ClaimAlert> ActiveAlerts { get; } = new List<ClaimAlert>();
+
+        public void CopyFrom(ClaimDiagnosticsDataV2 source)
+        {
+            if (source == null) return;
+
+            HogPanAreas.Clear();
+            HogPanAreas.AddRange(source.HogPanAreas);
+
+            MobilePlants.Clear();
+            MobilePlants.AddRange(source.MobilePlants);
+
+            ModularPlants.Clear();
+            ModularPlants.AddRange(source.ModularPlants);
+
+            OrangeBeasts.Clear();
+            OrangeBeasts.AddRange(source.OrangeBeasts);
+
+            Vehicles.Clear();
+            Vehicles.AddRange(source.Vehicles);
+
+            ActiveAlerts.Clear();
+            ActiveAlerts.AddRange(source.ActiveAlerts);
+        }
 
         public void Reset()
         {
