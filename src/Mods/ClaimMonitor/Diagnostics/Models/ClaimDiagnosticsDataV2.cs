@@ -223,6 +223,52 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
     }
 
     // ==========================================
+    // Vehicle & Conveyor Models
+    // ==========================================
+
+    public class VehicleTankInfo
+    {
+        public string Label { get; set; } = "Drive";
+        public float CurrentLiters { get; set; }
+        public float MaxLiters { get; set; }
+        public float FuelPct => MaxLiters > 0.001f ? Mathf.Clamp01(CurrentLiters / MaxLiters) : 0f;
+    }
+
+    public class VehicleConveyorInfo
+    {
+        public bool HasConveyor { get; set; }
+        public bool IsRunning { get; set; }
+        public float SpeedMultiplier { get; set; }
+
+        // Intake hopper fill
+        public float DirtVolume { get; set; }
+        public float MaxVolume { get; set; }
+        public float FillPct => MaxVolume > 0.001f ? Mathf.Clamp01(DirtVolume / MaxVolume) : 0f;
+    }
+
+    public class VehicleStatus
+    {
+        public int InstanceId { get; set; }
+        public int ClaimId { get; set; }
+        public string ClaimName { get; set; }
+        public string DisplayName { get; set; }
+        public string TypeName { get; set; }
+        public int SwitcherSlotIndex { get; set; }
+
+        public bool IsEngineStarted { get; set; }
+
+        // Primary fuel tank (Chassis / drive engine)
+        public VehicleTankInfo PrimaryTank { get; set; } = new VehicleTankInfo { Label = "Drive" };
+
+        // Secondary fuel tank (Optional: Frankenstein / Cordylus belt engine)
+        public VehicleTankInfo SecondaryTank { get; set; }
+        public bool HasDualTanks => SecondaryTank != null;
+
+        // Conveyor subsystem (Optional: Frankenstein / Cordylus)
+        public VehicleConveyorInfo Conveyor { get; set; } = new VehicleConveyorInfo();
+    }
+
+    // ==========================================
     // Diagnostics Root Container
     // ==========================================
 
@@ -232,6 +278,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public List<MobileWashPlantStatus> MobilePlants { get; } = new List<MobileWashPlantStatus>();
         public List<ModularWashPlantStatus> ModularPlants { get; } = new List<ModularWashPlantStatus>();
         public List<OrangeBeastStatus> OrangeBeasts { get; } = new List<OrangeBeastStatus>();
+        public List<VehicleStatus> Vehicles { get; } = new List<VehicleStatus>();
 
         public List<ClaimAlert> ActiveAlerts { get; } = new List<ClaimAlert>();
 
@@ -242,6 +289,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
             ModularPlants.Clear();
             OrangeBeasts.Clear();
             ActiveAlerts.Clear();
+            Vehicles.Clear();
         }
 
         public void CompileAlerts(MonitorConfig config)
@@ -251,6 +299,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
 
             float wearThreshold = (config.ComponentWearWarningThreshold?.Value ?? 20.0f) / 100.0f;
             float fillThreshold = (config.MatWarningThreshold?.Value ?? 90.0f) / 100.0f;
+            float fuelThreshold = (config.VehicleLowFuelThreshold?.Value ?? 20.0f) / 100.0f;
             //bool monitorButtons = config.MonitorGeneratorSwitchButtons?.Value ?? false;
             bool monitorButtons = false;
 
@@ -346,7 +395,6 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     // Diesel Fuel Alert (MiniWashPlant only)
                     if (mp.RequiresFuel)
                     {
-                        float fuelThreshold = (config.VehicleLowFuelThreshold?.Value ?? 20.0f) / 100.0f;
                         if (!mp.HasFuel || mp.FuelPct <= 0.01f)
                         {
                             ActiveAlerts.Add(new ClaimAlert
@@ -669,6 +717,63 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     if (config.Setup4IncludeFeedingChain?.Value ?? false)
                     {
                         EvaluateFeedingChain(beastHeader, beast.FeedingChain, wearThreshold);
+                    }
+                }
+            }
+
+            // ==========================================
+            // 5. Vehicles (Primary Fuel, Secondary Fuel & Conveyor)
+            // ==========================================
+            if (config.ShowFuelInVehicleSwitcher?.Value ?? true)
+            {
+                foreach (var v in Vehicles)
+                {
+                    if (v == null) continue;
+
+                    string vehicleHeader = $"{v.ClaimName ?? $"Claim #{v.ClaimId}"} ({v.DisplayName})";
+                    string fuelCat = LocalizationManager.T("alert.cat.fuel", "Fuel");
+
+                    // 1. Primary Tank (Fahrwerk)
+                    if (v.PrimaryTank.MaxLiters > 0.001f && v.PrimaryTank.FuelPct <= fuelThreshold)
+                    {
+                        bool isCritical = v.PrimaryTank.FuelPct <= (fuelThreshold * 0.4f);
+                        ActiveAlerts.Add(new ClaimAlert
+                        {
+                            Severity = isCritical ? AlertSeverity.Critical : AlertSeverity.Warning,
+                            Category = fuelCat,
+                            SourceId = v.InstanceId,
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", vehicleHeader, fuelCat),
+                            Description = LocalizationManager.Format("alert.fuel.low.desc", "Fuel level is at {0:F1}% ({1:F1} L).", v.PrimaryTank.FuelPct * 100f, v.PrimaryTank.CurrentLiters)
+                        });
+                    }
+
+                    // 2. Secondary Tank (Förderband-Motor bei Frankenstein & Cordylus)
+                    if (v.HasDualTanks && v.SecondaryTank.MaxLiters > 0.001f && v.SecondaryTank.FuelPct <= fuelThreshold)
+                    {
+                        bool isCritical = v.SecondaryTank.FuelPct <= (fuelThreshold * 0.4f);
+                        string secHeader = $"{vehicleHeader} [Conveyor]";
+                        ActiveAlerts.Add(new ClaimAlert
+                        {
+                            Severity = isCritical ? AlertSeverity.Critical : AlertSeverity.Warning,
+                            Category = fuelCat,
+                            SourceId = v.InstanceId,
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", secHeader, fuelCat),
+                            Description = LocalizationManager.Format("alert.fuel.low.desc", "Fuel level is at {0:F1}% ({1:F1} L).", v.SecondaryTank.FuelPct * 100f, v.SecondaryTank.CurrentLiters)
+                        });
+                    }
+
+                    // 3. Conveyor Trichter fast voll (Frankenstein / Cordylus)
+                    if (v.Conveyor.HasConveyor && v.Conveyor.MaxVolume > 0.001f && v.Conveyor.FillPct >= 0.90f)
+                    {
+                        string hopperCat = LocalizationManager.T("alert.cat.feeding_chain", "Feeding Chain");
+                        ActiveAlerts.Add(new ClaimAlert
+                        {
+                            Severity = AlertSeverity.Warning,
+                            Category = hopperCat,
+                            SourceId = v.InstanceId,
+                            Title = LocalizationManager.Format("alert.crates.near_full.title", "{0}: Hopper Nearly Full", vehicleHeader),
+                            Description = LocalizationManager.Format("alert.crates.near_full.desc", "Intake hopper reached {0:F0}% capacity ({1:F1} m³).", v.Conveyor.FillPct * 100f, v.Conveyor.DirtVolume)
+                        });
                     }
                 }
             }

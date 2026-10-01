@@ -24,6 +24,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             "debug.tab.setup2",
             "debug.tab.setup3",
             "debug.tab.setup4",
+            "debug.tab.vehicles",
             "debug.tab.alerts"
         };
 
@@ -86,6 +87,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                 LocalizationManager.T("debug.tab.setup2", "Setup 2 (Mobile)"),
                 LocalizationManager.T("debug.tab.setup3", "Setup 3 (Modular)"),
                 LocalizationManager.T("debug.tab.setup4", "Setup 4 (Orange Beast)"),
+                LocalizationManager.T("debug.tab.vehicles", "Vehicles"),
                 LocalizationManager.T("debug.tab.alerts", "Active Alerts")
             };
 
@@ -155,8 +157,18 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
                 }
             }
 
-            // 5. Active Alerts
+            // 5. Vehicles
             if (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 5)
+            {
+                foreach (var v in data.Vehicles)
+                {
+                    displayedCount++;
+                    DrawVehicleCard(v);
+                }
+            }
+
+            // 6. Active Alerts
+            if (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 6)
             {
                 if (data.ActiveAlerts.Count > 0)
                 {
@@ -396,6 +408,50 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
 
             GUILayout.EndVertical();
             GUILayout.EndHorizontal();
+        }
+
+        private void DrawVehicleCard(VehicleStatus v)
+        {
+            if (v == null) return;
+
+            string engineStatus = v.IsEngineStarted
+                ? "<color=#7CFC00>Running</color>"
+                : "<color=grey>Off</color>";
+
+            GUILayout.BeginVertical("Box");
+
+            // Header: DisplayName, Class, Slot & Claim
+            string slotText = v.SwitcherSlotIndex >= 0 ? $"Slot: {v.SwitcherSlotIndex}" : "No Slot";
+            GUILayout.Label($"<b>[Vehicle] {v.DisplayName}</b> ({v.TypeName}) | {slotText} | ({v.ClaimName ?? $"Claim #{v.ClaimId}"}) - Engine: {engineStatus}");
+
+            // Primary Tank
+            string primFuelColor = v.PrimaryTank.FuelPct <= 0.15f ? "yellow" : (v.PrimaryTank.FuelPct <= 0.05f ? "red" : "#7CFC00");
+            string primStr = $"Drive Tank: <color={primFuelColor}><b>{v.PrimaryTank.CurrentLiters:F1} / {v.PrimaryTank.MaxLiters:F1} L ({Mathf.RoundToInt(v.PrimaryTank.FuelPct * 100f)}%)</b></color>";
+
+            // Secondary Tank (if present)
+            string secStr = "";
+            if (v.HasDualTanks)
+            {
+                string secFuelColor = v.SecondaryTank.FuelPct <= 0.15f ? "yellow" : (v.SecondaryTank.FuelPct <= 0.05f ? "red" : "#7CFC00");
+                secStr = $" | Belt Tank: <color={secFuelColor}><b>{v.SecondaryTank.CurrentLiters:F1} / {v.SecondaryTank.MaxLiters:F1} L ({Mathf.RoundToInt(v.SecondaryTank.FuelPct * 100f)}%)</b></color>";
+            }
+
+            GUILayout.Label($"{primStr}{secStr}");
+
+            // Conveyor Subsystem (Frankenstein / Cordylus)
+            if (v.Conveyor.HasConveyor)
+            {
+                string beltState = v.Conveyor.IsRunning
+                    ? $"<color=#7CFC00>Running (x{v.Conveyor.SpeedMultiplier:F1})</color>"
+                    : "<color=grey>Stopped</color>";
+
+                string hopperColor = v.Conveyor.FillPct >= 0.95f ? "yellow" : "white";
+                string hopperStr = $"Hopper Fill: <color={hopperColor}><b>{v.Conveyor.DirtVolume:F1} / {v.Conveyor.MaxVolume:F1} m³ ({Mathf.RoundToInt(v.Conveyor.FillPct * 100f)}%)</b></color>";
+
+                GUILayout.Label($"Conveyor Belt: {beltState} | {hopperStr}");
+            }
+
+            GUILayout.EndVertical();
         }
 
         private void DrawAlertCard(ClaimAlert alert)

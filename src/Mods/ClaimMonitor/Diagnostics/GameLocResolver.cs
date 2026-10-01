@@ -63,6 +63,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
         public const string KeyVehicleMiniDrill = "SHOP_MACHINES_VEHICLE_BOBCAT_DRILL_NAME";
         public const string KeyVehicleBackhoeLoader = "SHOP_MACHINES_VEHICLE_LEX192_NAME";
         public const string KeyVehicleFuelTruck = "SHOP_MACHINES_VEHICLE_FUELTRUCK_BIG_NAME";
+        public const string KeyVehicleFrankenstein = "SHOP_MACHINES_VEHICLE_FRANKENSTEIN_NAME";
+        public const string KeyVehicleCordylus = "SHOP_MACHINES_VEHICLE_MAXIMUS_NAME";
+        public const string KeyVehicleQuad = "VEHICLE_QUAD";
 
         // Infrastructure & Utilities
         public const string KeyPowerGeneratorBig = "SHOP_MACHINES_EQUIPMENT_POWERGENERATOR_STATIONARY_NAME";
@@ -95,6 +98,45 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
             }
 
             return !string.IsNullOrEmpty(fallback) ? fallback : $"Claim #{claimId}";
+        }
+
+        // Resolves localized display name for any MachineController
+        public static string GetVehicleName(MachineController machine)
+        {
+            if (machine == null) return "Vehicle";
+
+            string typeName = machine.GetType().Name;
+            string goName = machine.gameObject.name;
+
+            string key = typeName switch
+            {
+                "Pickup" => KeyVehiclePickup,
+                "SmallExcavator" => KeyVehicleMiniExcavator, // EX303
+                "BobCatLoader" => KeyVehicleMiniLoader,
+                "BobCatDrill" => KeyVehicleMiniDrill,
+                "Ladowarka" => KeyVehicleLoader,
+                "DumpTruck" => goName.IndexOf("Big", StringComparison.OrdinalIgnoreCase) >= 0 ? KeyVehicleBigDumpTruck : KeyVehicleDumpTruck,
+                "KoparkoLadowarka" => KeyVehicleBackhoeLoader,
+                "Doozer_D6H_Drill" => KeyVehicleDrill,
+                "Doozer_D6H" => goName.IndexOf("BD11", StringComparison.OrdinalIgnoreCase) >= 0 ? KeyVehicleBigBulldozer : KeyVehicleBulldozer,
+                "Koparka" => goName.IndexOf("Winter", StringComparison.OrdinalIgnoreCase) >= 0 
+                    ? KeyVehicleHugeExcavator 
+                    : (goName.IndexOf("270", StringComparison.OrdinalIgnoreCase) >= 0 ? KeyVehicleSmallExcavator : KeyVehicleBigExcavator),
+                "FrankensteinExcavator" => KeyVehicleFrankenstein,
+                "MaximusMachineController" => KeyVehicleCordylus,
+                "Quad" => KeyVehicleQuad,
+                _ => null
+            };
+
+            if (!string.IsNullOrEmpty(key))
+            {
+                string resolved = Resolve(key);
+                if (!string.IsNullOrEmpty(resolved) && resolved != key)
+                    return resolved;
+            }
+
+            // Fallback: stripped GameObject name
+            return goName.Replace("(Clone)", "").Trim();
         }
 
         // Resolves shaker variant by class name or identifier

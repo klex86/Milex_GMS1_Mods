@@ -50,6 +50,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             public MobileWashPlantStatus Status;
         }
 
+        private class VehicleTracker
+        {
+            public MachineController Machine;
+            public FrankensteinBelt Belt;
+            public VehicleStatus Status;
+        }
+
         public ClaimDiagnosticsDataV2 CurrentData { get; } = new ClaimDiagnosticsDataV2();
 
         public List<ClaimAlert> ActiveAlerts => CurrentData.ActiveAlerts;
@@ -66,7 +73,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 return total;
             }
         }
-        public int VehicleCount => 0;
+        public int VehicleCount => CurrentData.Vehicles.Count;
 
         public static ClaimScannerV2 Instance { get; private set; }
         public MonitorConfig Config { get; set; }
@@ -76,6 +83,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
         private readonly List<OrangeBeastTracker> _trackedBeasts = new List<OrangeBeastTracker>();
         private readonly List<MobilePlantTracker> _trackedMobilePlants = new List<MobilePlantTracker>();
         private readonly List<MiniPlantTracker> _trackedMiniPlants = new List<MiniPlantTracker>();
+        private readonly List<VehicleTracker> _trackedVehicles = new List<VehicleTracker>();
         private readonly HashSet<int> _modularHogPanInstanceIds = new HashSet<int>();
 
         private Coroutine _scanRoutine;
@@ -152,6 +160,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                         _trackedBeasts.Clear();
                         _trackedMobilePlants.Clear();
                         _trackedMiniPlants.Clear();
+                        _trackedVehicles.Clear();
                         _modularHogPanInstanceIds.Clear();
                     }
                     lastSceneName = sceneName;
@@ -208,12 +217,14 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             _trackedBeasts.Clear();
             _trackedMobilePlants.Clear();
             _trackedMiniPlants.Clear();
+            _trackedVehicles.Clear();
             _modularHogPanInstanceIds.Clear();
 
             DiscoverOrangeBeasts();
             DiscoverModularPlants();
             DiscoverStandaloneHogPans();
             DiscoverMobilePlants();
+            DiscoverVehicles();
         }
 
         private void DiscoverModularPlants()
@@ -476,6 +487,51 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             }
         }
 
+        private void DiscoverVehicles()
+        {
+            var machines = UnityEngine.Object.FindObjectsOfType<MachineController>();
+            if (machines == null || machines.Length == 0) return;
+
+            for (int i = 0; i < machines.Length; i++)
+            {
+                var machine = machines[i];
+                if (machine == null || !machine.gameObject.activeInHierarchy) continue;
+
+                int claimId = GetFieldValue<int>(machine, machine.GetType(), "MyClaimId");
+                var lotDesc = GetFieldValue<LotDescriptor>(machine, machine.GetType(), "myLot");
+                if (lotDesc == null && Singleton<LaptopGlobalManager>.IsInstanced())
+                {
+                    lotDesc = Singleton<LaptopGlobalManager>.Instance.FindClosestLotFromAll(machine.transform.position);
+                }
+
+                string rawName = lotDesc != null ? lotDesc.Name.ToString() : null;
+                string claimName = GameLocResolver.GetClaimName(claimId, rawName);
+                string displayName = GameLocResolver.GetVehicleName(machine);
+
+                int slot = (int)(machine.GetType().GetField("numberInVehicleSwitchingList", FieldFlags)?.GetValue(machine) ?? -1);
+
+                var status = new VehicleStatus
+                {
+                    InstanceId = machine.gameObject.GetInstanceID(),
+                    ClaimId = claimId,
+                    ClaimName = claimName,
+                    TypeName = machine.GetType().Name,
+                    DisplayName = displayName,
+                    SwitcherSlotIndex = slot
+                };
+
+                var tracker = new VehicleTracker
+                {
+                    Machine = machine,
+                    Belt = machine.GetComponentInChildren<FrankensteinBelt>(true),
+                    Status = status
+                };
+
+                _trackedVehicles.Add(tracker);
+                CurrentData.Vehicles.Add(status);
+            }
+        }
+
 
         // ==========================================
         // STAGE 2: State Polling (Ultra-fast, frequent)
@@ -488,6 +544,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             PollStandaloneHogPans();
             PollOrangeBeasts();
             PollMobilePlants();
+            PollVehicles();
 
             CurrentData.CompileAlerts(Config);
         }
@@ -1036,6 +1093,53 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 status.IsReadyToOperate = status.HasWater && status.HasFuel && status.BucketMounted;
             }
         }
+
+        private void PollVehicles()
+        {
+            for (int i = 0; i < _trackedVehicles.Count; i++)
+            {
+                var tracker = _trackedVehicles[i];
+                var machine = tracker.Machine;
+                var status = tracker.Status;
+
+                if (machine == null || !machine.gameObject.activeInHierarchy)
+                {
+                    status.IsEngineStarted = false;
+                    continue;
+                }
+
+                status.IsEngineStarted = machine.IsEngineStarted;
+
+                // 1. Primary Tank (Fahrwerk)
+                if (machine.Fuel != null)
+                {
+                    status.PrimaryTank.CurrentLiters = machine.Fuel.FuelCurrentCapacity;
+                    status.PrimaryTank.MaxLiters = machine.Fuel.FuelMaxCapacity;
+                }
+
+                // 2. Secondary Tank & Conveyor (Frankenstein / Cordylus)
+                var belt = tracker.Belt;
+                if (belt != null && belt.gameObject.activeInHierarchy)
+                {
+                    status.Conveyor.HasConveyor = true;
+                    status.Conveyor.IsRunning = belt.IsEnabled;
+                    status.Conveyor.SpeedMultiplier = belt.SpeedMultiplier;
+                    status.Conveyor.DirtVolume = belt.DirtVolume;
+                    status.Conveyor.MaxVolume = belt.MaxVolume;
+
+                    if (belt.MyFuel != null)
+                    {
+                        if (status.SecondaryTank == null)
+                        {
+                            status.SecondaryTank = new VehicleTankInfo { Label = "Conveyor" };
+                        }
+                        status.SecondaryTank.CurrentLiters = belt.MyFuel.CurrentCapacity;
+                        status.SecondaryTank.MaxLiters = belt.MyFuel.MaxCapacity;
+                    }
+                }
+            }
+        }
+
         // ==========================================
         // Helper Routines
         // ==========================================
