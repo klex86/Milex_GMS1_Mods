@@ -35,6 +35,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
         {
             public OrangeBeastWashPlantGoldCounter Beast;
             public OrangeBeastStatus Status;
+            public ConveyorHolder ConveyorHolder { get; set; }
         }
 
         public ClaimDiagnosticsDataV2 CurrentData { get; } = new ClaimDiagnosticsDataV2();
@@ -65,6 +66,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
 
         private Coroutine _scanRoutine;
         private float _lastTopologyDiscoveryTime = -999f;
+        private float _lastPollTime = -999f;
+        private float _nextPollTime = 0f;
+        private float _nextTopologyTime = 0f;
         private const float TopologyIntervalSeconds = 30f;
         private const BindingFlags FieldFlags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.FlattenHierarchy;
 
@@ -96,6 +100,22 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             PollState();
         }
 
+        public float NextTopologyScanSeconds
+        {
+            get
+            {
+                return Mathf.Max(0f, _nextTopologyTime - Time.time);
+            }
+        }
+
+        public float NextPollSeconds
+        {
+            get
+            {
+                return Mathf.Max(0f, _nextPollTime - Time.time);
+            }
+        }
+
         private IEnumerator DiagnosticLoop()
         {
             // Warten, bis der Ladebildschirm vollständig weg ist
@@ -119,14 +139,17 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                         (_trackedModularPlants.Count == 0 && _trackedStandalonePans.Count == 0 && _trackedBeasts.Count == 0))
                     {
                         DiscoverTopology();
+                        _nextTopologyTime = Time.time + TopologyIntervalSeconds;
                     }
 
                     // 2. Schnelles Polling auf bekannten Referenzen
                     PollState();
+                    float interval = Mathf.Max(0.5f, Config?.ScanIntervalSeconds?.Value ?? 2.0f);
+                    _nextPollTime = Time.time + interval;
                 }
 
-                float interval = Config?.ScanIntervalSeconds?.Value ?? 2.0f;
-                yield return new WaitForSeconds(Mathf.Max(0.5f, interval));
+                float loopInterval = Config?.ScanIntervalSeconds?.Value ?? 2.0f;
+                yield return null;
             }
         }
 
@@ -151,7 +174,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
 
         private void DiscoverModularPlants()
         {
-            if (!(Config?.MonitorSetup2?.Value ?? true)) return;
+            if (!(Config?.MonitorSetup3?.Value ?? true)) return;
 
             WashPlantGoldCounter[] counters = UnityEngine.Object.FindObjectsOfType<WashPlantGoldCounter>();
             if (counters == null || counters.Length == 0) return;
@@ -166,7 +189,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
 
                 int claimId = GetFieldValue<int>(plant, plant.GetType(), "MyClaimId");
                 var lotDesc = GetFieldValue<LotDescriptor>(plant, plant.GetType(), "myLot");
-                string claimName = lotDesc != null ? lotDesc.Name.ToString() : $"Claim #{claimId}";
+
+                string rawName = lotDesc != null ? lotDesc.Name.ToString() : null;
+                string claimName = GameLocResolver.GetClaimName(claimId, rawName);
 
                 var status = new ModularWashPlantStatus
                 {
@@ -182,14 +207,18 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 };
 
                 // Conveyor Holder (Hopper & Elevator) lokalisieren und merken
-                var allHolders = UnityEngine.Object.FindObjectsOfType<GoldDigger.ConveyorHolder>();
-                for (int h = 0; h < allHolders.Length; h++)
+                bool includeFeedingChain = Config?.Setup3IncludeFeedingChain?.Value ?? false;
+                if (includeFeedingChain)
                 {
-                    var ch = allHolders[h];
-                    if (ch != null && Vector3.Distance(plant.transform.position, ch.transform.position) < 15f)
+                    var allHolders = UnityEngine.Object.FindObjectsOfType<GoldDigger.ConveyorHolder>();
+                    for (int h = 0; h < allHolders.Length; h++)
                     {
-                        tracker.ConveyorHolder = ch;
-                        break;
+                        var ch = allHolders[h];
+                        if (ch != null && Vector3.Distance(plant.transform.position, ch.transform.position) < 15f)
+                        {
+                            tracker.ConveyorHolder = ch;
+                            break;
+                        }
                     }
                 }
 
@@ -240,7 +269,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
 
                 int claimId = GetFieldValue<int>(pan, pan.GetType(), "MyClaimId");
                 var lotDesc = GetFieldValue<LotDescriptor>(pan, pan.GetType(), "myLot");
-                string claimName = lotDesc != null ? lotDesc.Name.ToString() : $"Claim #{claimId}";
+                string rawName = lotDesc != null ? lotDesc.Name.ToString() : null;
+                string claimName = GameLocResolver.GetClaimName(claimId, rawName);
 
                 bool requiresWater = pan.DirtBox != null && pan.DirtBox.MyWaterConsumer != null;
 
@@ -265,7 +295,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
 
         private void DiscoverOrangeBeasts()
         {
-            if (!(Config?.MonitorSetup3?.Value ?? true)) return;
+            if (!(Config?.MonitorSetup4?.Value ?? true)) return;
 
             OrangeBeastWashPlantGoldCounter[] beasts = UnityEngine.Object.FindObjectsOfType<OrangeBeastWashPlantGoldCounter>();
             if (beasts == null || beasts.Length == 0) return;
@@ -280,7 +310,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
 
                 int claimId = GetFieldValue<int>(beast, beast.GetType(), "MyClaimId");
                 var lotDesc = GetFieldValue<LotDescriptor>(beast, beast.GetType(), "myLot");
-                string claimName = lotDesc != null ? lotDesc.Name.ToString() : $"Claim #{claimId}";
+                string rawName = lotDesc != null ? lotDesc.Name.ToString() : null;
+                string claimName = GameLocResolver.GetClaimName(claimId, rawName);
 
                 var status = new OrangeBeastStatus
                 {
@@ -289,216 +320,41 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     BeastIndex = beastCounter++
                 };
 
-                _trackedBeasts.Add(new OrangeBeastTracker
+                var tracker = new OrangeBeastTracker
                 {
                     Beast = beast,
                     Status = status
-                });
-                CurrentData.OrangeBeasts.Add(status);
-            }
-        }
-
-
-        // ==========================================
-        // Setup 3: Modular Wash Plant (T3 - T5)
-        // ==========================================
-        private void ScanModularWashPlants()
-        {
-            if (!(Config?.MonitorSetup2?.Value ?? true)) return;
-
-            WashPlantGoldCounter[] counters = UnityEngine.Object.FindObjectsOfType<WashPlantGoldCounter>();
-            if (counters == null || counters.Length == 0) return;
-
-            foreach (var plant in counters)
-            {
-                if (plant == null) continue;
-
-                bool hasShaker = plant.WashPlantShaker != null && plant.WashPlantShaker.gameObject.activeInHierarchy;
-                bool hasTrommel = plant.Trommel != null && plant.Trommel.gameObject.activeInHierarchy;
-
-                // Active installation requires at least a Shaker or a Trommel mounted
-                if (!hasShaker && !hasTrommel) continue;
-
-                int claimId = GetFieldValue<int>(plant, plant.GetType(), "MyClaimId");
-                var lotDesc = GetFieldValue<LotDescriptor>(plant, plant.GetType(), "myLot");
-                string claimName = lotDesc != null ? lotDesc.Name.ToString() : $"Claim #{claimId}";
-
-                var status = new ModularWashPlantStatus
-                {
-                    ClaimId = claimId,
-                    ClaimName = claimName,
-                    IsReadyToOperate = plant.WashplantReady
                 };
 
-                // 1. Shaker Module (Requires Power and Water)
-                if (hasShaker)
+                // Locate and cache Conveyor Holder (Hopper & Elevator) near the Beast
+                bool includeFeedingChain = Config?.Setup4IncludeFeedingChain?.Value ?? false;
+                if (includeFeedingChain)
                 {
-                    var s = plant.WashPlantShaker;
-                    status.ShakerMounted = true;
-                    status.ShakerVariant = s.GetType().Name;
-                    status.ShakerHasPower = GetFieldValue<bool>(s, s.GetType(), "_hasPower");
-                    status.ShakerHasWater = GetFieldValue<bool>(s, s.GetType(), "_hasWater");
-                    status.ShakerReady = s.IsReadyToWork;
-                    CollectCheckAndRepairParts(s, "Shaker", status.Parts);
-                }
-
-                // 2. Trommel Module (Requires Power only)
-                if (hasTrommel)
-                {
-                    var t = plant.Trommel;
-                    status.TrommelMounted = true;
-                    status.TrommelVariant = t.GetType().Name;
-                    status.TrommelHasPower = GetFieldValue<bool>(t, t.GetType(), "_hasPower");
-                    status.TrommelReady = t.IsReadyToWork;
-                    CollectCheckAndRepairParts(t, "Trommel", status.Parts);
-                }
-
-                // Sluice Box 3: Nugget & Diamond Grates
-                if (plant.SluiceBox3 != null && plant.SluiceBox3.ObjectInHolder != null && plant.SluiceBox3.ObjectInHolder.gameObject.activeInHierarchy)
-                {
-                    status.SluiceBox3Mounted = true;
-                    var boxObj = plant.SluiceBox3.ObjectInHolder.gameObject;
-                    var cratesRoot = boxObj.transform.Find("SluiceCrates");
-
-                    int totalGrates = 0;
-                    int installedGrates = 0;
-
-                    if (cratesRoot != null)
+                    var allHolders = UnityEngine.Object.FindObjectsOfType<GoldDigger.ConveyorHolder>();
+                    for (int h = 0; h < allHolders.Length; h++)
                     {
-                        for (int i = 0; i < cratesRoot.childCount; i++)
+                        var ch = allHolders[h];
+                        if (ch != null && Vector3.Distance(beast.transform.position, ch.transform.position) < 20f)
                         {
-                            var holderTr = cratesRoot.GetChild(i);
-
-                            // Nur aktive Halter berücksichtigen (SluiceCrateHolder3 bis 6)
-                            if (holderTr != null && holderTr.gameObject.activeInHierarchy && holderTr.name.Contains("SluiceCrateHolder"))
-                            {
-                                totalGrates++;
-
-                                var holdableTr = holderTr.Find("SluiceCrateHoldable");
-                                if (holdableTr != null && holdableTr.gameObject.activeInHierarchy)
-                                {
-                                    installedGrates++;
-                                }
-                            }
+                            tracker.ConveyorHolder = ch;
+                            break;
                         }
                     }
-
-                    status.SluiceGratesTotal = totalGrates;
-                    status.SluiceGratesInstalled = installedGrates;
-                }
-                // 3. Duplex Jig 1 (Requires Power and Bucket)
-                if (plant.WashPlantDuplex != null && plant.WashPlantDuplex.gameObject.activeInHierarchy)
-                {
-                    var j1 = plant.WashPlantDuplex;
-                    status.Jig1Mounted = true;
-                    status.Jig1HasPower = GetJigPower(j1);
-                    ScanJigBucket(j1, status.Jig1Bucket);
-                    CollectCheckAndRepairParts(j1, "Jig 1", status.Parts);
                 }
 
-                // 4. Duplex Jig 2 (Requires Power and Bucket)
-                if (plant.WashPlantDuplex2 != null && plant.WashPlantDuplex2.gameObject.activeInHierarchy)
-                {
-                    var j2 = plant.WashPlantDuplex2;
-                    status.Jig2Mounted = true;
-                    status.Jig2HasPower = GetJigPower(j2);
-                    ScanJigBucket(j2, status.Jig2Bucket);
-                    CollectCheckAndRepairParts(j2, "Jig 2", status.Parts);
-                }
-
-                // 5. Sluice End HogPan 1 (Requires Water and Mats)
-                if (plant.MyHogPan != null && plant.MyHogPan.gameObject.activeInHierarchy)
-                {
-                    _modularHogPanInstanceIds.Add(plant.MyHogPan.GetInstanceID());
-
-                    status.EndHogPan1Mounted = true;
-                    status.EndHogPan1HasWater = plant.MyHogPan.DirtBox?.MyWaterConsumer?.HaveWater ?? false;
-                    var (total, installed) = CountHogPanMats(plant.MyHogPan);
-                    status.EndHogPan1MatsTotal = total;
-                    status.EndHogPan1MatsInstalled = installed;
-                }
-
-                // 6. Sluice End HogPan 2 (Requires Water and Mats)
-                if (plant.MyHogPan2 != null && plant.MyHogPan2.gameObject.activeInHierarchy)
-                {
-                    _modularHogPanInstanceIds.Add(plant.MyHogPan.GetInstanceID());
-
-                    status.EndHogPan2Mounted = true;
-                    status.EndHogPan2HasWater = plant.MyHogPan2.DirtBox?.MyWaterConsumer?.HaveWater ?? false;
-                    var (total, installed) = CountHogPanMats(plant.MyHogPan2);
-                    status.EndHogPan2MatsTotal = total;
-                    status.EndHogPan2MatsInstalled = installed;
-                }
-
-                // 7. Main Sluice Boxes (MinerMoss & MinerGrille)
-                var mats = CountHolders(plant.MinerMoss);
-                status.SluiceMatsTotal = mats.total;
-                status.SluiceMatsInstalled = mats.installed;
-
-                var grilles = CountHolders(plant.MinerGrille);
-                status.SluiceGrillesTotal = grilles.total;
-                status.SluiceGrillesInstalled = grilles.installed;
-
-                CurrentData.ModularPlants.Add(status);
-            }
-        }
-
-
-        // ==========================================
-        // Setup 4: Orange Beast (T6)
-        // ==========================================
-        private void ScanOrangeBeastPlants()
-        {
-            if (!(Config?.MonitorSetup3?.Value ?? true)) return;
-
-            OrangeBeastWashPlantGoldCounter[] beasts = UnityEngine.Object.FindObjectsOfType<OrangeBeastWashPlantGoldCounter>();
-            if (beasts == null || beasts.Length == 0) return;
-
-            int beastCounter = 1;
-            foreach (var plant in beasts)
-            {
-                if (plant == null || !plant.gameObject.activeInHierarchy) continue;
-                WashplantShakerBase shaker = plant.WashPlantShaker;
-                if (shaker == null || !shaker.gameObject.activeInHierarchy) continue;
-
-                int claimId = GetFieldValue<int>(plant, plant.GetType(), "MyClaimId");
-                var lotDesc = GetFieldValue<LotDescriptor>(plant, plant.GetType(), "myLot");
-                string claimName = lotDesc != null ? lotDesc.Name.ToString() : $"Claim #{claimId}";
-
-                var status = new OrangeBeastStatus
-                {
-                    ClaimId = claimId,
-                    ClaimName = claimName,
-                    BeastIndex = beastCounter++,
-                    IsReadyToOperate = plant.WashplantReady,
-                    HasPower = GetFieldValue<bool>(shaker, shaker.GetType(), "_hasPower"),
-                    HasWater = GetFieldValue<bool>(shaker, shaker.GetType(), "_hasWater"),
-                    IsPowerReady = shaker.IsPowerReady,
-                    IsWaterReady = shaker.IsWaterReady,
-                    IsReadyToWork = shaker.IsReadyToWork
-                };
-
-                // Mats & Grilles
-                var mats = CountHolders(plant.MinerMoss);
-                status.TotalMats = mats.total;
-                status.InstalledMats = mats.installed;
-
-                var grilles = CountHolders(plant.MinerGrille);
-                status.TotalGrilles = grilles.total;
-                status.InstalledGrilles = grilles.installed;
-
-                // Shaker wear parts
-                CollectCheckAndRepairParts(shaker, "Beast Shaker", status.Parts);
-
+                _trackedBeasts.Add(tracker);
                 CurrentData.OrangeBeasts.Add(status);
             }
         }
+
 
         // ==========================================
         // STAGE 2: State Polling (Ultra-fast, frequent)
         // ==========================================
         private void PollState()
         {
+            _lastPollTime = Time.time;
+
             PollModularPlants();
             PollStandaloneHogPans();
             PollOrangeBeasts();
@@ -522,6 +378,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
 
                 status.IsReadyToOperate = plant.WashplantReady;
 
+                float plantInputFill = 0f;
+
                 // 1. Shaker
                 if (plant.WashPlantShaker != null && plant.WashPlantShaker.gameObject.activeInHierarchy)
                 {
@@ -531,6 +389,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     status.ShakerHasPower = GetFieldValue<bool>(s, s.GetType(), "_hasPower");
                     status.ShakerHasWater = GetFieldValue<bool>(s, s.GetType(), "_hasWater");
                     status.ShakerReady = s.IsReadyToWork;
+
+                    float dirt = GetFieldValue<float>(s, s.GetType(), "DirtVolume");
+                    float max = GetFieldValue<float>(s, s.GetType(), "MaxFill");
+                    if (max > 0f) plantInputFill = Mathf.Clamp01(dirt / max);
 
                     status.Parts.Clear();
                     CollectCheckAndRepairParts(s, "Shaker", status.Parts);
@@ -556,6 +418,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     status.TrommelMounted = false;
                 }
 
+                status.PlantInputFillPct = plantInputFill;
+
                 // 3. Sluice Box 3 Grates
                 if (plant.SluiceBox3 != null && plant.SluiceBox3.ObjectInHolder != null && plant.SluiceBox3.ObjectInHolder.gameObject.activeInHierarchy)
                 {
@@ -568,11 +432,14 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                         if (holdable != null && holdable.gameObject.activeInHierarchy) installed++;
                     }
                     status.SluiceGratesInstalled = installed;
+
+                    status.MaxCrateFillPct = GetMaxCrateFillPct(plant);
                 }
                 else
                 {
                     status.SluiceBox3Mounted = false;
                     status.SluiceGratesInstalled = 0;
+                    status.MaxCrateFillPct = 0f;
                 }
 
                 // 4. Jigs
@@ -581,12 +448,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     var j1 = plant.WashPlantDuplex;
                     status.Jig1Mounted = true;
                     status.Jig1HasPower = GetJigPower(j1);
-                    ScanJigBucket(j1, status.Jig1Bucket);
+                    ScanJigBuckets(j1, status.Jig1Bucket1, status.Jig1Bucket2);
                     CollectCheckAndRepairParts(j1, "Jig 1", status.Parts);
                 }
                 else
                 {
                     status.Jig1Mounted = false;
+                    ScanJigBuckets(null, status.Jig1Bucket1, status.Jig1Bucket2);
                 }
 
 
@@ -595,13 +463,16 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     var j2 = plant.WashPlantDuplex2;
                     status.Jig2Mounted = true;
                     status.Jig2HasPower = GetJigPower(j2);
-                    ScanJigBucket(j2, status.Jig2Bucket);
+                    ScanJigBuckets(j2, status.Jig2Bucket1, status.Jig2Bucket2);
                     CollectCheckAndRepairParts(j2, "Jig 2", status.Parts);
                 }
                 else
                 {
                     status.Jig2Mounted = false;
+                    ScanJigBuckets(null, status.Jig2Bucket1, status.Jig2Bucket2);
                 }
+
+                float maxMatFill = 0f;
 
                 // 5. End HogPans
 
@@ -609,9 +480,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 {
                     status.EndHogPan1Mounted = true;
                     status.EndHogPan1HasWater = plant.MyHogPan.DirtBox?.MyWaterConsumer?.HaveWater ?? false;
-                    var (total, installed) = CountHogPanMats(plant.MyHogPan);
+                    var (total, installed, fill) = CountHogPanMats(plant.MyHogPan);
                     status.EndHogPan1MatsTotal = total;
                     status.EndHogPan1MatsInstalled = installed;
+                    if (fill > maxMatFill) maxMatFill = fill;
                 }
                 else
                 {
@@ -623,9 +495,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 {
                     status.EndHogPan2Mounted = true;
                     status.EndHogPan2HasWater = plant.MyHogPan2.DirtBox?.MyWaterConsumer?.HaveWater ?? false;
-                    var (total, installed) = CountHogPanMats(plant.MyHogPan2);
+                    var (total, installed, fill) = CountHogPanMats(plant.MyHogPan2);
                     status.EndHogPan2MatsTotal = total;
                     status.EndHogPan2MatsInstalled = installed;
+                    if (fill > maxMatFill) maxMatFill = fill;
                 }
                 else
                 {
@@ -636,13 +509,18 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 var mats = CountHolders(plant.MinerMoss);
                 status.SluiceMatsTotal = mats.total;
                 status.SluiceMatsInstalled = mats.installed;
+                if (mats.maxFill > maxMatFill) maxMatFill = mats.maxFill;
+
+                status.MaxMatFillPct = maxMatFill;
 
                 var grilles = CountHolders(plant.MinerGrille);
                 status.SluiceGrillesTotal = grilles.total;
                 status.SluiceGrillesInstalled = grilles.installed;
 
                 // 8. Feeding Chain (Hopper & Conveyor Elevator)
-                if (tracker.ConveyorHolder != null && tracker.ConveyorHolder.gameObject.activeInHierarchy)
+                bool monitorFeedingChain = Config?.Setup3IncludeFeedingChain?.Value ?? false;
+
+                if (monitorFeedingChain && tracker.ConveyorHolder != null && tracker.ConveyorHolder.gameObject.activeInHierarchy)
                 {
                     var chain = status.FeedingChain;
                     var beltHolder = tracker.ConveyorHolder.ConveyorBelt;
@@ -670,6 +548,11 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                             var pc = ground.GetComponent<GoldDigger.PowerConsumer>();
                             hopperPower = pc != null && GetFieldValue<bool>(pc, typeof(GoldDigger.PowerConsumer), "_hasPower");
 
+                            // Hopper fill level
+                            float curDirt = GetFieldValue<float>(ground, typeof(GoldDigger.ConveyorGround), "DirtVolume");
+                            float maxDirt = GetFieldValue<float>(ground, typeof(GoldDigger.ConveyorGround), "MaxFill");
+                            chain.HopperFillPct = maxDirt > 0f ? Mathf.Clamp01(curDirt / maxDirt) : 0f;
+
                             // Riemen aus EngineBelt auslesen
                             var belt = GetFieldValue<object>(ground, typeof(GoldDigger.ConveyorGround), "EngineBelt");
                             if (belt != null)
@@ -677,6 +560,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                                 AddCheckAndRepairPart(belt, "Hopper", chain.Parts);
                             }
                         }
+                    }
+                    else
+                    {
+                        chain.HopperFillPct = 0f;
                     }
 
                     // 2. Elevator: Strom & die 4 Becher
@@ -720,6 +607,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     status.FeedingChain.ConveyorBeltHasPower = false;
                     status.FeedingChain.HasPower = false;
                     status.FeedingChain.IsReadyToWork = false;
+                    status.FeedingChain.HopperFillPct = 0f;
                     status.FeedingChain.Parts.Clear();
                 }
             }
@@ -742,9 +630,20 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 status.IsMounted = true;
                 status.HasWater = status.RequiresWater && (pan.DirtBox?.MyWaterConsumer?.HaveWater ?? false);
 
-                var (total, installed) = CountHogPanMats(pan);
+                var (total, installed, maxMatFill) = CountHogPanMats(pan);
                 status.TotalMats = total;
                 status.InstalledMats = installed;
+                status.MaxMatFillPct = maxMatFill;
+
+                if (pan.DirtBox != null && pan.DirtBox.PlaneVolumeMax > 0f)
+                {
+                    status.DirtFillPct = Mathf.Clamp01(pan.DirtBox.PlaneVolume / pan.DirtBox.PlaneVolumeMax);
+                }
+                else
+                {
+                    status.DirtFillPct = 0f;
+                }
+
             }
         }
 
@@ -772,45 +671,179 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     status.IsWaterReady = shaker.IsWaterReady;
                     status.IsReadyToWork = shaker.IsReadyToWork;
 
+                    float dirt = GetFieldValue<float>(shaker, shaker.GetType(), "DirtVolume");
+                    float max = GetFieldValue<float>(shaker, shaker.GetType(), "MaxFill");
+                    status.PlantInputFillPct = max > 0f ? Mathf.Clamp01(dirt / max) : 0f;
+
                     status.Parts.Clear();
                     CollectCheckAndRepairParts(shaker, "Beast Shaker", status.Parts);
+                }
+                else
+                {
+                    status.PlantInputFillPct = 0f;
                 }
 
                 var mats = CountHolders(beast.MinerMoss);
                 status.TotalMats = mats.total;
                 status.InstalledMats = mats.installed;
+                status.MaxMatFillPct = mats.maxFill;
 
                 var grilles = CountHolders(beast.MinerGrille);
                 status.TotalGrilles = grilles.total;
                 status.InstalledGrilles = grilles.installed;
+
+                // Feeding Chain (Hopper & Conveyor Elevator)
+                bool monitorFeedingChain = Config?.Setup4IncludeFeedingChain?.Value ?? false;
+
+                if (monitorFeedingChain && tracker.ConveyorHolder != null && tracker.ConveyorHolder.gameObject.activeInHierarchy)
+                {
+                    var chain = status.FeedingChain;
+                    var beltHolder = tracker.ConveyorHolder.ConveyorBelt;
+                    var elevHolder = tracker.ConveyorHolder.ConveyorElevator;
+
+                    bool hopperMounted = beltHolder?.ObjectInHolder != null && beltHolder.ObjectInHolder.gameObject.activeInHierarchy;
+                    chain.HopperMounted = hopperMounted;
+
+                    bool elevMounted = elevHolder?.ObjectInHolder != null && elevHolder.ObjectInHolder.gameObject.activeInHierarchy;
+                    chain.ConveyorBeltMounted = elevMounted;
+
+                    chain.Parts.Clear();
+                    bool hopperPower = false;
+                    bool elevPower = false;
+
+                    // 1. Hopper: Power, Belt & Fill level
+                    if (hopperMounted)
+                    {
+                        var ground = beltHolder.ObjectInHolder.GetComponent<GoldDigger.ConveyorGround>();
+                        if (ground != null)
+                        {
+                            var pc = ground.GetComponent<GoldDigger.PowerConsumer>();
+                            hopperPower = pc != null && GetFieldValue<bool>(pc, typeof(GoldDigger.PowerConsumer), "_hasPower");
+
+                            // Read hopper fill level
+                            float curDirt = GetFieldValue<float>(ground, typeof(GoldDigger.ConveyorGround), "DirtVolume");
+                            float maxDirt = GetFieldValue<float>(ground, typeof(GoldDigger.ConveyorGround), "MaxFill");
+                            chain.HopperFillPct = maxDirt > 0f ? Mathf.Clamp01(curDirt / maxDirt) : 0f;
+
+                            var belt = GetFieldValue<object>(ground, typeof(GoldDigger.ConveyorGround), "EngineBelt");
+                            if (belt != null)
+                            {
+                                AddCheckAndRepairPart(belt, "Hopper", chain.Parts);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        chain.HopperFillPct = 0f;
+                    }
+
+                    // 2. Elevator: Power & Buckets
+                    if (elevMounted)
+                    {
+                        var elev = elevHolder.ObjectInHolder.GetComponent<GoldDigger.ConveyorElevator>();
+                        if (elev != null)
+                        {
+                            elevPower = GetFieldValue<bool>(elev, typeof(GoldDigger.ConveyorElevator), "_hasPower");
+
+                            var buckets = GetFieldValue<System.Collections.IList>(elev, typeof(GoldDigger.ConveyorElevator), "MyBuckets");
+                            if (buckets != null)
+                            {
+                                for (int b = 0; b < buckets.Count; b++)
+                                {
+                                    var bucket = buckets[b];
+                                    if (bucket == null) continue;
+
+                                    var cr = GetFieldValue<object>(bucket, bucket.GetType(), "MyCheckAndRepair");
+                                    if (cr != null)
+                                    {
+                                        AddCheckAndRepairPart(cr, $"Elevator Bucket #{b + 1}", chain.Parts);
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    chain.HopperHasPower = hopperPower;
+                    chain.ConveyorBeltHasPower = elevPower;
+                    chain.HasPower = (!hopperMounted || hopperPower) && (!elevMounted || elevPower);
+                    chain.IsReadyToWork = chain.HasPower && (hopperMounted || elevMounted);
+                }
+                else
+                {
+                    status.FeedingChain.HopperMounted = false;
+                    status.FeedingChain.ConveyorBeltMounted = false;
+                    status.FeedingChain.HopperHasPower = false;
+                    status.FeedingChain.ConveyorBeltHasPower = false;
+                    status.FeedingChain.HasPower = false;
+                    status.FeedingChain.IsReadyToWork = false;
+                    status.FeedingChain.HopperFillPct = 0f;
+                    status.FeedingChain.Parts.Clear();
+                }
             }
         }
 
         // ==========================================
         // Helper Routines
         // ==========================================
-        private void ScanJigBucket(WashplantDuplexJigBase jig, JigBucketStatus outBucket)
+        private void ScanJigBuckets(WashplantDuplexJigBase jig, JigBucketStatus b1Status, JigBucketStatus b2Status)
         {
-            if (jig == null || outBucket == null) return;
-
-            var gravelPump = jig as GravelPump;
-            var bucket = gravelPump?.Bucket1;
-
-            if (bucket != null)
+            if (jig == null)
             {
-                outBucket.IsMounted = bucket.IsMounted;
-                outBucket.CurrentVolumeM3 = bucket.CurrentVolumeM3;
-                outBucket.FillPct = bucket.FillPct;
+                if (b1Status != null)
+                {
+                    b1Status.HasSlot = false;
+                    b1Status.IsMounted = false;
+                    b1Status.CurrentVolumeM3 = 0f;
+                    b1Status.FillPct = 0f;
+                }
+                if (b2Status != null)
+                {
+                    b2Status.HasSlot = false;
+                    b2Status.IsMounted = false;
+                    b2Status.CurrentVolumeM3 = 0f;
+                    b2Status.FillPct = 0f;
+                }
+                return;
             }
-            else
+
+            bool isPlanter = jig is Planter;
+
+            // Bucket 1 (Duplex Jig, Gravel Pump, Planter)
+            if (b1Status != null)
             {
-                outBucket.IsMounted = false;
-                outBucket.CurrentVolumeM3 = 0f;
-                outBucket.FillPct = 0f;
+                var b1 = GetFieldValue<Bucket>(jig, typeof(WashplantDuplexJigBase), "Bucket1")
+                    ?? GetPropertyValue<Bucket>(jig, typeof(WashplantDuplexJigBase), "Bucket1");
+
+                b1Status.HasSlot = true;
+                b1Status.IsMounted = b1 != null && b1.IsMounted;
+                b1Status.CurrentVolumeM3 = b1 != null ? b1.CurrentVolumeM3 : 0f;
+                b1Status.FillPct = b1 != null ? b1.FillPct : 0f;
+            }
+
+            // Bucket 2 (Nur Planter besitzt physisch den 2. Slot)
+            if (b2Status != null)
+            {
+                if (isPlanter)
+                {
+                    var b2 = GetFieldValue<Bucket>(jig, typeof(WashplantDuplexJigBase), "Bucket2")
+                        ?? GetPropertyValue<Bucket>(jig, typeof(WashplantDuplexJigBase), "Bucket2");
+
+                    b2Status.HasSlot = true;
+                    b2Status.IsMounted = b2 != null && b2.IsMounted;
+                    b2Status.CurrentVolumeM3 = b2 != null ? b2.CurrentVolumeM3 : 0f;
+                    b2Status.FillPct = b2 != null ? b2.FillPct : 0f;
+                }
+                else
+                {
+                    b2Status.HasSlot = false;
+                    b2Status.IsMounted = false;
+                    b2Status.CurrentVolumeM3 = 0f;
+                    b2Status.FillPct = 0f;
+                }
             }
         }
 
-        // Helper routine to extract power state from WashplantDuplexJigBase -> PowerConsumer -> _hasPower
+
         private bool GetJigPower(WashplantDuplexJigBase jig)
         {
             if (jig == null) return false;
@@ -823,37 +856,105 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             return GetFieldValue<bool>(powerConsumer, typeof(GoldDigger.PowerConsumer), "_hasPower");
         }
 
-        private (int total, int installed) CountHogPanMats(HogPan hogPan)
+        private (int total, int installed, float maxMatFill) CountHogPanMats(HogPan hogPan)
         {
-            if (hogPan == null || hogPan.MinerMoss == null) return (0, 0);
+            if (hogPan == null || hogPan.MinerMoss == null) return (0, 0, 0f);
 
             int total = hogPan.MinerMoss.Count;
             int installed = 0;
+            float maxFill = 0f;
+
             for (int i = 0; i < hogPan.MinerMoss.Count; i++)
             {
                 var moss = hogPan.MinerMoss[i];
                 if (moss != null && moss.gameObject.activeInHierarchy)
                 {
                     installed++;
+                    if (moss.MaxGroundVolume > 0f)
+                    {
+                        float fill = Mathf.Clamp01(moss.GroundVolume / moss.MaxGroundVolume);
+                        if (fill > maxFill) maxFill = fill;
+                    }
                 }
             }
 
-            return (total, installed);
+            return (total, installed, maxFill);
         }
 
-        private (int total, int installed) CountHolders(List<RepairHolder> holders)
+        private (int total, int installed, float maxFill) CountHolders(List<RepairHolder> holders)
         {
-            if (holders == null) return (0, 0);
+            if (holders == null) return (0, 0, 0f);
 
             int total = holders.Count;
             int installed = 0;
+            float maxFill = 0f;
+
             for (int i = 0; i < holders.Count; i++)
             {
                 RepairHolder holder = holders[i];
                 if (holder != null && holder.ObjectInHolder != null && holder.ObjectInHolder.gameObject.activeInHierarchy)
+                {
                     installed++;
+                    var moss = holder.ObjectInHolder.GetComponent<MinersMoss>();
+                    if (moss != null && moss.MaxGroundVolume > 0f)
+                    {
+                        float fill = Mathf.Clamp01(moss.GroundVolume / moss.MaxGroundVolume);
+                        if (fill > maxFill) maxFill = fill;
+                    }
+                }
             }
-            return (total, installed);
+
+            return (total, installed, maxFill);
+        }
+
+        private float GetMaxCrateFillPct(WashPlantGoldCounter plant)
+        {
+            if (plant?.SluiceBox3?.ObjectInHolder == null || !plant.SluiceBox3.ObjectInHolder.gameObject.activeInHierarchy)
+                return 0f;
+
+            var holdable = plant.SluiceBox3.ObjectInHolder as ShovelHoldable;
+            if (holdable == null) return 0f;
+
+            float maxFill = 0f;
+            var indicators = GetFieldValue<Indicator[]>(holdable, holdable.GetType(), "_MyIndicators");
+
+            if (indicators != null && indicators.Length > 0)
+            {
+                for (int i = 0; i < indicators.Length; i++)
+                {
+                    var ind = indicators[i];
+                    if (ind == null || !ind.gameObject.activeInHierarchy) continue;
+
+                    string text = GetFieldValue<string>(ind, ind.GetType(), "_MyText");
+                    if (!string.IsNullOrEmpty(text))
+                    {
+                        string clean = text.Replace("%", "").Trim();
+                        if (float.TryParse(clean, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float parsed))
+                        {
+                            float pct = Mathf.Clamp01(parsed / 100f);
+                            if (pct > maxFill) maxFill = pct;
+                        }
+                    }
+                }
+                return maxFill;
+            }
+
+            // Fallback: Physical dirt volume
+            var cratesRoot = holdable.transform.Find("SluiceCrates");
+            if (cratesRoot != null)
+            {
+                for (int i = 0; i < cratesRoot.childCount; i++)
+                {
+                    var dirtComp = cratesRoot.GetChild(i).GetComponentInChildren<WashPlantSluiceBoxDirt>(true);
+                    if (dirtComp != null && dirtComp.MaxFill > 0f)
+                    {
+                        float pct = Mathf.Clamp01(dirtComp.CurrentFill / dirtComp.MaxFill);
+                        if (pct > maxFill) maxFill = pct;
+                    }
+                }
+            }
+
+            return maxFill;
         }
 
         private void CollectCheckAndRepairParts(MonoBehaviour module, string componentTag, List<MachinePartStatus> outParts)

@@ -18,7 +18,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Config
         public ConfigEntry<bool> MonitorSetup4 { get; private set; }
         public ConfigEntry<bool> Setup4IncludeFeedingChain { get; private set; }
 
-        public ConfigEntry<bool> MonitorGeneratorSwitchButtons { get; private set; }
+        //public ConfigEntry<bool> MonitorGeneratorSwitchButtons { get; private set; }
 
         // Thresholds
         public ConfigEntry<float> MatWarningThreshold { get; private set; }
@@ -91,12 +91,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Config
                 "Setup T6: Include feeding chain (hoppers and conveyors) in health evaluation."
             );
 
+            /*
             MonitorGeneratorSwitchButtons = config.Bind(
                 "Setups",
                 "MonitorGeneratorSwitchButtons",
                 false,
                 "Include big generator socket switch buttons in wear and breakdown monitoring. Default is false (ignored) to prevent HUD clutter."
-            );
+            );*/
 
             // Thresholds
             MatWarningThreshold = config.Bind(

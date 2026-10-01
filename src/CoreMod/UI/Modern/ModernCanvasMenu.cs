@@ -127,7 +127,7 @@ namespace Milex.GMS1.Core.UI.Modern
             // The only purpose of OnGUI now is to consume Unity's legacy GUI events 
             // so they don't fall through to the game world (Rewired ignores consumed events).
             if (!IsVisible) return;
-            
+
             Event e = Event.current;
             if (e != null && (e.type == EventType.MouseDown || e.type == EventType.MouseUp || e.type == EventType.ScrollWheel || e.type == EventType.MouseDrag))
             {
@@ -327,7 +327,7 @@ namespace Milex.GMS1.Core.UI.Modern
             RefreshActiveModView();
 
             Canvas.ForceUpdateCanvases();
-            
+
             // Force a full layout rebuild on all content containers after everything is instantiated
             if (_sidebarContentRt != null) LayoutRebuilder.ForceRebuildLayoutImmediate(_sidebarContentRt);
             if (_tabsContentRt != null) LayoutRebuilder.ForceRebuildLayoutImmediate(_tabsContentRt);
@@ -560,8 +560,8 @@ namespace Milex.GMS1.Core.UI.Modern
 
             var categories = GetActiveModCategories();
             var featureMods = GetFeatureMods();
-            ModInfo currentMod = (_selectedModIndex >= 0 && _selectedModIndex < featureMods.Count) 
-                ? featureMods[_selectedModIndex] 
+            ModInfo currentMod = (_selectedModIndex >= 0 && _selectedModIndex < featureMods.Count)
+                ? featureMods[_selectedModIndex]
                 : null;
 
             foreach (var cat in categories)
@@ -636,8 +636,8 @@ namespace Milex.GMS1.Core.UI.Modern
             if (rawCat.Equals("General", StringComparison.OrdinalIgnoreCase) || rawCat.Equals("Allgemein", StringComparison.OrdinalIgnoreCase))
                 return L("UI_Tab_General", "Allgemein");
 
-            string fullLabel = mod != null 
-                ? mod.Translate($"config.{rawCat.ToLowerInvariant()}.section", rawCat) 
+            string fullLabel = mod != null
+                ? mod.Translate($"config.{rawCat.ToLowerInvariant()}.section", rawCat)
                 : L($"config.{rawCat.ToLowerInvariant()}.section", rawCat);
 
             // Clean short labels
@@ -750,10 +750,10 @@ namespace Milex.GMS1.Core.UI.Modern
                 var meta = card.GetComponent<SettingCardMeta>();
                 if (meta == null) continue;
 
-                bool matchesCategory = (_activeCategory == "All") || 
+                bool matchesCategory = (_activeCategory == "All") ||
                                        meta.Section.Equals(_activeCategory, StringComparison.OrdinalIgnoreCase);
 
-                bool matchesSearch = string.IsNullOrEmpty(search) || 
+                bool matchesSearch = string.IsNullOrEmpty(search) ||
                                      meta.SearchText.Contains(search);
 
                 bool shouldShow = matchesCategory && matchesSearch;
@@ -775,6 +775,7 @@ namespace Milex.GMS1.Core.UI.Modern
             {
                 _windowSubtitleText.text = "> CoreMod & Allgemeine Einstellungen";
             }
+
 
             // General Section
             CreateCategoryHeader(L("UI_Section_General", "Allgemeine Einstellungen"), "General");

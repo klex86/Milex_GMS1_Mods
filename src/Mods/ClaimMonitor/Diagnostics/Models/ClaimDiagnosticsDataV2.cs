@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using GoldDigger;
+using Milex.GMS1.Core.Localization;
 using Milex.GMS1.Mods.ClaimMonitor.Config;
 using UnityEngine;
 
@@ -41,6 +42,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public bool IsMounted { get; set; }
         public float CurrentVolumeM3 { get; set; }
         public float FillPct { get; set; } // 0.0 to 1.0
+
+        public bool HasSlot { get; set; }
     }
 
     public class FeederChainStatus
@@ -51,6 +54,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public bool ConveyorBeltHasPower { get; set; }
         public bool HasPower { get; set; }
         public bool IsReadyToWork { get; set; }
+        public float HopperFillPct { get; set; }
 
         // Maintenance parts specifically on Hopper (Drive Belt) and Conveyor (Buckets)
         public List<MachinePartStatus> Parts { get; set; } = new List<MachinePartStatus>();
@@ -75,6 +79,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         // Primary sluice (2 mats) + Extension sluice (2 mats) = max 4 mats
         public int TotalMats { get; set; }
         public int InstalledMats { get; set; }
+        public float MaxMatFillPct { get; set; }
+
     }
 
     // Setup 2: Mobile Wash Plants (Trailers / DLC Mini Trommel)
@@ -89,8 +95,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public bool HasPower { get; set; }
         public bool HasWater { get; set; }
 
-        public int TotalMats { get; set; }
-        public int InstalledMats { get; set; }
+        public float DirtFillPct { get; set; }
+        public float BucketFillPct { get; set; }
 
         public List<MachinePartStatus> Parts { get; set; } = new List<MachinePartStatus>();
     }
@@ -118,11 +124,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         // Unit: Duplex Jigs / Gravel Pumps (Requires power, buckets & wear parts)
         public bool Jig1Mounted { get; set; }
         public bool Jig1HasPower { get; set; }
-        public JigBucketStatus Jig1Bucket { get; set; } = new JigBucketStatus { SlotIndex = 1 };
+        public JigBucketStatus Jig1Bucket1 { get; set; } = new JigBucketStatus { SlotIndex = 1 };
+        public JigBucketStatus Jig1Bucket2 { get; set; } = new JigBucketStatus { SlotIndex = 2 };
 
         public bool Jig2Mounted { get; set; }
         public bool Jig2HasPower { get; set; }
-        public JigBucketStatus Jig2Bucket { get; set; } = new JigBucketStatus { SlotIndex = 2 };
+        public JigBucketStatus Jig2Bucket1 { get; set; } = new JigBucketStatus { SlotIndex = 1 };
+        public JigBucketStatus Jig2Bucket2 { get; set; } = new JigBucketStatus { SlotIndex = 2 };
 
         // Sluice Box 3 (Nugget / Diamond traps)
         public bool SluiceBox3Mounted { get; set; }
@@ -150,8 +158,12 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public int SluiceGrillesTotal { get; set; }
         public float MaxMatFillPct { get; set; }
 
+        public float PlantInputFillPct { get; set; }
+
         // Optional Feeding Chain (Hopper & Conveyor Belt)
         public FeederChainStatus FeedingChain { get; set; } = new FeederChainStatus();
+
+        public float MaxCrateFillPct { get; set; }
 
         // Wearable maintenance parts across all mounted modules (Trommel, Shaker, Jigs)
         public List<MachinePartStatus> Parts { get; set; } = new List<MachinePartStatus>();
@@ -178,6 +190,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         public int InstalledGrilles { get; set; }
         public int TotalGrilles { get; set; }
         public float MaxMatFillPct { get; set; }
+
+        public float PlantInputFillPct { get; set; }
 
         // Optional Feeding Chain
         public FeederChainStatus FeedingChain { get; set; } = new FeederChainStatus();
@@ -214,8 +228,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
             if (config == null) return;
 
             float wearThreshold = (config.ComponentWearWarningThreshold?.Value ?? 20.0f) / 100.0f;
-            float matThreshold = (config.MatWarningThreshold?.Value ?? 90.0f) / 100.0f;
-            bool monitorButtons = config.MonitorGeneratorSwitchButtons?.Value ?? false;
+            float fillThreshold = (config.MatWarningThreshold?.Value ?? 90.0f) / 100.0f;
+            //bool monitorButtons = config.MonitorGeneratorSwitchButtons?.Value ?? false;
+            bool monitorButtons = false;
 
             // ==========================================
             // 1. Setup 1: Standalone HogPan Areas
@@ -225,7 +240,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                 foreach (var hp in HogPanAreas)
                 {
                     if (!hp.IsMounted) continue;
-                    string header = $"{hp.ClaimName ?? $"Claim #{hp.ClaimId}"} (HogPan #{hp.AreaIndex})";
+
+                    string hogPanName = GameLocResolver.Resolve(GameLocResolver.KeyHogPanContainer, "Hog Pan");
+                    string matsName = GameLocResolver.Resolve(GameLocResolver.KeyHogPanMat, "Hog Pan Mat");
+                    string header = $"{hp.ClaimName ?? $"Claim #{hp.ClaimId}"} ({hogPanName} #{hp.AreaIndex})";
 
                     // Check water only if this variant actually requires water
                     if (hp.RequiresWater && !hp.HasWater)
@@ -233,20 +251,33 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Water",
-                            Title = $"{header}: No Water",
-                            Description = "HogPan water supply is turned off or disconnected."
+                            Category = LocalizationManager.T("alert.cat.water", "Water"),
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", header, LocalizationManager.T("alert.cat.water", "Water")),
+                            Description = LocalizationManager.Format("issue.hogpan.no_water", "{0}: Hog Pan Dirt Box has no water supply!", header)
                         });
                     }
 
+                    // Missing mats alert
                     if (hp.TotalMats > 0 && hp.InstalledMats < hp.TotalMats)
                     {
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Mats",
-                            Title = $"{header}: Mats Missing",
-                            Description = $"Only {hp.InstalledMats} of {hp.TotalMats} mats installed."
+                            Category = LocalizationManager.T("alert.cat.mats", "Mats"),
+                            Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", header, matsName),
+                            Description = LocalizationManager.Format("issue.machinery.part_missing", "{0} is missing a required part ({1})!", header, matsName)
+                        });
+                    }
+
+                    // HogPan Mats Fill Alert
+                    if (hp.MaxMatFillPct >= fillThreshold)
+                    {
+                        ActiveAlerts.Add(new ClaimAlert
+                        {
+                            Severity = AlertSeverity.Warning,
+                            Category = LocalizationManager.T("alert.cat.mats", "Mats"),
+                            Title = LocalizationManager.Format("alert.mats.near_full.title", "{0}: Sluice Mats Nearly Full", header),
+                            Description = LocalizationManager.Format("alert.mats.near_full.desc", "{0} mat(s) above {1:F0}% (Highest: {2:F1}%).", hp.InstalledMats, fillThreshold * 100f, hp.MaxMatFillPct * 100f)
                         });
                     }
                 }
@@ -264,17 +295,19 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
             {
                 foreach (var plant in ModularPlants)
                 {
-                    string plantHeader = $"{plant.ClaimName ?? $"Claim #{plant.ClaimId}"} ({plant.ShakerVariant ?? "Modular Plant"})";
+                    string plantTypeName = LocalizationManager.T("setup.name.stationary", "Modular Wash Plant");
+                    string plantHeader = $"{plant.ClaimName ?? $"Claim #{plant.ClaimId}"} ({plantTypeName})";
 
                     // Trommel checks
+                    string trommelName = GameLocResolver.GetTrommelName(plant.TrommelVariant);
                     if (!plant.TrommelMounted)
                     {
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Setup",
-                            Title = $"{plantHeader}: Trommel Missing",
-                            Description = "No trommel mounted in modular plant."
+                            Category = LocalizationManager.T("alert.cat.washplant", "Wash Plant"),
+                            Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", plantHeader, trommelName),
+                            Description = LocalizationManager.Format("issue.machinery.part_missing", "{0} is missing a required part ({1})!", plantHeader, trommelName)
                         });
                     }
                     else if (!plant.TrommelHasPower)
@@ -282,21 +315,22 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Power",
-                            Title = $"{plantHeader}: Trommel No Power",
-                            Description = "Trommel has no active power supply."
+                            Category = LocalizationManager.T("alert.cat.power", "Power"),
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, trommelName),
+                            Description = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", trommelName)
                         });
                     }
 
                     // Shaker checks
+                    string shakerName = GameLocResolver.GetShakerName(plant.ShakerVariant);
                     if (!plant.ShakerMounted)
                     {
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Setup",
-                            Title = $"{plantHeader}: Shaker Missing",
-                            Description = "No shaker unit mounted."
+                            Category = LocalizationManager.T("alert.cat.washplant", "Wash Plant"),
+                            Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", plantHeader, shakerName),
+                            Description = LocalizationManager.Format("issue.machinery.part_missing", "{0} is missing a required part ({1})!", plantHeader, shakerName)
                         });
                     }
                     else
@@ -306,9 +340,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                             ActiveAlerts.Add(new ClaimAlert
                             {
                                 Severity = AlertSeverity.Warning,
-                                Category = "Power",
-                                Title = $"{plantHeader}: Shaker No Power",
-                                Description = "Shaker has no power supply."
+                                Category = LocalizationManager.T("alert.cat.power", "Power"),
+                                Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, shakerName),
+                                Description = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", shakerName)
                             });
                         }
                         if (!plant.ShakerHasWater)
@@ -316,38 +350,56 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                             ActiveAlerts.Add(new ClaimAlert
                             {
                                 Severity = AlertSeverity.Warning,
-                                Category = "Water",
-                                Title = $"{plantHeader}: Shaker No Water",
-                                Description = "Shaker water hose is missing or pump is off."
+                                Category = LocalizationManager.T("alert.cat.water", "Water"),
+                                Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, shakerName),
+                                Description = LocalizationManager.Format("issue.machinery.no_water", "{0} has no water supply.", shakerName)
                             });
                         }
                     }
 
-                    // Duplex Jigs checks
-                    CheckJigAlerts(plantHeader, "Jig 1", plant.Jig1Mounted, plant.Jig1HasPower, plant.Jig1Bucket);
-                    CheckJigAlerts(plantHeader, "Jig 2", plant.Jig2Mounted, plant.Jig2HasPower, plant.Jig2Bucket);
+                    // Duplex Jigs / Concentrator checks
+                    string jig1Name = $"{GameLocResolver.Resolve(GameLocResolver.KeyDuplexJig, "Duplex Jig")} 1";
+                    string jig2Name = $"{GameLocResolver.Resolve(GameLocResolver.KeyDuplexJig, "Duplex Jig")} 2";
+                    CheckJigAlerts(plantHeader, jig1Name, plant.Jig1Mounted, plant.Jig1HasPower, plant.Jig1Bucket1, 1, fillThreshold);
+                    CheckJigAlerts(plantHeader, jig1Name, plant.Jig1Mounted, plant.Jig1HasPower, plant.Jig1Bucket2, 2, fillThreshold);
+                    CheckJigAlerts(plantHeader, jig2Name, plant.Jig2Mounted, plant.Jig2HasPower, plant.Jig2Bucket1, 1, fillThreshold);
+                    CheckJigAlerts(plantHeader, jig2Name, plant.Jig2Mounted, plant.Jig2HasPower, plant.Jig2Bucket2, 2, fillThreshold);
 
                     // Sluice Box 3 Grates Missing
+                    string grateName = GameLocResolver.Resolve(GameLocResolver.KeySluiceGrate, "Sluicebox Grate");
                     if (plant.SluiceBox3Mounted && plant.SluiceGratesTotal > 0 && plant.SluiceGratesInstalled < plant.SluiceGratesTotal)
                     {
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Mats",
-                            Title = $"{plantHeader}: Sluice Grates Missing",
-                            Description = $"Only {plant.SluiceGratesInstalled} of {plant.SluiceGratesTotal} nugget/diamond traps installed."
+                            Category = LocalizationManager.T("alert.cat.mats", "Mats"),
+                            Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", plantHeader, grateName),
+                            Description = LocalizationManager.Format("alert.crates.missing.desc", "Only {0} of {1} nugget/diamond traps installed.", plant.SluiceGratesInstalled, plant.SluiceGratesTotal)
+                        });
+                    }
+
+                    // Sluice Box 3 Crates Fill Alert
+                    if (plant.SluiceBox3Mounted && plant.MaxCrateFillPct >= fillThreshold)
+                    {
+                        ActiveAlerts.Add(new ClaimAlert
+                        {
+                            Severity = AlertSeverity.Warning,
+                            Category = LocalizationManager.T("alert.cat.mats", "Mats"),
+                            Title = LocalizationManager.Format("alert.crates.near_full.title", "{0}: Crates Nearly Full", plantHeader),
+                            Description = LocalizationManager.Format("alert.crates.near_full.desc", "Sluice crates reached {0:F0}% capacity.", plant.MaxCrateFillPct * 100f)
                         });
                     }
 
                     // Sluice End HogPans checks
+                    string endHogPanName = GameLocResolver.Resolve(GameLocResolver.KeyHogPanContainer, "Hog Pan");
                     if (plant.EndHogPan1Mounted && !plant.EndHogPan1HasWater)
                     {
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Water",
-                            Title = $"{plantHeader}: End HogPan 1 No Water",
-                            Description = "Water hose disconnected or pump inactive."
+                            Category = LocalizationManager.T("alert.cat.water", "Water"),
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, $"{endHogPanName} 1"),
+                            Description = LocalizationManager.Format("issue.hogpan.no_water", "{0}: Hog Pan Dirt Box has no water supply!", $"{plantHeader} ({endHogPanName} 1)")
                         });
                     }
                     if (plant.EndHogPan2Mounted && !plant.EndHogPan2HasWater)
@@ -355,21 +407,24 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Water",
-                            Title = $"{plantHeader}: End HogPan 2 No Water",
-                            Description = "Water hose disconnected or pump inactive."
+                            Category = LocalizationManager.T("alert.cat.water", "Water"),
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", plantHeader, $"{endHogPanName} 2"),
+                            Description = LocalizationManager.Format("issue.hogpan.no_water", "{0}: Hog Pan Dirt Box has no water supply!", $"{plantHeader} ({endHogPanName} 2)")
                         });
                     }
 
-                    // Sluice Mats & Grilles
+                    // Sluice Mats & Grilles Missing
+                    string mainMatName = GameLocResolver.Resolve(GameLocResolver.KeyMinersMoss, "Miner's Moss");
+                    string grilleName = GameLocResolver.Resolve(GameLocResolver.KeyMinersGrille, "Miner's Grille");
+
                     if (plant.SluiceMatsTotal > 0 && plant.SluiceMatsInstalled < plant.SluiceMatsTotal)
                     {
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Mats",
-                            Title = $"{plantHeader}: Sluice Mats Missing",
-                            Description = $"Only {plant.SluiceMatsInstalled} of {plant.SluiceMatsTotal} main mats installed."
+                            Category = LocalizationManager.T("alert.cat.mats", "Mats"),
+                            Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", plantHeader, mainMatName),
+                            Description = LocalizationManager.Format("alert.mats.missing.desc", "Only {0} of {1} main mats installed.", plant.SluiceMatsInstalled, plant.SluiceMatsTotal)
                         });
                     }
                     if (plant.SluiceGrillesTotal > 0 && plant.SluiceGrillesInstalled < plant.SluiceGrillesTotal)
@@ -377,43 +432,21 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Mats",
-                            Title = $"{plantHeader}: Sluice Grilles Missing",
-                            Description = $"Only {plant.SluiceGrillesInstalled} of {plant.SluiceGrillesTotal} grilles installed."
-                        });
-                    }
-                    if (plant.MaxMatFillPct >= matThreshold)
-                    {
-                        ActiveAlerts.Add(new ClaimAlert
-                        {
-                            Severity = AlertSeverity.Warning,
-                            Category = "Mats",
-                            Title = $"{plantHeader}: Mats Nearly Full",
-                            Description = $"Mats reached {Mathf.RoundToInt(plant.MaxMatFillPct * 100f)}% capacity."
+                            Category = LocalizationManager.T("alert.cat.mats", "Mats"),
+                            Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", plantHeader, grilleName),
+                            Description = LocalizationManager.Format("alert.grilles.missing.desc", "Only {0} of {1} grilles installed.", plant.SluiceGrillesInstalled, plant.SluiceGrillesTotal)
                         });
                     }
 
-                    // End HogPan 1 Mats
-                    if (plant.EndHogPan1Mounted && plant.EndHogPan1MatsTotal > 0 && plant.EndHogPan1MatsInstalled < plant.EndHogPan1MatsTotal)
+                    // Sluice Mats Fill Alert (covers Main Mats and End HogPan Mats)
+                    if (plant.MaxMatFillPct >= fillThreshold)
                     {
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Mats",
-                            Title = $"{plantHeader}: End HogPan 1 Mats Missing",
-                            Description = $"Only {plant.EndHogPan1MatsInstalled} of {plant.EndHogPan1MatsTotal} mats installed."
-                        });
-                    }
-
-                    // End HogPan 2 Mats
-                    if (plant.EndHogPan2Mounted && plant.EndHogPan2MatsTotal > 0 && plant.EndHogPan2MatsInstalled < plant.EndHogPan2MatsTotal)
-                    {
-                        ActiveAlerts.Add(new ClaimAlert
-                        {
-                            Severity = AlertSeverity.Warning,
-                            Category = "Mats",
-                            Title = $"{plantHeader}: End HogPan 2 Mats Missing",
-                            Description = $"Only {plant.EndHogPan2MatsInstalled} of {plant.EndHogPan2MatsTotal} mats installed."
+                            Category = LocalizationManager.T("alert.cat.mats", "Mats"),
+                            Title = LocalizationManager.Format("alert.mats.near_full.title", "{0}: Sluice Mats Nearly Full", plantHeader),
+                            Description = LocalizationManager.Format("alert.mats.near_full.desc", "{0} mat(s) above {1:F0}% (Highest: {2:F1}%).", plant.SluiceMatsInstalled, fillThreshold * 100f, plant.MaxMatFillPct * 100f)
                         });
                     }
 
@@ -435,16 +468,17 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
             {
                 foreach (var beast in OrangeBeasts)
                 {
-                    string beastHeader = $"{beast.ClaimName ?? $"Claim #{beast.ClaimId}"} (Orange Beast #{beast.BeastIndex})";
+                    string beastTypeName = LocalizationManager.T("setup.name.orange_beast", "Orange Beast");
+                    string beastHeader = $"{beast.ClaimName ?? $"Claim #{beast.ClaimId}"} ({beastTypeName} #{beast.BeastIndex})";
 
                     if (!beast.HasPower)
                     {
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Power",
-                            Title = $"{beastHeader}: No Power",
-                            Description = "Generator disconnected or turned off."
+                            Category = LocalizationManager.T("alert.cat.power", "Power"),
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", beastHeader, beastTypeName),
+                            Description = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", beastTypeName)
                         });
                     }
                     if (!beast.HasWater)
@@ -452,21 +486,24 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Water",
-                            Title = $"{beastHeader}: No Water",
-                            Description = "Water pump disconnected or turned off."
+                            Category = LocalizationManager.T("alert.cat.water", "Water"),
+                            Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", beastHeader, beastTypeName),
+                            Description = LocalizationManager.Format("issue.machinery.no_water", "{0} has no water supply.", beastTypeName)
                         });
                     }
 
                     // Mats & Grilles
+                    string beastMatName = GameLocResolver.Resolve(GameLocResolver.KeyMinersMoss, "Miner's Moss");
+                    string beastGrilleName = GameLocResolver.Resolve(GameLocResolver.KeyMinersGrille, "Miner's Grille");
+
                     if (beast.TotalMats > 0 && beast.InstalledMats < beast.TotalMats)
                     {
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Mats",
-                            Title = $"{beastHeader}: Sluice Mats Missing",
-                            Description = $"Only {beast.InstalledMats} of {beast.TotalMats} mats installed."
+                            Category = LocalizationManager.T("alert.cat.mats", "Mats"),
+                            Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", beastHeader, beastMatName),
+                            Description = LocalizationManager.Format("alert.mats.missing.desc", "Only {0} of {1} main mats installed.", beast.InstalledMats, beast.TotalMats)
                         });
                     }
                     if (beast.TotalGrilles > 0 && beast.InstalledGrilles < beast.TotalGrilles)
@@ -474,19 +511,21 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Mats",
-                            Title = $"{beastHeader}: Sluice Grilles Missing",
-                            Description = $"Only {beast.InstalledGrilles} of {beast.TotalGrilles} grilles installed."
+                            Category = LocalizationManager.T("alert.cat.mats", "Mats"),
+                            Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", beastHeader, beastGrilleName),
+                            Description = LocalizationManager.Format("alert.grilles.missing.desc", "Only {0} of {1} grilles installed.", beast.InstalledGrilles, beast.TotalGrilles)
                         });
                     }
-                    if (beast.MaxMatFillPct >= matThreshold)
+
+                    // Beast Mats Fill Alert
+                    if (beast.MaxMatFillPct >= fillThreshold)
                     {
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Mats",
-                            Title = $"{beastHeader}: Mats Nearly Full",
-                            Description = $"Mats reached {Mathf.RoundToInt(beast.MaxMatFillPct * 100f)}% capacity."
+                            Category = LocalizationManager.T("alert.cat.mats", "Mats"),
+                            Title = LocalizationManager.Format("alert.mats.near_full.title", "{0}: Sluice Mats Nearly Full", beastHeader),
+                            Description = LocalizationManager.Format("alert.mats.near_full.desc", "{0} mat(s) above {1:F0}% (Highest: {2:F1}%).", beast.InstalledMats, fillThreshold * 100f, beast.MaxMatFillPct * 100f)
                         });
                     }
 
@@ -508,41 +547,43 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         // Helper Methods for Alert Evaluation
         // ==========================================
 
-        private void CheckJigAlerts(string header, string jigName, bool isMounted, bool hasPower, JigBucketStatus bucket)
+        private void CheckJigAlerts(string header, string jigName, bool isMounted, bool hasPower, JigBucketStatus bucket, int slotIndex, float fillThreshold)
         {
             if (!isMounted) return;
+
+            string bucketDisplayName = $"{jigName} - {GameLocResolver.Resolve(GameLocResolver.KeyBucket, "Bucket")} {slotIndex}";
 
             if (!hasPower)
             {
                 ActiveAlerts.Add(new ClaimAlert
                 {
                     Severity = AlertSeverity.Warning,
-                    Category = "Power",
-                    Title = $"{header}: {jigName} No Power",
-                    Description = $"{jigName} has no power supply."
+                    Category = LocalizationManager.T("alert.cat.power", "Power"),
+                    Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", header, jigName),
+                    Description = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", jigName)
                 });
             }
 
-            if (bucket != null)
+            if (bucket != null && bucket.HasSlot)
             {
                 if (!bucket.IsMounted)
                 {
                     ActiveAlerts.Add(new ClaimAlert
                     {
                         Severity = AlertSeverity.Warning,
-                        Category = "Jigs",
-                        Title = $"{header}: {jigName} Bucket Missing",
-                        Description = $"Concentrate bucket is not mounted on {jigName}."
+                        Category = LocalizationManager.T("alert.cat.washplant", "Wash Plant"),
+                        Title = LocalizationManager.Format("alert.wear.missing.title", "{0}: {1} Missing!", header, bucketDisplayName),
+                        Description = LocalizationManager.Format("issue.machinery.part_missing", "{0} is missing a required part ({1})!", header, bucketDisplayName)
                     });
                 }
-                else if (bucket.FillPct >= 0.95f)
+                else if (bucket.FillPct >= fillThreshold)
                 {
                     ActiveAlerts.Add(new ClaimAlert
                     {
                         Severity = AlertSeverity.Warning,
-                        Category = "Jigs",
-                        Title = $"{header}: {jigName} Bucket Full",
-                        Description = $"{jigName} bucket reached {Mathf.RoundToInt(bucket.FillPct * 100f)}% capacity."
+                        Category = LocalizationManager.T("alert.cat.washplant", "Wash Plant"),
+                        Title = LocalizationManager.Format("alert.bucket.near_full.title", "{0}: Bucket Nearly Full", header),
+                        Description = LocalizationManager.Format("issue.duplex.bucket_full", "{0} bucket is full (replace bucket).", bucketDisplayName)
                     });
                 }
             }
@@ -557,6 +598,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                 if (part == null) continue;
                 if (part.Category == MachinePartCategory.SwitchButton && !monitorButtons) continue;
 
+                string resolvedPartName = LocalizationManager.ResolveGameText(part.Name);
                 string source = !string.IsNullOrEmpty(part.SourceComponent) ? $"[{part.SourceComponent}] " : string.Empty;
 
                 if (!part.IsInPlace || part.IsDestroyed)
@@ -564,9 +606,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     ActiveAlerts.Add(new ClaimAlert
                     {
                         Severity = AlertSeverity.Critical,
-                        Category = "Maintenance",
-                        Title = $"{header}: {source}Part Fault",
-                        Description = $"{part.Name} is missing or destroyed."
+                        Category = LocalizationManager.T("alert.cat.maintenance", "Maintenance"),
+                        Title = LocalizationManager.Format("alert.wear.broken.title", "{0}: {1} Broken!", header, $"{source}{resolvedPartName}"),
+                        Description = LocalizationManager.Format("alert.wear.broken.desc", "{0} {1} is destroyed and must be replaced immediately.", header, $"{source}{resolvedPartName}")
                     });
                 }
                 else if (part.Durability <= wearThreshold)
@@ -574,9 +616,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                     ActiveAlerts.Add(new ClaimAlert
                     {
                         Severity = AlertSeverity.Warning,
-                        Category = "Maintenance",
-                        Title = $"{header}: {source}Low Durability",
-                        Description = $"{part.Name} durability is down to {Mathf.RoundToInt(part.Durability * 100f)}%."
+                        Category = LocalizationManager.T("alert.cat.maintenance", "Maintenance"),
+                        Title = LocalizationManager.Format("alert.wear.high.title", "{0}: {1} Wear High", header, $"{source}{resolvedPartName}"),
+                        Description = LocalizationManager.Format("alert.wear.high.desc", "{0} {1} durability low ({2:F0}% remaining). Prepare replacement.", header, $"{source}{resolvedPartName}", part.Durability * 100f)
                     });
                 }
             }
@@ -586,15 +628,18 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
         {
             if (chain == null) return;
 
+            string hopperName = GameLocResolver.Resolve(GameLocResolver.KeyConveyorHopper, "Hopper");
+            string elevatorName = GameLocResolver.Resolve(GameLocResolver.KeyConveyorBelt, "Conveyor Belt");
+
             // Hopper Alert
             if (chain.HopperMounted && !chain.HopperHasPower)
             {
                 ActiveAlerts.Add(new ClaimAlert
                 {
                     Severity = AlertSeverity.Warning,
-                    Category = "Power",
-                    Title = $"{header}: Hopper No Power",
-                    Description = "Hopper is mounted but has no power supply."
+                    Category = LocalizationManager.T("alert.cat.feeding_chain", "Feeding Chain"),
+                    Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", header, hopperName),
+                    Description = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", hopperName)
                 });
             }
 
@@ -604,9 +649,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                 ActiveAlerts.Add(new ClaimAlert
                 {
                     Severity = AlertSeverity.Warning,
-                    Category = "Power",
-                    Title = $"{header}: Conveyor Elevator No Power",
-                    Description = "Elevator is mounted but has no power supply."
+                    Category = LocalizationManager.T("alert.cat.feeding_chain", "Feeding Chain"),
+                    Title = LocalizationManager.Format("alert.machinery.issue.title", "{0}: {1} Issue", header, elevatorName),
+                    Description = LocalizationManager.Format("issue.machinery.no_power", "{0} has no electric power.", elevatorName)
                 });
             }
 
@@ -615,6 +660,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                 foreach (var part in chain.Parts)
                 {
                     if (part == null) continue;
+                    string resolvedPartName = LocalizationManager.ResolveGameText(part.Name);
                     string source = !string.IsNullOrEmpty(part.SourceComponent) ? $"[{part.SourceComponent}] " : string.Empty;
 
                     if (!part.IsInPlace || part.IsDestroyed)
@@ -622,9 +668,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Critical,
-                            Category = "Maintenance",
-                            Title = $"{header}: {source}Feeder Part Broken",
-                            Description = $"{part.Name} is missing or broken."
+                            Category = LocalizationManager.T("alert.cat.feeding_chain", "Feeding Chain"),
+                            Title = LocalizationManager.Format("alert.wear.broken.title", "{0}: {1} Broken!", header, $"{source}{resolvedPartName}"),
+                            Description = LocalizationManager.Format("alert.wear.broken.desc", "{0} {1} is destroyed and must be replaced immediately.", header, $"{source}{resolvedPartName}")
                         });
                     }
                     else if (part.Durability <= wearThreshold)
@@ -632,9 +678,9 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models
                         ActiveAlerts.Add(new ClaimAlert
                         {
                             Severity = AlertSeverity.Warning,
-                            Category = "Maintenance",
-                            Title = $"{header}: {source}Low Durability",
-                            Description = $"{part.Name} is at {Mathf.RoundToInt(part.Durability * 100f)}% durability."
+                            Category = LocalizationManager.T("alert.cat.feeding_chain", "Feeding Chain"),
+                            Title = LocalizationManager.Format("alert.wear.high.title", "{0}: {1} Wear High", header, $"{source}{resolvedPartName}"),
+                            Description = LocalizationManager.Format("alert.wear.high.desc", "{0} {1} durability low ({2:F0}% remaining). Prepare replacement.", header, $"{source}{resolvedPartName}", part.Durability * 100f)
                         });
                     }
                 }

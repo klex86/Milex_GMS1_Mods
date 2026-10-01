@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using Milex.GMS1.Core;
+using Milex.GMS1.Core.Localization;
 using Milex.GMS1.Mods.ClaimMonitor.Config;
 using Milex.GMS1.Mods.ClaimMonitor.Diagnostics;
 using Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Models;
-using Milex.GMS1.Core.Localization;
 using UnityEngine;
 
 namespace Milex.GMS1.Mods.ClaimMonitor.UI
@@ -137,7 +137,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             InitStyles();
 
             var alerts = Scanner?.ActiveAlerts;
-        bool hasAlerts = alerts != null && alerts.Count > 0;
+            bool hasAlerts = alerts != null && alerts.Count > 0;
 
             // Optional setting: Only show HUD if alerts exist
             if (Config.HudOnlyShowWarnings.Value && !hasAlerts)
@@ -261,7 +261,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             {
                 if (!hasAlerts)
                 {
-                    GUILayout.Label(string.Format("<color=#7CFC00>[OK]</color> {0}", LocalizationManager.T("hud.compact.all_operational", "All Systems Operational")), _compactItemStyle);
+                    string allOkText = LocalizationManager.T("hud.compact.all_operational", "All Systems Operational");
+                    GUILayout.Label($"<color=#7CFC00>[OK]</color> {allOkText}", _compactItemStyle);
                 }
                 else
                 {
@@ -287,7 +288,8 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             int vehicleCount = Scanner?.VehicleCount ?? 0;
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label(LocalizationManager.Format("hud.equipment_summary", "<color=#D4AF37>Equipment:</color> {0} Plants | {1} Mats | {2} Vehicles", plantCount, matCount, vehicleCount), _descStyle);
+            string equipLabel = LocalizationManager.T("hud.label.equipment", "Equipment");
+            GUILayout.Label(LocalizationManager.Format("hud.equipment_summary", "<color=#D4AF37>{0}:</color> {1} Plants | {2} Mats | {3} Vehicles", equipLabel, plantCount, matCount, vehicleCount), _descStyle);
             GUILayout.EndHorizontal();
             GUILayout.Space(2);
 

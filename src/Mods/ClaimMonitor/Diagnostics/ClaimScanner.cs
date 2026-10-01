@@ -1614,10 +1614,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics
                     bool isGenSwitchButton = cr.gameObject.name.Contains("Switch_Button")
                                           || cr.gameObject.name.Contains("Power_Generator_Switch")
                                           || (!string.IsNullOrEmpty(cr.Name) && cr.Name.Contains("SWITCH_BUTTON"));
-                    if (isGenSwitchButton && (Config == null || !Config.MonitorGeneratorSwitchButtons.Value))
+                    /*if (isGenSwitchButton && (Config == null || !Config.MonitorGeneratorSwitchButtons.Value))
                     {
                         continue;
-                    }
+                    }*/
 
                     bool isAttached = IsCheckAndRepairAttached(cr);
                     bool isMissing = !isAttached;
