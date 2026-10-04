@@ -166,21 +166,46 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
             }
         }
 
+        [HarmonyPatch(typeof(GoldDigger.WashPlantGoldCounter), "Update")]
+        public static class WashPlantGoldCounterUpdatePatch
+        {
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.WashPlantGoldCounter __instance)
+            {
+                if (__instance == null) return;
+
+                int id = __instance.GetInstanceID();
+                if (!TrackedCounterIds.Contains(id))
+                {
+                    TrackedCounterIds.Add(id);
+                    TrackedCounters.Add(__instance);
+                }
+
+                float mult = ProductionTunerPlugin.Service?.WashplantT3T5SetupCapacityMultiplier ?? 1f;
+                SyncJigBuckets(__instance.WashPlantDuplex, mult);
+                SyncJigBuckets(__instance.WashPlantDuplex2, mult);
+            }
+        }
+
         private static void SyncJigBuckets(GoldDigger.WashplantDuplexJigBase jig, float mult)
         {
             if (jig == null) return;
             float targetVol = VanillaBucketCapacity * mult;
 
-            if (jig.Bucket1 != null)
+            void ApplyBucketVolume(GoldDigger.Bucket bucket)
             {
-                jig.Bucket1.MaxVolume = targetVol;
-                WashPlantBucketIds.Add(jig.Bucket1.GetInstanceID());
+                if (bucket == null) return;
+
+                WashPlantBucketIds.Add(bucket.GetInstanceID());
+                if (Mathf.Abs(bucket.MaxVolume - targetVol) > 0.0001f)
+                {
+                    bucket.MaxVolume = targetVol;
+                    bucket.UpdatePlaneAndMass();
+                }
             }
-            if (jig.Bucket2 != null)
-            {
-                jig.Bucket2.MaxVolume = targetVol;
-                WashPlantBucketIds.Add(jig.Bucket2.GetInstanceID());
-            }
+
+            ApplyBucketVolume(jig.Bucket1);
+            ApplyBucketVolume(jig.Bucket2);
 
             if (jig.SwapBuckets != null)
             {
@@ -190,11 +215,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
                     if (holder != null && holder.ObjectInHolder != null)
                     {
                         var b = holder.ObjectInHolder.GetComponent<GoldDigger.Bucket>();
-                        if (b != null)
-                        {
-                            b.MaxVolume = targetVol;
-                            WashPlantBucketIds.Add(b.GetInstanceID());
-                        }
+                        ApplyBucketVolume(b);
                     }
                 }
             }

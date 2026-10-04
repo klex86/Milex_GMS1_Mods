@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using HarmonyLib;
 using Milex.GMS1.Mods.ProductionTuner.Helpers;
+using UnityEngine;
 
 namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
 {
@@ -39,6 +40,7 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
         // -------------------------------------------------------------------------
         // Update() Postfix — Live multiplier changes in the in-game menu
         // -------------------------------------------------------------------------
+        /*
         [HarmonyPatch(typeof(GoldDigger.WashPlantSluiceBoxDirt), "Update")]
         public static class SluiceBoxUpdatePatch
         {
@@ -64,6 +66,35 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
                 }
             }
         }
+        */
+        [HarmonyPatch(typeof(GoldDigger.WashPlantSluiceBoxDirt), "Update")]
+        public static class SluiceBoxUpdatePatch
+        {
+            [HarmonyPostfix]
+            public static void Postfix(GoldDigger.WashPlantSluiceBoxDirt __instance)
+            {
+                if (__instance == null || OrangeBeastFilter.IsOrangeBeastPart(__instance)) return;
+
+                int id = __instance.GetInstanceID();
+                float multiplier = ProductionTunerPlugin.Service?.WashplantT3T5SetupCapacityMultiplier ?? 1f;
+
+                if (!Tracked.ContainsKey(id))
+                {
+                    Tracked[id] = __instance;
+                    ApplySluiceCapacity(__instance, multiplier);
+                }
+
+                if (multiplier != _lastMultiplier)
+                {
+                    _lastMultiplier = multiplier;
+                    foreach (var sluice in Tracked.Values)
+                    {
+                        ApplySluiceCapacity(sluice, multiplier);
+                    }
+                }
+            }
+        }
+
 
         public static void RestoreVanilla()
         {
@@ -72,10 +103,23 @@ namespace Milex.GMS1.Mods.ProductionTuner.Patches.WashPlants
                 if (sluice != null)
                 {
                     sluice.MaxFill = VanillaMaxFill;
+                    sluice.SetDirtLevel(forced: true);
                 }
             }
             Tracked.Clear();
             _lastMultiplier = 1f;
+        }
+
+        private static void ApplySluiceCapacity(GoldDigger.WashPlantSluiceBoxDirt sluice, float multiplier)
+        {
+            if (sluice == null) return;
+
+            float targetFill = VanillaMaxFill * multiplier;
+            if (Mathf.Abs(sluice.MaxFill - targetFill) > 0.00001f)
+            {
+                sluice.MaxFill = targetFill;
+                sluice.SetDirtLevel(forced: true);
+            }
         }
 
         public static void Reset()
