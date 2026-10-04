@@ -610,7 +610,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                         Plant = plant,
                         Status = status
                     });
-                    CurrentData.MobilePlants.Add(status);
+                    _workingData.MobilePlants.Add(status);
                 }
             }
         }
@@ -944,7 +944,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 {
                     status.EndHogPan2Mounted = true;
                     status.EndHogPan2HasWater = plant.MyHogPan2.DirtBox?.MyWaterConsumer?.HaveWater ?? false;
-                    CountHogPanMats(plant.MyHogPan, out int pan2Total, out int pan2Installed, out float pan2Fill);
+                    CountHogPanMats(plant.MyHogPan2, out int pan2Total, out int pan2Installed, out float pan2Fill);
                     status.EndHogPan2MatsTotal = pan2Total;
                     status.EndHogPan2MatsInstalled = pan2Installed;
                     if (pan2Fill > maxMatFill) maxMatFill = pan2Fill;
@@ -1501,31 +1501,6 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             return GetFieldValue<bool>(powerConsumer, typeof(GoldDigger.PowerConsumer), "_hasPower");
         }
 
-        // Current in ClaimScannerV2.cs:
-        private (int total, int installed, float maxMatFill) CountHogPanMats(HogPan hogPan)
-        {
-            if (hogPan == null || hogPan.MinerMoss == null) return (0, 0, 0f);
-
-            int total = hogPan.MinerMoss.Count;
-            int installed = 0;
-            float maxFill = 0f;
-
-            for (int i = 0; i < hogPan.MinerMoss.Count; i++)
-            {
-                var moss = hogPan.MinerMoss[i];
-                if (moss != null && moss.gameObject.activeInHierarchy)
-                {
-                    installed++;
-                    if (moss.MaxGroundVolume > 0f)
-                    {
-                        float fill = Mathf.Clamp01(moss.GroundVolume / moss.MaxGroundVolume);
-                        if (fill > maxFill) maxFill = fill;
-                    }
-                }
-            }
-
-            return (total, installed, maxFill);
-        }
 
         private void CountHogPanMats(HogPan hogPan, out int total, out int installed, out float maxMatFill)
         {
@@ -1578,56 +1553,6 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             }
         }
 
-        /*private (int total, int installed, float maxMatFill) CountHogPanMats(HogPan hogPan)
-        {
-            if (hogPan == null || hogPan.MinerMoss == null) return (0, 0, 0f);
-
-            int total = hogPan.MinerMoss.Count;
-            int installed = 0;
-            float maxFill = 0f;
-
-            for (int i = 0; i < hogPan.MinerMoss.Count; i++)
-            {
-                var moss = hogPan.MinerMoss[i];
-                if (moss != null && moss.gameObject.activeInHierarchy)
-                {
-                    installed++;
-                    if (moss.MaxGroundVolume > 0f)
-                    {
-                        float fill = Mathf.Clamp01(moss.GroundVolume / moss.MaxGroundVolume);
-                        if (fill > maxFill) maxFill = fill;
-                    }
-                }
-            }
-
-            return (total, installed, maxFill);
-        }
-
-        private (int total, int installed, float maxFill) CountHolders(List<RepairHolder> holders)
-        {
-            if (holders == null) return (0, 0, 0f);
-
-            int total = holders.Count;
-            int installed = 0;
-            float maxFill = 0f;
-
-            for (int i = 0; i < holders.Count; i++)
-            {
-                RepairHolder holder = holders[i];
-                if (holder != null && holder.ObjectInHolder != null && holder.ObjectInHolder.gameObject.activeInHierarchy)
-                {
-                    installed++;
-                    var moss = holder.ObjectInHolder.GetComponent<MinersMoss>();
-                    if (moss != null && moss.MaxGroundVolume > 0f)
-                    {
-                        float fill = Mathf.Clamp01(moss.GroundVolume / moss.MaxGroundVolume);
-                        if (fill > maxFill) maxFill = fill;
-                    }
-                }
-            }
-
-            return (total, installed, maxFill);
-        }*/
 
         private float GetMaxCrateFillPct(ModularPlantTracker tracker)
         {

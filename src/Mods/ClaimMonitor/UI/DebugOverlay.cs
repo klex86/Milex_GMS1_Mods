@@ -20,7 +20,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
         private readonly string[] _categoryKeys = new[]
         {
             "debug.tab.all",
-            "debug.tab.player",
+            //"debug.tab.player",
             "debug.tab.setup1",
             "debug.tab.setup2",
             "debug.tab.setup3",
