@@ -21,7 +21,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
         {
             public WashPlantGoldCounter WashPlantCounter;
             public ModularWashPlantStatus Status;
+
             public List<Transform> SluiceGrateHoldables = new List<Transform>();
+
+            public List<WashPlantSluiceBoxDirt> CachedDirtComponents = new List<WashPlantSluiceBoxDirt>();
             public ConveyorHolder ConveyorHolder { get; set; }
         }
 
@@ -57,10 +60,41 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             public VehicleStatus Status;
         }
 
+        public class ClaimTracker
+        {
+            public int ClaimId;
+            public string Name;
+            public string DisplayName;
+            public ParcelTypeSO ParcelType;
+
+            public Vector3 Center2D;
+            public float RadiusSqr;
+            public bool IsTown;
+
+            public bool Contains(Vector3 playerPos)
+            {
+                float dx = playerPos.x - Center2D.x;
+                float dz = playerPos.z - Center2D.z;
+                return (dx * dx + dz * dz) <= RadiusSqr;
+            }
+
+            public void Reset()
+            {
+                ClaimId = -1;
+                Name = string.Empty;
+                DisplayName = string.Empty;
+                ParcelType = null;
+                Center2D = Vector3.zero;
+                RadiusSqr = 0f;
+                IsTown = false;
+            }
+        }
+
+
         public ClaimDiagnosticsDataV2 CurrentData { get; } = new ClaimDiagnosticsDataV2();
 
         public List<ClaimAlert> ActiveAlerts => CurrentData.ActiveAlerts;
-        public int PlantCount => CurrentData.ModularPlants.Count + CurrentData.OrangeBeasts.Count + CurrentData.MobilePlants.Count;        
+        public int PlantCount => CurrentData.ModularPlants.Count + CurrentData.OrangeBeasts.Count + CurrentData.MobilePlants.Count;
 
         // Interner Arbeitspuffer für die Scans im Hintergrund
         private ClaimDiagnosticsDataV2 _workingData = new ClaimDiagnosticsDataV2();
@@ -87,7 +121,16 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
         private readonly List<MobilePlantTracker> _trackedMobilePlants = new List<MobilePlantTracker>();
         private readonly List<MiniPlantTracker> _trackedMiniPlants = new List<MiniPlantTracker>();
         private readonly List<VehicleTracker> _trackedVehicles = new List<VehicleTracker>();
+
+        private readonly List<ClaimTracker> _trackedClaims = new List<ClaimTracker>();
+        private ClaimTracker _townTracker;
+
+        private static readonly Vector3 TownCenter = new Vector3(-150f, 0f, 1000f);
+        private const float TownRadiusSqr = 350f * 350f;
+
         private readonly HashSet<int> _modularHogPanInstanceIds = new HashSet<int>();
+        private static readonly Dictionary<(Type, string), FieldInfo> _fieldCache = new Dictionary<(Type, string), FieldInfo>();
+        private static readonly Dictionary<(Type, string), PropertyInfo> _propertyCache = new Dictionary<(Type, string), PropertyInfo>();
 
         private Coroutine _scanRoutine;
         private float _lastTopologyDiscoveryTime = -999f;
@@ -118,9 +161,16 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             _trackedMobilePlants.Clear();
             _trackedMiniPlants.Clear();
             _trackedVehicles.Clear();
+            for (int i = 0; i < _trackedClaims.Count; i++)
+            {
+                _trackedClaims[i].Reset();
+            }
+            _trackedClaims.Clear();
             _modularHogPanInstanceIds.Clear();
             _nextTopologyTime = 0f;
             _nextPollTime = 0f;
+            _townTracker?.Reset();
+            _townTracker = null;
         }
 
         private bool IsMenuScene(string sceneName)
@@ -162,6 +212,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             float pollInterval = Mathf.Max(0.5f, Config?.ScanIntervalSeconds?.Value ?? 2.0f);
             _nextPollTime = Time.time + pollInterval;
 
+            //DiscoverClaims();
             DiscoverTopology();
             PollState();
         }
@@ -268,7 +319,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
         // ==========================================
         // STAGE 1: Topology Discovery (Heavy Scan, infrequent)
         // ==========================================
-       private void DiscoverTopology()
+        private void DiscoverTopology()
         {
             _lastTopologyDiscoveryTime = Time.time;
 
@@ -283,15 +334,23 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             _trackedVehicles.Clear();
             _modularHogPanInstanceIds.Clear();
 
+            // Cache conveyor holders once for both setups
+            GoldDigger.ConveyorHolder[] cachedHolders = null;
+            bool needHolders = (Config?.Setup3IncludeFeedingChain?.Value ?? false) || (Config?.Setup4IncludeFeedingChain?.Value ?? false);
+            if (needHolders)
+            {
+                cachedHolders = UnityEngine.Object.FindObjectsOfType<GoldDigger.ConveyorHolder>();
+            }
+
             // 2. Deine bestehenden Discovery-Methoden aufrufen (unverändert!)
-            DiscoverOrangeBeasts();
-            DiscoverModularPlants();
+            DiscoverOrangeBeasts(cachedHolders);
+            DiscoverModularPlants(cachedHolders);
             DiscoverStandaloneHogPans();
             DiscoverMobilePlants();
             DiscoverVehicles();
         }
 
-        private void DiscoverModularPlants()
+        private void DiscoverModularPlants(GoldDigger.ConveyorHolder[] cachedHolders)
         {
             if (!(Config?.MonitorSetup3?.Value ?? true)) return;
 
@@ -325,14 +384,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     Status = status
                 };
 
-                // Conveyor Holder (Hopper & Elevator) lokalisieren und merken
+                // Conveyor Holder (Hopper & Elevator)
                 bool includeFeedingChain = Config?.Setup3IncludeFeedingChain?.Value ?? false;
-                if (includeFeedingChain)
+                if (includeFeedingChain && cachedHolders != null)
                 {
-                    var allHolders = UnityEngine.Object.FindObjectsOfType<GoldDigger.ConveyorHolder>();
-                    for (int h = 0; h < allHolders.Length; h++)
+                    for (int h = 0; h < cachedHolders.Length; h++)
                     {
-                        var ch = allHolders[h];
+                        var ch = cachedHolders[h];
                         if (ch != null && Vector3.Distance(plant.transform.position, ch.transform.position) < 15f)
                         {
                             tracker.ConveyorHolder = ch;
@@ -341,7 +399,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     }
                 }
 
-                // Grate-Transforms auf Sluice Box 3 lokalisieren und cachen
+                // Grate-Transforms and Dirt components on Sluice Box 3
                 if (plant.SluiceBox3 != null && plant.SluiceBox3.ObjectInHolder != null)
                 {
                     var cratesRoot = plant.SluiceBox3.ObjectInHolder.gameObject.transform.Find("SluiceCrates");
@@ -357,6 +415,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                                 {
                                     tracker.SluiceGrateHoldables.Add(holdableTr);
                                 }
+                            }
+
+                            // Cache dirt component once during discovery
+                            var dirtComp = holderTr != null ? holderTr.GetComponentInChildren<WashPlantSluiceBoxDirt>(true) : null;
+                            if (dirtComp != null)
+                            {
+                                tracker.CachedDirtComponents.Add(dirtComp);
                             }
                         }
                     }
@@ -412,7 +477,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             }
         }
 
-        private void DiscoverOrangeBeasts()
+        private void DiscoverOrangeBeasts(GoldDigger.ConveyorHolder[] cachedHolders)
         {
             if (!(Config?.MonitorSetup4?.Value ?? true)) return;
 
@@ -445,14 +510,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     Status = status
                 };
 
-                // Locate and cache Conveyor Holder (Hopper & Elevator) near the Beast
+                // Locate and cache Conveyor Holder near the Beast
                 bool includeFeedingChain = Config?.Setup4IncludeFeedingChain?.Value ?? false;
-                if (includeFeedingChain)
+                if (includeFeedingChain && cachedHolders != null)
                 {
-                    var allHolders = UnityEngine.Object.FindObjectsOfType<GoldDigger.ConveyorHolder>();
-                    for (int h = 0; h < allHolders.Length; h++)
+                    for (int h = 0; h < cachedHolders.Length; h++)
                     {
-                        var ch = allHolders[h];
+                        var ch = cachedHolders[h];
                         if (ch != null && Vector3.Distance(beast.transform.position, ch.transform.position) < 20f)
                         {
                             tracker.ConveyorHolder = ch;
@@ -614,18 +678,137 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
         {
             _lastPollTime = Time.time;
 
+            //PollPlayerLocation();
             PollModularPlants();
             PollStandaloneHogPans();
             PollOrangeBeasts();
             PollMobilePlants();
             PollVehicles();
 
-            // Alerts im Arbeitspuffer zusammenstellen
             _workingData.CompileAlerts(Config);
 
-            // JETZT ATOMAR ÜBERTRAGEN:
-            // Das UI merkt überhaupt nicht, dass im Hintergrund gescannt wurde – null Flackern!
             CurrentData.CopyFrom(_workingData);
+        }
+
+        private void PollPlayerLocation()
+        {
+            var player = Singleton<Player>.Instance;
+            if (player == null)
+                return;
+
+            Vector3 playerPos = player.transform.position;
+            _workingData.PlayerPosition = playerPos;
+            _workingData.PlayerHeading = player.transform.eulerAngles.y;
+
+            if (_trackedClaims.Count == 0)
+            {
+                DiscoverClaims();
+            }
+
+            ClaimTracker detectedClaim = null;
+
+            // 1. Check claim boundaries (0-5)
+            for (int i = 0; i < _trackedClaims.Count; i++)
+            {
+                if (_trackedClaims[i].Contains(playerPos))
+                {
+                    detectedClaim = _trackedClaims[i];
+                    break;
+                }
+            }
+
+            // 2. Check town boundary
+            if (detectedClaim == null && _townTracker != null && _townTracker.Contains(playerPos))
+            {
+                detectedClaim = _townTracker;
+            }
+
+            // 3. Write directly into working data model
+            if (detectedClaim != null)
+            {
+                if (detectedClaim.IsTown)
+                {
+                    _workingData.LocationType = PlayerLocationType.Town;
+                    _workingData.CurrentClaimId = -1;
+                    _workingData.CurrentClaimName = detectedClaim.Name;
+                    _workingData.CurrentLocationDisplayName = detectedClaim.DisplayName;
+                }
+                else
+                {
+                    _workingData.LocationType = PlayerLocationType.Claim;
+                    _workingData.CurrentClaimId = detectedClaim.ClaimId;
+                    _workingData.CurrentClaimName = detectedClaim.Name;
+                    _workingData.CurrentLocationDisplayName = detectedClaim.DisplayName;
+                }
+            }
+            else
+            {
+                _workingData.LocationType = PlayerLocationType.Wilderness;
+                _workingData.CurrentClaimId = -1;
+                _workingData.CurrentClaimName = string.Empty;
+                _workingData.CurrentLocationDisplayName = GameLocResolver.Resolve("LOCATION_WILDERNESS", "Wilderness");
+            }
+        }
+
+
+        private void DiscoverClaims()
+        {
+            _trackedClaims.Clear();
+            _townTracker = null;
+
+            var mgr = GoldDigger.LaptopGlobalManager.Instance;
+            if (mgr == null || mgr.LotList == null)
+            {
+                Debug.LogWarning("[ClaimMonitor] DiscoverClaims: LaptopGlobalManager or LotList not available.");
+                return;
+            }
+
+            const float claimRadius = 450f;
+            const float claimRadiusSqr = claimRadius * claimRadius;
+
+            // 1. Regular claims (Index 0 to 5)
+            for (int i = 0; i < mgr.LotList.Count; i++)
+            {
+                var lot = mgr.LotList[i];
+                if (lot?.Terrains == null || lot.Terrains.Count == 0 || lot.Terrains[0] == null)
+                    continue;
+
+                string claimName = lot.Name.ToString();
+                string locKey = lot.LotName;
+                string displayName = !string.IsNullOrEmpty(locKey)
+                    ? GameLocResolver.Resolve(locKey, claimName)
+                    : claimName;
+
+                Vector3 pos = lot.Terrains[0].transform.position;
+
+                _trackedClaims.Add(new ClaimTracker
+                {
+                    ClaimId = i,
+                    Name = claimName,
+                    DisplayName = displayName,
+                    ParcelType = lot.MyParcelType,
+                    Center2D = new Vector3(pos.x, 0f, pos.z),
+                    RadiusSqr = claimRadiusSqr,
+                    IsTown = false
+                });
+            }
+
+            // 2. Town center (verified at bank/store hub: X=693, Z=-391)
+            string townLocKey = mgr.TownLot != null ? mgr.TownLot.LotName : "ALLOTMENT_TOWN_NAME";
+            const float townRadius = 350f;
+
+            _townTracker = new ClaimTracker
+            {
+                ClaimId = -1,
+                Name = "Town",
+                DisplayName = GameLocResolver.Resolve(townLocKey, "Town"),
+                ParcelType = mgr.TownLot != null ? mgr.TownLot.MyParcelType : null,
+                Center2D = new Vector3(693f, 0f, -391f),
+                RadiusSqr = townRadius * townRadius,
+                IsTown = true
+            };
+
+            Debug.Log($"[ClaimMonitor] DiscoverClaims: Registered {_trackedClaims.Count} claims and town tracker.");
         }
 
         private void PollModularPlants()
@@ -699,7 +882,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     }
                     status.SluiceGratesInstalled = installed;
 
-                    status.MaxCrateFillPct = GetMaxCrateFillPct(plant);
+                    status.MaxCrateFillPct = GetMaxCrateFillPct(tracker);
                 }
                 else
                 {
@@ -746,10 +929,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 {
                     status.EndHogPan1Mounted = true;
                     status.EndHogPan1HasWater = plant.MyHogPan.DirtBox?.MyWaterConsumer?.HaveWater ?? false;
-                    var (total, installed, fill) = CountHogPanMats(plant.MyHogPan);
-                    status.EndHogPan1MatsTotal = total;
-                    status.EndHogPan1MatsInstalled = installed;
-                    if (fill > maxMatFill) maxMatFill = fill;
+                    CountHogPanMats(plant.MyHogPan, out int pan1Total, out int pan1Installed, out float pan1Fill);
+                    status.EndHogPan1MatsTotal = pan1Total;
+                    status.EndHogPan1MatsInstalled = pan1Installed;
+                    if (pan1Fill > maxMatFill) maxMatFill = pan1Fill;
                 }
                 else
                 {
@@ -761,10 +944,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 {
                     status.EndHogPan2Mounted = true;
                     status.EndHogPan2HasWater = plant.MyHogPan2.DirtBox?.MyWaterConsumer?.HaveWater ?? false;
-                    var (total, installed, fill) = CountHogPanMats(plant.MyHogPan2);
-                    status.EndHogPan2MatsTotal = total;
-                    status.EndHogPan2MatsInstalled = installed;
-                    if (fill > maxMatFill) maxMatFill = fill;
+                    CountHogPanMats(plant.MyHogPan, out int pan2Total, out int pan2Installed, out float pan2Fill);
+                    status.EndHogPan2MatsTotal = pan2Total;
+                    status.EndHogPan2MatsInstalled = pan2Installed;
+                    if (pan2Fill > maxMatFill) maxMatFill = pan2Fill;
                 }
                 else
                 {
@@ -772,16 +955,16 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 }
 
                 // 6. Main Mats & Grilles
-                var mats = CountHolders(plant.MinerMoss);
-                status.SluiceMatsTotal = mats.total;
-                status.SluiceMatsInstalled = mats.installed;
-                if (mats.maxFill > maxMatFill) maxMatFill = mats.maxFill;
+                CountHolders(plant.MinerMoss, out int matsTotal, out int matsInstalled, out float matsFill);
+                status.SluiceMatsTotal = matsTotal;
+                status.SluiceMatsInstalled = matsInstalled;
+                if (matsFill > maxMatFill) maxMatFill = matsFill;
 
                 status.MaxMatFillPct = maxMatFill;
 
-                var grilles = CountHolders(plant.MinerGrille);
-                status.SluiceGrillesTotal = grilles.total;
-                status.SluiceGrillesInstalled = grilles.installed;
+                CountHolders(plant.MinerGrille, out int grillesTotal, out int grillesInstalled, out _);
+                status.SluiceGrillesTotal = grillesTotal;
+                status.SluiceGrillesInstalled = grillesInstalled;
 
                 // 8. Feeding Chain (Hopper & Conveyor Elevator)
                 bool monitorFeedingChain = Config?.Setup3IncludeFeedingChain?.Value ?? false;
@@ -896,10 +1079,10 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 status.IsMounted = true;
                 status.HasWater = status.RequiresWater && (pan.DirtBox?.MyWaterConsumer?.HaveWater ?? false);
 
-                var (total, installed, maxMatFill) = CountHogPanMats(pan);
-                status.TotalMats = total;
-                status.InstalledMats = installed;
-                status.MaxMatFillPct = maxMatFill;
+                CountHogPanMats(pan, out int panTotal, out int panInstalled, out float panFill);
+                status.TotalMats = panTotal;
+                status.InstalledMats = panInstalled;
+                status.MaxMatFillPct = panFill;
 
                 if (pan.DirtBox != null && pan.DirtBox.PlaneVolumeMax > 0f)
                 {
@@ -949,14 +1132,15 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                     status.PlantInputFillPct = 0f;
                 }
 
-                var mats = CountHolders(beast.MinerMoss);
-                status.TotalMats = mats.total;
-                status.InstalledMats = mats.installed;
-                status.MaxMatFillPct = mats.maxFill;
+                CountHolders(beast.MinerMoss, out int matsTotal, out int matsInstalled, out float matsFill);
+                status.TotalMats = matsTotal;
+                status.InstalledMats = matsInstalled;
+                status.MaxMatFillPct = matsFill;
 
-                var grilles = CountHolders(beast.MinerGrille);
-                status.TotalGrilles = grilles.total;
-                status.InstalledGrilles = grilles.installed;
+                CountHolders(beast.MinerGrille, out int grillesTotal, out int grillesInstalled, out _);
+                status.TotalGrilles = grillesTotal;
+                status.InstalledGrilles = grillesInstalled;
+
 
                 // Feeding Chain (Hopper & Conveyor Elevator)
                 bool monitorFeedingChain = Config?.Setup4IncludeFeedingChain?.Value ?? false;
@@ -1317,7 +1501,84 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             return GetFieldValue<bool>(powerConsumer, typeof(GoldDigger.PowerConsumer), "_hasPower");
         }
 
+        // Current in ClaimScannerV2.cs:
         private (int total, int installed, float maxMatFill) CountHogPanMats(HogPan hogPan)
+        {
+            if (hogPan == null || hogPan.MinerMoss == null) return (0, 0, 0f);
+
+            int total = hogPan.MinerMoss.Count;
+            int installed = 0;
+            float maxFill = 0f;
+
+            for (int i = 0; i < hogPan.MinerMoss.Count; i++)
+            {
+                var moss = hogPan.MinerMoss[i];
+                if (moss != null && moss.gameObject.activeInHierarchy)
+                {
+                    installed++;
+                    if (moss.MaxGroundVolume > 0f)
+                    {
+                        float fill = Mathf.Clamp01(moss.GroundVolume / moss.MaxGroundVolume);
+                        if (fill > maxFill) maxFill = fill;
+                    }
+                }
+            }
+
+            return (total, installed, maxFill);
+        }
+
+        private void CountHogPanMats(HogPan hogPan, out int total, out int installed, out float maxMatFill)
+        {
+            total = 0;
+            installed = 0;
+            maxMatFill = 0f;
+
+            if (hogPan == null || hogPan.MinerMoss == null) return;
+
+            var mats = hogPan.MinerMoss;
+            total = mats.Count;
+
+            for (int i = 0; i < mats.Count; i++)
+            {
+                var moss = mats[i];
+                if (moss != null && moss.gameObject.activeInHierarchy)
+                {
+                    installed++;
+                    if (moss.MaxGroundVolume > 0f)
+                    {
+                        float fill = Mathf.Clamp01(moss.GroundVolume / moss.MaxGroundVolume);
+                        if (fill > maxMatFill) maxMatFill = fill;
+                    }
+                }
+            }
+        }
+
+        private void CountHolders(List<RepairHolder> holders, out int total, out int installed, out float maxFill)
+        {
+            total = 0;
+            installed = 0;
+            maxFill = 0f;
+
+            if (holders == null) return;
+
+            total = holders.Count;
+            for (int i = 0; i < holders.Count; i++)
+            {
+                var holder = holders[i];
+                if (holder != null && holder.ObjectInHolder != null && holder.ObjectInHolder.gameObject.activeInHierarchy)
+                {
+                    installed++;
+                    var moss = holder.ObjectInHolder.GetComponent<MinersMoss>();
+                    if (moss != null && moss.MaxGroundVolume > 0f)
+                    {
+                        float fill = Mathf.Clamp01(moss.GroundVolume / moss.MaxGroundVolume);
+                        if (fill > maxFill) maxFill = fill;
+                    }
+                }
+            }
+        }
+
+        /*private (int total, int installed, float maxMatFill) CountHogPanMats(HogPan hogPan)
         {
             if (hogPan == null || hogPan.MinerMoss == null) return (0, 0, 0f);
 
@@ -1366,10 +1627,11 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
             }
 
             return (total, installed, maxFill);
-        }
+        }*/
 
-        private float GetMaxCrateFillPct(WashPlantGoldCounter plant)
+        private float GetMaxCrateFillPct(ModularPlantTracker tracker)
         {
+            var plant = tracker?.WashPlantCounter;
             if (plant?.SluiceBox3?.ObjectInHolder == null || !plant.SluiceBox3.ObjectInHolder.gameObject.activeInHierarchy)
                 return 0f;
 
@@ -1400,18 +1662,14 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
                 return maxFill;
             }
 
-            // Fallback: Physical dirt volume
-            var cratesRoot = holdable.transform.Find("SluiceCrates");
-            if (cratesRoot != null)
+            // Fast fallback: Use pre-cached dirt components instead of recursive hierarchy searches
+            for (int i = 0; i < tracker.CachedDirtComponents.Count; i++)
             {
-                for (int i = 0; i < cratesRoot.childCount; i++)
+                var dirtComp = tracker.CachedDirtComponents[i];
+                if (dirtComp != null && dirtComp.MaxFill > 0f)
                 {
-                    var dirtComp = cratesRoot.GetChild(i).GetComponentInChildren<WashPlantSluiceBoxDirt>(true);
-                    if (dirtComp != null && dirtComp.MaxFill > 0f)
-                    {
-                        float pct = Mathf.Clamp01(dirtComp.CurrentFill / dirtComp.MaxFill);
-                        if (pct > maxFill) maxFill = pct;
-                    }
+                    float pct = Mathf.Clamp01(dirtComp.CurrentFill / dirtComp.MaxFill);
+                    if (pct > maxFill) maxFill = pct;
                 }
             }
 
@@ -1529,40 +1787,58 @@ namespace Milex.GMS1.Mods.ClaimMonitor.Diagnostics.Scanners
 
         private T GetFieldValue<T>(object target, Type type, string fieldName)
         {
-            Type current = type;
-            while (current != null && current != typeof(MonoBehaviour) && current != typeof(object))
+            if (target == null || type == null) return default;
+
+            var key = (type, fieldName);
+            if (!_fieldCache.TryGetValue(key, out var field))
             {
-                var field = current.GetField(fieldName, FieldFlags);
-                if (field != null)
+                Type current = type;
+                while (current != null && current != typeof(MonoBehaviour) && current != typeof(object))
                 {
-                    try
-                    {
-                        var val = field.GetValue(target);
-                        if (val is T castVal) return castVal;
-                    }
-                    catch { }
+                    field = current.GetField(fieldName, FieldFlags);
+                    if (field != null) break;
+                    current = current.BaseType;
                 }
-                current = current.BaseType;
+                _fieldCache[key] = field; // Cache result even if null to avoid repeating failed searches
+            }
+
+            if (field != null)
+            {
+                try
+                {
+                    var val = field.GetValue(target);
+                    if (val is T castVal) return castVal;
+                }
+                catch { }
             }
             return default;
         }
 
         private T GetPropertyValue<T>(object target, Type type, string propertyName)
         {
-            Type current = type;
-            while (current != null && current != typeof(MonoBehaviour) && current != typeof(object))
+            if (target == null || type == null) return default;
+
+            var key = (type, propertyName);
+            if (!_propertyCache.TryGetValue(key, out var prop))
             {
-                var prop = current.GetProperty(propertyName, FieldFlags);
-                if (prop != null && prop.CanRead && prop.GetIndexParameters().Length == 0)
+                Type current = type;
+                while (current != null && current != typeof(MonoBehaviour) && current != typeof(object))
                 {
-                    try
-                    {
-                        var val = prop.GetValue(target, null);
-                        if (val is T castVal) return castVal;
-                    }
-                    catch { }
+                    prop = current.GetProperty(propertyName, FieldFlags);
+                    if (prop != null && prop.CanRead && prop.GetIndexParameters().Length == 0) break;
+                    current = current.BaseType;
                 }
-                current = current.BaseType;
+                _propertyCache[key] = prop; // Cache result even if null
+            }
+
+            if (prop != null)
+            {
+                try
+                {
+                    var val = prop.GetValue(target, null);
+                    if (val is T castVal) return castVal;
+                }
+                catch { }
             }
             return default;
         }

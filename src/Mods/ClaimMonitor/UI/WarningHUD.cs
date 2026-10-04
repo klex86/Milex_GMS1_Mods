@@ -35,6 +35,13 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
         private Texture2D _warningTex;
         private Texture2D _nominalTex;
 
+        private float _cachedCalculatedHeight = 120f;
+        private int _lastAlertCount = -1;
+        private int _lastCriticalCount = -1;
+        private int _lastWarningCount = -1;
+        private bool _lastCompactMode = false;
+        private string _cachedHeaderTitle = string.Empty;
+
         private void Awake()
         {
             _windowRect = new Rect(20f, 100f, 340f, 380f);
@@ -122,6 +129,61 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             };
         }
 
+        private void UpdateCalculatedHeight(List<ClaimAlert> alerts, bool isCompact, float currentWidth, float maxAllowedHeight)
+        {
+            bool hasAlerts = alerts != null && alerts.Count > 0;
+
+            if (isCompact)
+            {
+                if (!hasAlerts)
+                {
+                    _cachedCalculatedHeight = 54f;
+                }
+                else
+                {
+                    float estimatedTotalTextHeight = 28f; // Window Header
+                    float contentWidth = Mathf.Max(200f, currentWidth - 30f);
+                    float charsPerLine = contentWidth / 7.2f;
+
+                    for (int i = 0; i < alerts.Count; i++)
+                    {
+                        var alert = alerts[i];
+                        int titleLen = alert.Title != null ? alert.Title.Length : 0;
+                        int descLen = alert.Description != null ? alert.Description.Length : 0;
+                        int totalLen = 10 + titleLen + 2 + descLen; // Length of "• [WARN] Title: Description" without string allocation
+
+                        int estimatedLines = Mathf.Max(1, Mathf.CeilToInt(totalLen / charsPerLine));
+                        estimatedTotalTextHeight += (estimatedLines * 16f) + 6f;
+                    }
+                    _cachedCalculatedHeight = Mathf.Clamp(estimatedTotalTextHeight + 14f, 54f, maxAllowedHeight);
+                }
+            }
+            else
+            {
+                if (!hasAlerts)
+                {
+                    _cachedCalculatedHeight = 120f;
+                }
+                else
+                {
+                    float estimatedTotalTextHeight = 72f;
+                    float contentWidth = Mathf.Max(250f, currentWidth - 40f);
+                    float charsPerLine = contentWidth / 7.5f;
+
+                    for (int i = 0; i < alerts.Count; i++)
+                    {
+                        float cardHeight = 36f;
+                        int descLen = alerts[i].Description != null ? alerts[i].Description.Length : 0;
+                        int descLines = Mathf.Max(1, Mathf.CeilToInt(descLen / charsPerLine));
+                        cardHeight += (descLines * 16f);
+                        estimatedTotalTextHeight += cardHeight;
+                    }
+
+                    _cachedCalculatedHeight = Mathf.Clamp(estimatedTotalTextHeight, 120f, Mathf.Max(120f, maxAllowedHeight));
+                }
+            }
+        }
+
         private void OnGUI()
         {
             if (Config == null || !Config.HudEnabled.Value)
@@ -153,87 +215,53 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             float configuredMaxHeight = Config?.HudMaxHeight?.Value ?? 420f;
             float maxAllowedHeight = Mathf.Clamp(configuredMaxHeight, 100f, Screen.height - 40f);
 
-            float currentHeight;
-            if (isCompact)
-            {
-                if (!hasAlerts)
-                {
-                    currentHeight = 54f;
-                }
-                else
-                {
-                    // Calculate dynamic height based on text content length to avoid any truncation
-                    float estimatedTotalTextHeight = 28f; // Window Header
-                    float contentWidth = Mathf.Max(200f, currentWidth - 30f);
-                    float charsPerLine = contentWidth / 7.2f;
-
-                    for (int i = 0; i < alerts.Count; i++)
-                    {
-                        string line = $"• [WARN] {alerts[i].Title}: {alerts[i].Description}";
-                        int estimatedLines = Mathf.Max(1, Mathf.CeilToInt(line.Length / charsPerLine));
-                        estimatedTotalTextHeight += (estimatedLines * 16f) + 6f;
-                    }
-                    currentHeight = Mathf.Clamp(estimatedTotalTextHeight + 14f, 54f, maxAllowedHeight);
-                }
-            }
-            else
-            {
-                if (!hasAlerts)
-                {
-                    currentHeight = 120f;
-                }
-                else
-                {
-                    // Full window mode: window title (28) + equipment summary header (28) + padding (16)
-                    float estimatedTotalTextHeight = 72f;
-                    float contentWidth = Mathf.Max(250f, currentWidth - 40f);
-                    float charsPerLine = contentWidth / 7.5f;
-
-                    for (int i = 0; i < alerts.Count; i++)
-                    {
-                        // Card header: ~20px + Box padding/margins: ~16px
-                        float cardHeight = 36f;
-                        string desc = alerts[i].Description ?? "";
-                        int descLines = Mathf.Max(1, Mathf.CeilToInt(desc.Length / charsPerLine));
-                        cardHeight += (descLines * 16f);
-                        estimatedTotalTextHeight += cardHeight;
-                    }
-
-                    // Dynamically fit all content without scrolling, constrained by HudMaxHeight and screen height
-                    currentHeight = Mathf.Clamp(estimatedTotalTextHeight, 120f, Mathf.Max(120f, maxAllowedHeight));
-                }
-            }
-
-            _windowRect.width = currentWidth;
-            _windowRect.height = currentHeight;
-            _windowRect.x = Mathf.Clamp(_windowRect.x, 0f, Screen.width - _windowRect.width);
-            _windowRect.y = Mathf.Clamp(_windowRect.y, 0f, Screen.height - _windowRect.height);
-
-            // Determine header title
+            // Count severity levels
             int criticalCount = 0;
             int warningCount = 0;
             if (hasAlerts)
             {
-                foreach (var a in alerts)
+                for (int i = 0; i < alerts.Count; i++)
                 {
-                    if (a.Severity == AlertSeverity.Critical) criticalCount++;
-                    else if (a.Severity == AlertSeverity.Warning) warningCount++;
+                    if (alerts[i].Severity == AlertSeverity.Critical) criticalCount++;
+                    else if (alerts[i].Severity == AlertSeverity.Warning) warningCount++;
                 }
             }
 
-            string headerBadge = LocalizationManager.T("hud.badge.ok", "[OK]");
-            if (criticalCount > 0)
-                headerBadge = LocalizationManager.Format("hud.badge.critical", "[! {0} CRITICAL]", criticalCount);
-            else if (warningCount > 0)
-                headerBadge = LocalizationManager.Format("hud.badge.warning", "[^ {0} WARNINGS]", warningCount);
+            // Cache window height and title only on state change during Layout event
+            int currentAlertCount = alerts != null ? alerts.Count : 0;
+            bool stateChanged = currentAlertCount != _lastAlertCount ||
+                                criticalCount != _lastCriticalCount ||
+                                warningCount != _lastWarningCount ||
+                                isCompact != _lastCompactMode;
 
-            string title = isCompact
-                ? LocalizationManager.Format("hud.header.warnings", "Claim Warnings {0}", headerBadge)
-                : LocalizationManager.Format("hud.header.monitor", "Claim Monitor {0}", headerBadge);
+            if (stateChanged || Event.current.type == EventType.Layout)
+            {
+                UpdateCalculatedHeight(alerts, isCompact, currentWidth, maxAllowedHeight);
+
+                string headerBadge = LocalizationManager.T("hud.badge.ok", "[OK]");
+                if (criticalCount > 0)
+                    headerBadge = LocalizationManager.Format("hud.badge.critical", "[! {0} CRITICAL]", criticalCount);
+                else if (warningCount > 0)
+                    headerBadge = LocalizationManager.Format("hud.badge.warning", "[^ {0} WARNINGS]", warningCount);
+
+                _cachedHeaderTitle = isCompact
+                    ? LocalizationManager.Format("hud.header.warnings", "Claim Warnings {0}", headerBadge)
+                    : LocalizationManager.Format("hud.header.monitor", "Claim Monitor {0}", headerBadge);
+
+                _lastAlertCount = currentAlertCount;
+                _lastCriticalCount = criticalCount;
+                _lastWarningCount = warningCount;
+                _lastCompactMode = isCompact;
+            }
+
+            _windowRect.width = currentWidth;
+            _windowRect.height = _cachedCalculatedHeight;
+            _windowRect.x = Mathf.Clamp(_windowRect.x, 0f, Screen.width - _windowRect.width);
+            _windowRect.y = Mathf.Clamp(_windowRect.y, 0f, Screen.height - _windowRect.height);
 
             GUI.depth = -500;
             var activeStyle = isCompact ? _compactWindowStyle : _windowStyle;
-            _windowRect = GUI.Window(887123, _windowRect, DrawWindow, title, activeStyle);
+            _windowRect = GUI.Window(887123, _windowRect, DrawWindow, _cachedHeaderTitle, activeStyle);
 
             // Persist dragged position to PlayerPrefs
             float savedX = PlayerPrefs.GetFloat("Milex_ClaimMonitor_HudPosX", 20f);

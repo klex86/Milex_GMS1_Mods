@@ -14,7 +14,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor
     {
         public const string PluginGuid = "com.milex.gms1.claimmonitor";
         public const string PluginName = "Milex Claim Monitor";
-        public const string PluginVersion = "1.0.14";
+        public const string PluginVersion = "1.0.15";
 
         public override string ModGuid => PluginGuid;
         public override string ModName => PluginName;

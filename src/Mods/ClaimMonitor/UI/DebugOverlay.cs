@@ -20,6 +20,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
         private readonly string[] _categoryKeys = new[]
         {
             "debug.tab.all",
+            "debug.tab.player",
             "debug.tab.setup1",
             "debug.tab.setup2",
             "debug.tab.setup3",
@@ -80,8 +81,16 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
 
                 string pollLabel = LocalizationManager.T("debug.timer.poll", "Poll Loop");
                 string topoLabel = LocalizationManager.T("debug.timer.topo", "Topology Discovery");
+                //string locLabel = LocalizationManager.T("debug.header.location", "Location");
+
+                /*
+                string currentLoc = !string.IsNullOrEmpty(scanner.CurrentData?.CurrentLocationDisplayName)
+                    ? scanner.CurrentData.CurrentLocationDisplayName
+                    : LocalizationManager.T("debug.status.unknown", "Unknown");
+                */
 
                 GUILayout.Label($"<b>{pollLabel}:</b> <color=#00FFFF>{pollTime}</color> | <b>{topoLabel}:</b> <color=#FFD700>{topoTime}</color>", GUILayout.Height(24));
+                //GUILayout.Label($"<b>{pollLabel}:</b> <color=#00FFFF>{pollTime}</color> | <b>{topoLabel}:</b> <color=#FFD700>{topoTime}</color> | <b>{locLabel}:</b> <color=#7CFC00>{currentLoc}</color>", GUILayout.Height(24));
             }
 
             if (!string.IsNullOrEmpty(_lastDumpStatus))
@@ -113,6 +122,7 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             string[] categoryNames = new[]
             {
                 LocalizationManager.T("debug.tab.all", "All"),
+                //LocalizationManager.T("debug.tab.player", "Player"),
                 LocalizationManager.T("debug.tab.setup1", "Setup 1 (HogPan)"),
                 LocalizationManager.T("debug.tab.setup2", "Setup 2 (Mobile)"),
                 LocalizationManager.T("debug.tab.setup3", "Setup 3 (Modular)"),
@@ -146,6 +156,15 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             _scrollPos = GUILayout.BeginScrollView(_scrollPos, false, true);
 
             int displayedCount = 0;
+
+            /*
+            // 0. Player Diagnostics (rendered first)
+            if (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 1)
+            {
+                displayedCount++;
+                DrawPlayerCard(data);
+            }
+            */
 
             // 1. Setup 1: Standalone HogPans
             if (_selectedCategoryIndex == 0 || _selectedCategoryIndex == 1)
@@ -363,6 +382,50 @@ namespace Milex.GMS1.Mods.ClaimMonitor.UI
             }
 
             DrawPartsList(beast.Parts);
+            GUILayout.EndVertical();
+        }
+
+        private void DrawPlayerCard(ClaimDiagnosticsDataV2 data)
+        {
+            if (data == null) return;
+
+            string titleLabel = LocalizationManager.T("debug.player.title", "Player Diagnostics");
+            string locLabel = LocalizationManager.T("debug.player.location", "Location");
+            string statusLabel = LocalizationManager.T("debug.player.status", "Area Type");
+            string coordsLabel = LocalizationManager.T("debug.player.coords", "Coordinates");
+            string headingLabel = LocalizationManager.T("debug.player.heading", "Heading");
+            string poiLabel = LocalizationManager.T("debug.player.poi_distances", "Points of Interest");
+
+            // Format compass heading
+            string[] compass = { "N", "NE", "E", "SE", "S", "SW", "W", "NW" };
+            int cIndex = Mathf.RoundToInt(data.PlayerHeading / 45f) % 8;
+            if (cIndex < 0) cIndex += 8;
+            string headingStr = $"{data.PlayerHeading:F1}° ({compass[cIndex]})";
+
+            // Format location text
+            string locName = !string.IsNullOrEmpty(data.CurrentLocationDisplayName)
+                ? data.CurrentLocationDisplayName
+                : LocalizationManager.T("debug.status.unknown", "Unknown");
+
+            string claimTag = data.IsOnClaim ? $" [Claim #{data.CurrentClaimId}]" : "";
+
+            GUILayout.BeginVertical("Box");
+            GUILayout.Label($"<b>[{titleLabel}]</b> - {locLabel}: <color=#7CFC00><b>{locName}</b></color>{claimTag}");
+            GUILayout.Label($"{statusLabel}: <b>{data.LocationType}</b> | {headingLabel}: <b>{headingStr}</b>");
+            GUILayout.Label($"{coordsLabel}: <b>X: {data.PlayerPosition.x:F1} | Y: {data.PlayerPosition.y:F1} | Z: {data.PlayerPosition.z:F1}</b>");
+
+            // Points of Interest distances
+            Vector3 flatPlayer = new Vector3(data.PlayerPosition.x, 0f, data.PlayerPosition.z);
+            Vector3 flatTown = new Vector3(-150f, 0f, 1000f);
+            float townDist = Vector3.Distance(flatPlayer, flatTown);
+
+            string townInsideTag = townDist <= 350f ? " <color=#7CFC00>[Inside Town]</color>" : "";
+            string townName = GameLocResolver.Resolve("BANK_GUI_LOCATION", "Haines, Alaska");
+
+            GUILayout.Space(4);
+            GUILayout.Label($"<b>{poiLabel}:</b>");
+            GUILayout.Label($"• {townName}: <b>{townDist:F1} m</b>{townInsideTag}");
+
             GUILayout.EndVertical();
         }
 
